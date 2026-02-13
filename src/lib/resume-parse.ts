@@ -1,5 +1,4 @@
 import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
 
 export type ResumeFileType = "pdf" | "docx";
 
@@ -105,10 +104,16 @@ function inferJobTitle(text: string): string | null {
   return candidate || null;
 }
 
+async function parsePdfText(fileBuffer: Buffer): Promise<string> {
+  // Use the legacy parser entry to avoid package-level debug wrapper side effects.
+  const pdfParseModule = await import("pdf-parse/lib/pdf-parse.js");
+  const parsed = await pdfParseModule.default(fileBuffer);
+  return normalize(parsed.text || "");
+}
+
 export async function extractResumeText(fileBuffer: Buffer, fileType: ResumeFileType): Promise<string> {
   if (fileType === "pdf") {
-    const parsed = await pdfParse(fileBuffer);
-    return normalize(parsed.text || "");
+    return parsePdfText(fileBuffer);
   }
 
   const parsed = await mammoth.extractRawText({ buffer: fileBuffer });

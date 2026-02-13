@@ -31,6 +31,26 @@ async function withRetries<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   throw lastError;
 }
 
+function buildFallbackHookAndTags(paper: ArxivPaper): { hook: string; tags: string[] } {
+  const abstract = paper.abstract.replace(/\s+/g, " ").trim();
+  const words = abstract.split(" ").filter(Boolean);
+  const fallbackHook =
+    words.length > 28
+      ? `${words.slice(0, 28).join(" ").replace(/[,.!?;:]+$/, "")}.`
+      : abstract || `${paper.title} introduces a new research direction with practical implications.`;
+
+  const categoryTags = paper.categories
+    .map((category) => category.split(".").pop() || category)
+    .map((tag) => tag.replace(/[^a-zA-Z0-9\- ]/g, "").trim())
+    .filter(Boolean);
+
+  const tags = Array.from(new Set(categoryTags)).slice(0, 5);
+  return {
+    hook: fallbackHook,
+    tags: tags.length > 0 ? tags : ["research", "arxiv"],
+  };
+}
+
 async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & { hookSummaryEn: string; tags: string[] }) {
   const { data: existing, error: existingError } = await client
     .from("papers")
@@ -153,11 +173,27 @@ export async function runIngestPipeline(options: {
   try {
     for (const domain of DOMAINS) {
       const domainSince = options.mode === "backfill" ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
-      const papers = await fetchArxivPapers({
-        domain,
-        maxResults: options.mode === "daily" ? DAILY_LIMIT_PER_DOMAIN : BACKFILL_FETCH_PER_DOMAIN,
-        since: domainSince,
-      });
+      let papers: ArxivPaper[] = [];
+      try {
+        papers = await withRetries(
+          () =>
+            fetchArxivPapers({
+              domain,
+              maxResults: options.mode === "daily" ? DAILY_LIMIT_PER_DOMAIN : BACKFILL_FETCH_PER_DOMAIN,
+              since: domainSince,
+            }),
+          4,
+        );
+      } catch (error) {
+        log.errors.push(`Domain ${domain} fetch failed: ${(error as Error).message}`);
+        log.domainStats[domain] = {
+          fetched: 0,
+          upserted: 0,
+          skipped: 0,
+          llmFailed: 0,
+        };
+        continue;
+      }
 
       const capped = options.mode === "daily" ? papers.slice(0, DAILY_LIMIT_PER_DOMAIN) : papers;
       fetchedCount += capped.length;
@@ -168,20 +204,32 @@ export async function runIngestPipeline(options: {
 
       for (const paper of capped) {
         try {
-          const llmResult = await withRetries(
-            () =>
-              generatePaperHookAndTags({
-                title: paper.title,
-                abstract: paper.abstract,
-                categories: paper.categories,
-              }),
-            3,
-          );
+          let hookSummaryEn = "";
+          let tags: string[] = [];
+          try {
+            const llmResult = await withRetries(
+              () =>
+                generatePaperHookAndTags({
+                  title: paper.title,
+                  abstract: paper.abstract,
+                  categories: paper.categories,
+                }),
+              3,
+            );
+            hookSummaryEn = llmResult.hook;
+            tags = llmResult.tags;
+          } catch {
+            llmFailedCount += 1;
+            domainLlmFailed += 1;
+            const fallback = buildFallbackHookAndTags(paper);
+            hookSummaryEn = fallback.hook;
+            tags = fallback.tags;
+          }
 
           const didUpsert = await upsertPaperByVersion(serviceClient, {
             ...paper,
-            hookSummaryEn: llmResult.hook,
-            tags: llmResult.tags,
+            hookSummaryEn,
+            tags,
           });
 
           if (didUpsert) {
@@ -189,9 +237,7 @@ export async function runIngestPipeline(options: {
             domainUpserted += 1;
           }
         } catch (error) {
-          llmFailedCount += 1;
           skippedCount += 1;
-          domainLlmFailed += 1;
           domainSkipped += 1;
           log.errors.push(`Domain ${domain}, paper ${paper.arxivIdBase}: ${(error as Error).message}`);
         }

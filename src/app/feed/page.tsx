@@ -119,6 +119,7 @@ function FeedContent() {
 
   useEffect(() => {
     if (bootLoading || loadingMore) return;
+    if (items.length === 0) return;
     if (!cursor) return;
     if (activeIndex < Math.max(items.length - 3, 0)) return;
 

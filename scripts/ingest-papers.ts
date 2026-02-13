@@ -1,4 +1,9 @@
-import { runIngestPipeline, type IngestMode } from "../src/lib/ingest";
+import { config as loadDotenv } from "dotenv";
+
+type IngestMode = "daily" | "backfill";
+
+loadDotenv({ path: ".env.local", override: true });
+loadDotenv({ path: ".env", override: false });
 
 function parseArgs(argv: string[]) {
   let mode: IngestMode = "daily";
@@ -27,6 +32,7 @@ function parseArgs(argv: string[]) {
 
 async function main() {
   const { mode, days } = parseArgs(process.argv.slice(2));
+  const { runIngestPipeline } = await import("../src/lib/ingest");
 
   const result = await runIngestPipeline({
     mode,

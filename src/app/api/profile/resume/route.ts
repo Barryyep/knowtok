@@ -1,13 +1,51 @@
 import { NextResponse } from "next/server";
+import { getOptionalServiceRoleKey } from "@/lib/env";
 import { parseResume } from "@/lib/resume-parse";
 import { badRequest, jsonError } from "@/lib/http";
-import { getAuthedClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, getAuthedClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 const MAX_RESUME_SIZE_BYTES = 10 * 1024 * 1024;
 
 type ResumeKind = "pdf" | "docx";
+const RESUME_BUCKET = "resumes";
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function resumeContentType(kind: ResumeKind) {
+  return kind === "pdf" ? "application/pdf" : DOCX_MIME;
+}
+
+function isBucketNotFound(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: unknown }).message ?? "");
+  return /bucket not found/i.test(message);
+}
+
+async function ensureResumeBucketIfPossible() {
+  const key = getOptionalServiceRoleKey();
+  if (!key) {
+    return false;
+  }
+
+  const service = createServiceRoleClient();
+  const { error } = await service.storage.createBucket(RESUME_BUCKET, {
+    public: false,
+    fileSizeLimit: MAX_RESUME_SIZE_BYTES,
+    allowedMimeTypes: ["application/pdf", DOCX_MIME],
+  });
+
+  if (!error) {
+    return true;
+  }
+
+  const message = String(error.message || "");
+  if (/already exists/i.test(message) || /duplicate/i.test(message)) {
+    return true;
+  }
+
+  throw error;
+}
 
 function inferResumeKind(file: File): ResumeKind | null {
   const fileName = file.name.toLowerCase();
@@ -87,15 +125,23 @@ export async function POST(request: Request) {
 
     const storagePath = `${user.id}/resume.${resumeKind}`;
 
-    const { error: uploadError } = await client.storage
-      .from("resumes")
+    let { error: uploadError } = await client.storage
+      .from(RESUME_BUCKET)
       .upload(storagePath, fileBuffer, {
-        contentType:
-          resumeKind === "pdf"
-            ? "application/pdf"
-            : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        contentType: resumeContentType(resumeKind),
         upsert: true,
       });
+
+    if (uploadError && isBucketNotFound(uploadError)) {
+      const bucketReady = await ensureResumeBucketIfPossible();
+      if (bucketReady) {
+        const retry = await client.storage.from(RESUME_BUCKET).upload(storagePath, fileBuffer, {
+          contentType: resumeContentType(resumeKind),
+          upsert: true,
+        });
+        uploadError = retry.error;
+      }
+    }
 
     if (uploadError) {
       throw uploadError;

@@ -134,9 +134,12 @@ export async function GET(request: Request) {
       );
     }
 
-    const nextCursor = encodeCursor({
-      offset: cursor.offset + Math.ceil(limit * 0.7),
-    });
+    const nextCursor =
+      items.length > 0
+        ? encodeCursor({
+            offset: cursor.offset + Math.ceil(limit * 0.7),
+          })
+        : null;
 
     return NextResponse.json({ items, nextCursor });
   } catch (error) {
