@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-mesh-bg min-h-screen text-slate-100 font-body;
+}
+
+a {
+  @apply text-accent transition-colors;
+}
+
+a:hover {
+  @apply text-cyan-300;
+}
+
+.card-surface {
+  @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-card;
+}
+
+.pill-button {
+  @apply rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan-300/60 hover:bg-cyan-300/10;
+}
+
+.primary-button {
+  @apply rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-cyan-900/50 disabled:text-slate-300;
+}
+
+.input-field {
+  @apply w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/40;
+}

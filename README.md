@@ -1,54 +1,99 @@
-# KnowTok Demo
+# KnowTok Web MVP
 
-React Native (Expo) 信息探索流 Demo：
-- 类似短视频的纵向刷流
-- 支持中文/英文 Wikipedia 随机词条
-- Supabase 用户系统（邮箱+密码登录/注册）
-- 每条内容支持三档标记：
-  - `known` 已经知道（信息茧房内）
-  - `curious` 不知道但好奇（后续多推）
-  - `not_interested` 不知道且不感兴趣
+KnowTok is a web-first research feed built on arXiv + Supabase + OpenAI.
 
-## 1. 安装依赖
+## What this MVP includes
+
+- Next.js (App Router) web app in TypeScript
+- Email/password auth with Supabase
+- Onboarding gate: users must add at least one profile field or upload a resume
+- Resume upload (PDF/DOCX, max 10MB) with text extraction
+- Swipe-like card flow: Skip / Save / "What does this mean for me?"
+- Personalized relevance insight generated on demand and cached per user/paper
+- Daily paper ingestion pipeline from arXiv (`CS/Physics/Math`, 30 per domain)
+- LLM-generated 1-line hook summary + 3-5 tags per ingested paper
+- Supabase SQL migration with RLS and storage policies
+- Vitest + Playwright test scaffolding
+
+## Stack
+
+- Next.js + React + TypeScript + Tailwind
+- Supabase (Postgres/Auth/Storage)
+- OpenAI API (server-side only)
+
+## Setup
+
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-## 2. 配置 Supabase
-
-已使用 `.env` 读取以下变量：
+2. Create env file:
 
 ```bash
-EXPO_PUBLIC_SUPABASE_URL=...
-EXPO_PUBLIC_SUPABASE_ANON_KEY=...
+cp .env.example .env.local
 ```
 
-如需重建，可参考 `.env.example`。
+Fill all variables in `.env.local`.
 
-## 3. 初始化数据库
+3. Apply database migration in Supabase:
 
-在 Supabase Dashboard -> SQL Editor 执行：
+- File: `supabase/migrations/20260213_001_web_mvp_schema.sql`
+- Run in Supabase SQL Editor, or via Supabase CLI migration flow.
 
-`/Users/barry/Desktop/knowtok/supabase/schema.sql`
-
-这个脚本会创建：
-- `profiles`（语言偏好）
-- `feed_votes`（三档内容标记）
-- RLS 与 owner-only policies
-
-## 4. 启动项目
+4. Start the app:
 
 ```bash
-npm run start -- --clear
+npm run dev
 ```
 
-然后在 Expo Go 打开，或按 `i` / `a` 启动模拟器。
+Open [http://localhost:3000](http://localhost:3000).
 
-## 5. 当前功能
+## Manual ingest (local trigger)
 
-- 邮箱 + 密码登录/注册
-- 用户语言偏好持久化（`zh` / `en`）
-- 根据语言从对应 Wikipedia 拉取词条
-- 三档标记写入 Supabase，并在列表中显示当前状态
-- 纵向分页滑动与自动加载下一批内容
+Daily mode:
+
+```bash
+npm run ingest:papers -- --mode daily
+```
+
+Backfill mode (14 days example):
+
+```bash
+npm run ingest:papers -- --mode backfill --days 14
+```
+
+The run writes metrics to `public.ingest_runs`.
+
+## API overview
+
+- `GET /api/feed`
+- `POST /api/papers/:paperId/save`
+- `POST /api/papers/:paperId/skip`
+- `POST /api/papers/:paperId/impact`
+- `GET /api/papers/:paperId`
+- `GET|PUT /api/profile`
+- `POST /api/profile/resume`
+- `GET /api/saved`
+- `POST /api/ingest/run` (protected by `x-ingest-secret`)
+
+## Testing
+
+Unit tests:
+
+```bash
+npm run test:unit
+```
+
+E2E tests:
+
+```bash
+npm run test:e2e
+```
+
+## Security notes
+
+- Keep `OPENAI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` only in server env.
+- Never expose service role or OpenAI keys to client-side code.
+- If any API key was previously leaked, rotate it immediately.
