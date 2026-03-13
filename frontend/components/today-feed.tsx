@@ -9,6 +9,8 @@ import { loadProfile, OnboardingProfile } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
 
 const FREE_FLIP_LIMIT = 5;
+const PACK_CARD_WIDTH = 148;
+const PACK_CARD_GAP = 18;
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString("zh-CN", {
@@ -19,6 +21,13 @@ function formatDate(value: string): string {
 
 function normalizeHref(value: string): string {
   return value.startsWith("http") ? value : `https://${value}`;
+}
+
+function getPackSlotStyle(index: number): CSSProperties {
+  return {
+    "--slot-index": String(index),
+    "--slot-x": `${index * (PACK_CARD_WIDTH + PACK_CARD_GAP)}px`,
+  } as CSSProperties;
 }
 
 /* ---- Phase state machine ----
@@ -42,6 +51,7 @@ export function TodayFeed() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [openedIds, setOpenedIds] = useState<string[]>([]);
+  const [beltOffset, setBeltOffset] = useState(0);
 
   /* key bumps force React to remount the emerged‑card so the CSS entrance
      animation replays when switching between cards */
@@ -77,6 +87,29 @@ export function TodayFeed() {
   }, [router]);
 
   useEffect(() => () => { if (exitTimer.current) clearTimeout(exitTimer.current); }, []);
+
+  useEffect(() => {
+    if (cards.length === 0 || phase !== "idle") {
+      return;
+    }
+
+    let frameId = 0;
+    let last = 0;
+    const totalWidth = cards.length * (PACK_CARD_WIDTH + PACK_CARD_GAP);
+
+    const tick = (now: number) => {
+      if (!last) {
+        last = now;
+      }
+      const delta = now - last;
+      last = now;
+      setBeltOffset((current) => (current + delta * 0.018) % totalWidth);
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [cards.length, phase]);
 
   /* ---- derived ---- */
   const selected = cards.find((c) => c.paper_id === selectedId) ?? null;
@@ -165,52 +198,83 @@ export function TodayFeed() {
 
       <header className="scene-title">
         <p className="eyebrow">KnowTok Deck</p>
-        <h2>选一张牌，先读 Hook，再决定要不要翻开</h2>
+        <h2>卡片会横着慢慢移动，右边出去就从左边接上</h2>
       </header>
 
       {/* ---- stage ---- */}
       <div className="today-stage">
         <div className="deck-theater">
+          <div className={`pack-board${hasSelection ? " has-selection" : ""}`}>
+            <div className="pack-track-head">
+              <p className="pack-track-title">Today Pack</p>
+              <p className="pack-track-subtitle">看中一张，它就停下来翻面</p>
+            </div>
+            <div className="pack-carousel">
+              <div className="pack-viewport">
+                <div className="pack-rail" />
+              {cards.map((card, index) => {
+                const isSel = card.paper_id === selectedId;
+                const isOpened = openedIds.includes(card.paper_id);
+                const isHookRevealed = Boolean(personalizedHooks[card.paper_id]) || loadingHookId === card.paper_id;
+                const totalWidth = cards.length * (PACK_CARD_WIDTH + PACK_CARD_GAP);
+                const rawX = index * (PACK_CARD_WIDTH + PACK_CARD_GAP) + beltOffset;
+                const wrappedX = rawX >= totalWidth ? rawX - totalWidth : rawX;
 
-          {/* --- fan deck: cards never change position --- */}
-          <div className={`fan-deck center-stage${hasSelection ? " has-selection" : ""}`}>
-            {cards.map((card, index) => {
-              const offset = index - (cards.length - 1) / 2;
-              const isSel = card.paper_id === selectedId;
-              const isOpened = openedIds.includes(card.paper_id);
-
-              return (
-                <button
-                  key={card.paper_id}
-                  className={[
-                    "fan-card",
-                    isSel && hasSelection ? "fan-card--ghost" : "",
-                    !isSel && hasSelection ? "fan-card--dim" : "",
-                    isOpened ? "fan-card--spent" : "",
-                  ].filter(Boolean).join(" ")}
-                  onClick={() => selectCard(card.paper_id)}
-                  style={{
-                    "--offset": String(offset),
-                    "--rotation": `${offset * 6.5}deg`,
-                  } as CSSProperties}
-                  type="button"
-                >
-                  <span className="fan-card-inner">
-                    <span className="fan-card-face">
-                      <span className="constellation" />
-                      <span className="fan-card-label">{card.source.toUpperCase()}</span>
+                return (
+                  <button
+                    key={card.paper_id}
+                    className={[
+                      "pack-slot",
+                      isSel && phase === "detail" ? "pack-slot--ghost" : "",
+                      !isSel && hasSelection ? "pack-slot--dim" : "",
+                      isOpened ? "pack-slot--spent" : "",
+                      isSel || isHookRevealed ? "pack-slot--selected" : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => selectCard(card.paper_id)}
+                    style={{
+                      ...getPackSlotStyle(index),
+                      "--slot-x": `${wrappedX}px`,
+                    } as CSSProperties}
+                    type="button"
+                  >
+                    <span className="pack-slot-card">
+                      <span className="pack-slot-card-inner">
+                        <span className="pack-slot-face pack-slot-face--front">
+                          <span className="constellation" />
+                          <span className="pack-slot-label">{card.source.toUpperCase()}</span>
+                          <span className="pack-slot-rarity" />
+                        </span>
+                        <span className="pack-slot-face pack-slot-face--back">
+                          <span className="eyebrow">Hook</span>
+                          <strong className="pack-slot-hook">
+                            {personalizedHooks[card.paper_id]?.hook_text
+                              ? personalizedHooks[card.paper_id].hook_text
+                              : loadingHookId === card.paper_id
+                                ? "正在为你生成专属 Hook..."
+                                : "点开后生成你的专属 Hook"}
+                          </strong>
+                        </span>
+                      </span>
                     </span>
-                  </span>
-                </button>
-              );
-            })}
+                    {isSel ? (
+                      <span className="pack-slot-shadow-card" aria-hidden="true">
+                        <span className="pack-slot-shadow-face">
+                          <span className="constellation" />
+                        </span>
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+              </div>
+            </div>
           </div>
 
-          {/* --- emerged card (hook view) --- */}
-          {selected && phase !== "idle" ? (
+          {/* --- emerged card (detail transition only) --- */}
+          {selected && phase === "detail" ? (
             <div
               key={emergeKey}
-              className={`emerged ${phase === "detail" ? "emerged--left" : "emerged--center"}`}
+              className="emerged emerged--left"
             >
               <div className="emerged-card">
                 <div className="emerged-card-inner">
@@ -236,32 +300,31 @@ export function TodayFeed() {
                   </div>
                 </div>
               </div>
+            </div>
+          ) : null}
 
-              {/* action buttons below card (only in hook phase) */}
-              {phase === "hook" ? (
-                <div className="hook-strip">
-                  <p className="mini-caption">
-                    {selected.source.toUpperCase()} · {formatDate(selected.published_at)}
-                  </p>
-                  <div className="hook-buttons">
-                    <button className="secondary-button" onClick={deselect} type="button">
-                      放回牌阵
-                    </button>
-                    <button
-                      className="primary-button"
-                      disabled={!canFlip}
-                      onClick={flipCard}
-                      type="button"
-                    >
-                      {loadingHookId === selected.paper_id
-                        ? "正在生成专属 Hook..."
-                        : openedIds.length >= flipLimit
-                          ? "今日免费翻牌次数已用完"
-                          : "翻开这张牌"}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
+          {selected && phase === "hook" ? (
+            <div className="hook-strip hook-strip--pack">
+              <p className="mini-caption">
+                {selected.source.toUpperCase()} · {formatDate(selected.published_at)}
+              </p>
+              <div className="hook-buttons">
+                <button className="secondary-button" onClick={deselect} type="button">
+                  放回牌阵
+                </button>
+                <button
+                  className="primary-button"
+                  disabled={!canFlip}
+                  onClick={flipCard}
+                  type="button"
+                >
+                  {loadingHookId === selected.paper_id
+                    ? "正在生成专属 Hook..."
+                    : openedIds.length >= flipLimit
+                      ? "今日免费翻牌次数已用完"
+                      : "翻开这张牌"}
+                </button>
+              </div>
             </div>
           ) : null}
         </div>

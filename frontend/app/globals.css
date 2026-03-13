@@ -300,15 +300,15 @@ button {
 .deck-theater { position: relative; min-height: calc(100vh - 72px); }
 
 /* ==========================================================================
-   FAN DECK — cards never shift position
+   PACK BOARD — hearthstone-like pack opening stage
    ========================================================================== */
 
-.fan-deck {
+.pack-board {
   position: absolute;
   left: 50%;
-  top: 60%;
+  top: 56%;
   width: min(980px, 88vw);
-  min-height: 360px;
+  height: min(720px, 74vh);
   transform: translate(-50%, -50%);
   transition:
     transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -316,89 +316,205 @@ button {
     filter 420ms ease;
 }
 
-/* when detail panel is open, shrink deck toward bottom‑left */
-.today-scene.phase-detail .fan-deck {
-  transform: translate(-50%, -38%) scale(0.68);
-  opacity: 0.18;
-  filter: blur(2px);
+.today-scene.phase-detail .pack-board {
+  transform: translate(-50%, -48%) scale(0.82);
+  opacity: 0.22;
+  filter: blur(1px);
   pointer-events: none;
 }
 
-.fan-card {
+.pack-track-head {
   position: absolute;
   left: 50%;
-  bottom: 0;
+  top: 44px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.pack-track-title {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(255, 229, 188, 0.8);
+}
+
+.pack-track-subtitle {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: rgba(240, 232, 255, 0.68);
+}
+
+.pack-carousel {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: min(920px, 86vw);
+  height: 290px;
+  transform: translate(-50%, -50%);
+}
+
+.pack-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pack-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 14px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(255, 225, 171, 0.06), rgba(255, 225, 171, 0.24), rgba(255, 225, 171, 0.06));
+  box-shadow:
+    0 0 0 1px rgba(255, 231, 195, 0.08),
+    0 0 36px rgba(255, 190, 88, 0.12);
+}
+
+.pack-rail::before,
+.pack-rail::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 224, 171, 0.56);
+  box-shadow: 0 0 20px rgba(255, 208, 117, 0.3);
+}
+
+.pack-rail::before { left: -2px; }
+.pack-rail::after { right: -2px; }
+
+.pack-slot {
+  position: absolute;
+  left: 0;
+  top: 50%;
   width: 148px;
   height: 226px;
   padding: 0;
   border: 0;
   background: transparent;
-  /* position purely by --offset; no shifting */
-  transform:
-    translateX(calc(var(--offset) * 36px - 50%))
-    rotate(var(--rotation));
-  transform-origin: center 360px;
+  transform: translate(var(--slot-x), -50%);
   transition:
     transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
     opacity 380ms ease,
     filter 380ms ease;
-  z-index: 10;
+  z-index: 12;
+  animation: pack-slide-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--slot-index) * 90ms);
 }
 
-/* hover lift */
-.fan-card:hover:not(.fan-card--ghost):not(.fan-card--spent) {
-  filter: drop-shadow(0 22px 44px rgba(215, 176, 109, 0.22));
-  transform:
-    translateX(calc(var(--offset) * 36px - 50%))
-    rotate(var(--rotation))
-    translateY(-18px);
+.pack-slot:hover:not(.pack-slot--ghost):not(.pack-slot--spent) {
+  filter: drop-shadow(0 18px 42px rgba(255, 181, 80, 0.28));
+  transform: translate(var(--slot-x), calc(-50% - 12px)) scale(1.04);
 }
 
-/* selected card ghosts in the deck */
-.fan-card--ghost {
-  opacity: 0.1;
-  transform:
-    translateX(calc(var(--offset) * 36px - 50%))
-    rotate(calc(var(--rotation) * 0.35))
-    translateY(-24px)
-    scale(0.88);
-  z-index: 1;
+.pack-slot--ghost {
+  opacity: 0.08;
+  transform: translate(var(--slot-x), -50%) scale(0.82);
 }
 
-/* non‑selected cards dim */
-.fan-card--dim {
-  filter: brightness(0.6) saturate(0.7);
+.pack-slot--dim {
+  filter: brightness(0.56) saturate(0.7);
 }
 
-/* already‑opened cards */
-.fan-card--spent {
-  opacity: 0.15;
+.pack-slot--spent {
+  opacity: 0.18;
 }
 
-.fan-card-inner,
-.fan-card-face {
+.pack-slot--selected {
+  z-index: 18;
+}
+
+.pack-slot-card,
+.pack-slot-shadow-card {
+  position: absolute;
+  inset: 0;
+}
+
+.pack-slot-shadow-card {
+  opacity: 0;
+  transform: translateX(-22px) scale(0.96);
+  transition: opacity 260ms ease, transform 320ms ease;
+  pointer-events: none;
+}
+
+.pack-slot--selected .pack-slot-shadow-card {
+  opacity: 0.22;
+  transform: translateX(-30px) scale(0.96);
+}
+
+.pack-slot-card,
+.pack-slot-card-inner,
+.pack-slot-face,
+.pack-slot-shadow-face {
   display: block;
   width: 100%;
   height: 100%;
   border-radius: 24px;
 }
 
-.fan-card-face {
+.pack-slot-card {
+  perspective: 1400px;
+}
+
+.pack-slot-card-inner {
   position: relative;
+  transform-style: preserve-3d;
+  transition: transform 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.pack-slot--selected .pack-slot-card-inner {
+  transform: rotateY(180deg);
+}
+
+.pack-slot-face {
+  position: relative;
+  inset: 0;
+  position: absolute;
   overflow: hidden;
-  border: 1px solid rgba(215, 176, 109, 0.48);
+  backface-visibility: hidden;
+  border: 1px solid rgba(255, 211, 147, 0.46);
   background:
-    radial-gradient(circle at top, rgba(215, 176, 109, 0.2), transparent 24%),
-    radial-gradient(circle at bottom, rgba(63, 91, 141, 0.55), transparent 40%),
-    linear-gradient(180deg, #05060c 0%, #090b15 100%);
+    radial-gradient(circle at top, rgba(255, 216, 143, 0.22), transparent 24%),
+    radial-gradient(circle at bottom, rgba(68, 113, 191, 0.58), transparent 42%),
+    linear-gradient(180deg, #09050d 0%, #110d20 54%, #1e1426 100%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 28px 40px rgba(0, 0, 0, 0.35);
+    0 24px 42px rgba(0, 0, 0, 0.32);
+}
+
+.pack-slot-face--back,
+.pack-slot-shadow-face {
+  padding: 18px 18px 20px;
+  background:
+    linear-gradient(180deg, rgba(30, 17, 54, 0.98), rgba(37, 46, 86, 0.92)),
+    radial-gradient(circle at top right, rgba(255, 216, 143, 0.16), transparent 34%);
+}
+
+.pack-slot-face--back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.pack-slot-hook {
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(247, 241, 255, 0.96);
 }
 
 /* constellation stars */
-.fan-card-face::before,
-.fan-card-face::after,
+.pack-slot-face--front::before,
+.pack-slot-face--front::after,
 .constellation::before,
 .constellation::after {
   content: "";
@@ -408,14 +524,14 @@ button {
   box-shadow: 0 0 16px rgba(215, 176, 109, 0.85);
 }
 
-.fan-card-face::before { width: 10px; height: 10px; top: 24px;  left: 20px; }
-.fan-card-face::after  { width: 8px;  height: 8px;  right: 28px; top: 54px; }
+.pack-slot-face--front::before { width: 10px; height: 10px; top: 24px;  left: 20px; }
+.pack-slot-face--front::after  { width: 8px;  height: 8px;  right: 28px; top: 54px; }
 
 .constellation { position: absolute; inset: 0; }
 .constellation::before { width: 12px; height: 12px; bottom: 28px; left: 26px; }
 .constellation::after  { width: 9px;  height: 9px;  right: 22px;  bottom: 36px; }
 
-.fan-card-label {
+.pack-slot-label {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -423,6 +539,18 @@ button {
   font-size: 11px;
   letter-spacing: 0.22em;
   color: rgba(255, 241, 214, 0.88);
+}
+
+.pack-slot-rarity {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 48px;
+  height: 8px;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, rgba(255, 208, 125, 0.2), rgba(255, 231, 183, 0.9), rgba(255, 208, 125, 0.2));
+  box-shadow: 0 0 18px rgba(255, 214, 145, 0.3);
 }
 
 /* ==========================================================================
@@ -437,8 +565,7 @@ button {
   align-items: center;
   gap: 18px;
   pointer-events: none;
-  /* entrance animation via @keyframes */
-  animation: emerge-in 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: none;
 }
 
 /* centred — hook phase */
@@ -450,28 +577,13 @@ button {
 
 /* collapsed left — detail phase */
 .emerged--left {
-  left: 15%;
+  left: 16%;
   top: 50%;
   transform: translate(-50%, -50%) scale(0.82);
   transition:
     left 720ms cubic-bezier(0.2, 0.8, 0.2, 1),
     top 720ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes emerge-in {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -30%) scale(0.55) rotateY(0deg);
-  }
-  50% {
-    opacity: 1;
-    transform: translate(-50%, -55%) scale(1.04) rotateY(0deg);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -55%) scale(1) rotateY(0deg);
-  }
 }
 
 /* the 3D card itself */
@@ -487,13 +599,13 @@ button {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  /* auto‑flip to show hook after emerge */
-  animation: card-flip-to-hook 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 320ms both;
+  animation: card-flip-to-hook 1080ms cubic-bezier(0.2, 0.8, 0.2, 1) 220ms both;
 }
 
 @keyframes card-flip-to-hook {
-  0%   { transform: rotateY(0deg); }
-  100% { transform: rotateY(180deg); }
+  0%   { transform: rotateY(0deg) scale(0.92); }
+  48%  { transform: rotateY(88deg) scale(1.02); }
+  100% { transform: rotateY(180deg) scale(1); }
 }
 
 .emerged-face {
@@ -564,9 +676,28 @@ button {
   animation: fade-up 420ms ease 600ms both;
 }
 
+.hook-strip--pack {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 24;
+}
+
 @keyframes fade-up {
   0%   { opacity: 0; transform: translateY(14px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pack-slide-in {
+  0% {
+    opacity: 0;
+    transform: translate(calc(var(--slot-x) - 80px), -50%) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(var(--slot-x), -50%) scale(1);
+  }
 }
 
 .mini-caption {
@@ -858,25 +989,43 @@ button {
   .today-stage,
   .deck-theater { min-height: auto; }
 
-  .fan-deck {
+  .pack-board {
     position: relative;
     top: auto;
     left: auto;
     width: 100%;
-    min-height: 280px;
+    min-height: 520px;
     margin-top: 24px;
     transform: none;
   }
 
-  .today-scene.phase-detail .fan-deck {
+  .today-scene.phase-detail .pack-board {
     transform: none;
     opacity: 0.12;
   }
 
-  .fan-card {
-    width: 108px;
-    height: 170px;
-    transform: translateX(calc(var(--offset) * 20px - 50%)) rotate(var(--rotation));
+  .pack-track-head {
+    position: static;
+    transform: none;
+    margin-bottom: 18px;
+  }
+
+  .pack-carousel {
+    position: relative;
+    inset: auto;
+    height: 280px;
+  }
+
+  .pack-rail {
+    width: 100%;
+    height: 14px;
+  }
+
+  .pack-slot {
+    width: 110px;
+    height: 168px;
+    top: 50%;
+    transform: translate(var(--slot-x), -50%);
   }
 
   .emerged,
@@ -914,14 +1063,26 @@ button {
     flex-direction: column;
   }
 
+  .hook-strip--pack {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    margin-top: 20px;
+  }
+
   .detail-facts { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 1120px) and (min-width: 721px) {
-  .fan-card {
+  .pack-carousel {
+    width: min(760px, 82vw);
+  }
+
+  .pack-slot {
     width: 122px;
     height: 186px;
-    transform: translateX(calc(var(--offset) * 28px - 50%)) rotate(var(--rotation));
+    transform: translate(var(--slot-x), -50%);
   }
 
   .emerged--left {

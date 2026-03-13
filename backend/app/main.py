@@ -31,7 +31,7 @@ def healthz() -> dict[str, str]:
 @app.get("/api/v1/cards/today", response_model=list[CardTodayItem])
 def get_today_cards(_: object = Depends(require_bearer_token)) -> list[CardTodayItem]:
     with SessionLocal() as session:
-        return list_today_cards(session, limit=5)
+        return list_today_cards(session, limit=10)
 
 
 @app.post("/api/v1/cards/{paper_id}/hook", response_model=PersonalizedHookResult)
