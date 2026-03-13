@@ -231,6 +231,10 @@ button {
     radial-gradient(circle at top right, rgba(146, 161, 194, 0.22), transparent 30%);
 }
 
+/* ==========================================================================
+   TODAY SCENE — full‑viewport card deck
+   ========================================================================== */
+
 .today-scene {
   position: relative;
   min-height: 100vh;
@@ -248,6 +252,8 @@ button {
   pointer-events: none;
 }
 
+/* ---- scene chrome ---- */
+
 .scene-meta {
   position: absolute;
   z-index: 50;
@@ -257,26 +263,11 @@ button {
   color: rgba(247, 241, 255, 0.66);
 }
 
-.scene-meta p {
-  margin: 0;
-}
+.scene-meta p { margin: 0; }
 
-.scene-progress {
-  top: 28px;
-  left: 32px;
-}
-
-.scene-account {
-  right: 32px;
-  bottom: 24px;
-  max-width: 220px;
-  text-align: right;
-}
-
-.scene-actions {
-  top: 24px;
-  right: 28px;
-}
+.scene-progress { top: 28px; left: 32px; }
+.scene-account  { right: 32px; bottom: 24px; max-width: 220px; text-align: right; }
+.scene-actions   { top: 24px; right: 28px; }
 
 .secondary-button.subtle {
   min-height: 38px;
@@ -303,15 +294,14 @@ button {
   font-weight: 500;
 }
 
-.today-stage {
-  position: relative;
-  min-height: calc(100vh - 72px);
-}
+/* ---- stage / theater ---- */
 
-.deck-theater {
-  position: relative;
-  min-height: calc(100vh - 72px);
-}
+.today-stage  { position: relative; min-height: calc(100vh - 72px); }
+.deck-theater { position: relative; min-height: calc(100vh - 72px); }
+
+/* ==========================================================================
+   FAN DECK — cards never shift position
+   ========================================================================== */
 
 .fan-deck {
   position: absolute;
@@ -320,17 +310,18 @@ button {
   width: min(980px, 88vw);
   min-height: 360px;
   transform: translate(-50%, -50%);
-  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 420ms ease, filter 420ms ease;
+  transition:
+    transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 420ms ease,
+    filter 420ms ease;
 }
 
-.today-scene.detail-open .fan-deck {
-  transform: translate(-64%, -52%) scale(0.86);
-  opacity: 0.24;
-  filter: blur(1px);
-}
-
-.fan-deck.has-selection .fan-card:not(.selected) {
-  filter: brightness(0.76);
+/* when detail panel is open, shrink deck toward bottom‑left */
+.today-scene.phase-detail .fan-deck {
+  transform: translate(-50%, -38%) scale(0.68);
+  opacity: 0.18;
+  filter: blur(2px);
+  pointer-events: none;
 }
 
 .fan-card {
@@ -342,36 +333,46 @@ button {
   padding: 0;
   border: 0;
   background: transparent;
-  transform: translateX(calc(var(--shifted-offset, var(--offset)) * 36px - 50%)) rotate(var(--rotation));
+  /* position purely by --offset; no shifting */
+  transform:
+    translateX(calc(var(--offset) * 36px - 50%))
+    rotate(var(--rotation));
   transform-origin: center 360px;
   transition:
     transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 280ms ease,
-    filter 280ms ease;
+    opacity 380ms ease,
+    filter 380ms ease;
   z-index: 10;
 }
 
-.fan-card:hover,
-.fan-card.selected {
-  filter: drop-shadow(0 22px 44px rgba(215, 176, 109, 0.16));
+/* hover lift */
+.fan-card:hover:not(.fan-card--ghost):not(.fan-card--spent) {
+  filter: drop-shadow(0 22px 44px rgba(215, 176, 109, 0.22));
   transform:
-    translateX(calc(var(--shifted-offset, var(--offset)) * 36px - 50%))
+    translateX(calc(var(--offset) * 36px - 50%))
     rotate(var(--rotation))
     translateY(-18px);
 }
 
-.selected-deck-card.ghosted {
-  opacity: 0.08;
+/* selected card ghosts in the deck */
+.fan-card--ghost {
+  opacity: 0.1;
   transform:
-    translateX(calc(var(--offset) * 20px - 50%))
+    translateX(calc(var(--offset) * 36px - 50%))
     rotate(calc(var(--rotation) * 0.35))
-    translateY(-32px)
+    translateY(-24px)
     scale(0.88);
   z-index: 1;
 }
 
-.fan-card.opened {
-  opacity: 0.12;
+/* non‑selected cards dim */
+.fan-card--dim {
+  filter: brightness(0.6) saturate(0.7);
+}
+
+/* already‑opened cards */
+.fan-card--spent {
+  opacity: 0.15;
 }
 
 .fan-card-inner,
@@ -395,6 +396,7 @@ button {
     0 28px 40px rgba(0, 0, 0, 0.35);
 }
 
+/* constellation stars */
 .fan-card-face::before,
 .fan-card-face::after,
 .constellation::before,
@@ -406,38 +408,12 @@ button {
   box-shadow: 0 0 16px rgba(215, 176, 109, 0.85);
 }
 
-.fan-card-face::before {
-  width: 10px;
-  height: 10px;
-  top: 24px;
-  left: 20px;
-}
+.fan-card-face::before { width: 10px; height: 10px; top: 24px;  left: 20px; }
+.fan-card-face::after  { width: 8px;  height: 8px;  right: 28px; top: 54px; }
 
-.fan-card-face::after {
-  width: 8px;
-  height: 8px;
-  right: 28px;
-  top: 54px;
-}
-
-.constellation {
-  position: absolute;
-  inset: 0;
-}
-
-.constellation::before {
-  width: 12px;
-  height: 12px;
-  bottom: 28px;
-  left: 26px;
-}
-
-.constellation::after {
-  width: 9px;
-  height: 9px;
-  right: 22px;
-  bottom: 36px;
-}
+.constellation { position: absolute; inset: 0; }
+.constellation::before { width: 12px; height: 12px; bottom: 28px; left: 26px; }
+.constellation::after  { width: 9px;  height: 9px;  right: 22px;  bottom: 36px; }
 
 .fan-card-label {
   position: absolute;
@@ -449,47 +425,61 @@ button {
   color: rgba(255, 241, 214, 0.88);
 }
 
-.emerged-card-layer {
+/* ==========================================================================
+   EMERGED CARD — rises from deck, flips to show hook
+   ========================================================================== */
+
+.emerged {
   position: absolute;
-  left: 50%;
-  top: 55%;
   z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  transform: translate(-50%, -50%);
   pointer-events: none;
+  /* entrance animation via @keyframes */
+  animation: emerge-in 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* centred — hook phase */
+.emerged--center {
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -55%);
+}
+
+/* collapsed left — detail phase */
+.emerged--left {
+  left: 15%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.82);
   transition:
     left 720ms cubic-bezier(0.2, 0.8, 0.2, 1),
     top 720ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.emerged-card-layer.previewing {
-  transform: translate(-50%, -58%);
+@keyframes emerge-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.55) rotateY(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -55%) scale(1.04) rotateY(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -55%) scale(1) rotateY(0deg);
+  }
 }
 
-.emerged-card-layer.docked {
-  left: 17%;
-  top: 60%;
-  transform: translate(-50%, -50%) scale(0.9);
-}
-
+/* the 3D card itself */
 .emerged-card {
-  width: 236px;
-  height: 356px;
+  width: 246px;
+  height: 368px;
   perspective: 1800px;
   pointer-events: auto;
-  transition: transform 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.emerged-card.is-preview {
-  transform: translateY(-16px) scale(1.02);
-}
-
-.emerged-card.is-opened {
-  transform: translateY(0) scale(0.98);
 }
 
 .emerged-card-inner {
@@ -497,18 +487,16 @@ button {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 820ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* auto‑flip to show hook after emerge */
+  animation: card-flip-to-hook 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 320ms both;
 }
 
-.emerged-card.is-preview .emerged-card-inner {
-  transform: rotateY(180deg);
+@keyframes card-flip-to-hook {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(180deg); }
 }
 
-.emerged-card.is-opened .emerged-card-inner {
-  transform: rotateY(360deg);
-}
-
-.emerged-card-face {
+.emerged-face {
   position: absolute;
   inset: 0;
   border-radius: 32px;
@@ -520,7 +508,8 @@ button {
     0 34px 56px rgba(0, 0, 0, 0.42);
 }
 
-.emerged-card-front {
+/* front = constellation pattern (deck face) */
+.emerged-face--front {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -531,51 +520,53 @@ button {
     linear-gradient(180deg, #05060c 0%, #090b15 100%);
 }
 
-.emerged-card-back {
+/* back = hook text */
+.emerged-face--back {
   transform: rotateY(180deg);
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 14px;
-  padding: 24px;
+  padding: 28px 24px;
   background:
     linear-gradient(180deg, rgba(18, 13, 41, 0.98), rgba(46, 54, 90, 0.88)),
     radial-gradient(circle at top right, rgba(215, 176, 109, 0.18), transparent 34%);
 }
 
-.emerged-card-front h3,
-.emerged-card-back h3 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.4;
-}
-
-.emerged-card-source {
+.emerged-source {
   margin: 0;
   font-size: 12px;
   letter-spacing: 0.28em;
   color: rgba(255, 241, 214, 0.8);
 }
 
+.emerged-hook {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
 .hook-caption {
   margin: 0;
   color: rgba(247, 241, 255, 0.66);
   line-height: 1.6;
+  font-size: 13px;
 }
 
-.hook-action-strip {
+/* --- hook action strip --- */
+
+.hook-strip {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   pointer-events: auto;
-  transition: opacity 260ms ease, transform 260ms ease;
+  animation: fade-up 420ms ease 600ms both;
 }
 
-.hook-action-strip.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-12px);
+@keyframes fade-up {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .mini-caption {
@@ -592,15 +583,12 @@ button {
   align-items: center;
 }
 
-.preview-meta.minimal {
-  margin-top: 0;
-}
+/* ==========================================================================
+   SHARED — badges, meta, small helpers
+   ========================================================================== */
 
-.preview-copy h3 {
-  font-size: 26px;
-  line-height: 1.4;
-  margin-top: 8px;
-}
+.preview-meta.minimal { margin-top: 0; }
+.preview-copy h3      { font-size: 26px; line-height: 1.4; margin-top: 8px; }
 
 .preview-meta {
   display: flex;
@@ -609,9 +597,7 @@ button {
   margin-top: 16px;
 }
 
-.small {
-  font-size: 13px;
-}
+.small { font-size: 13px; }
 
 .badge {
   display: inline-flex;
@@ -623,9 +609,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.badge.ghost {
-  background: rgba(255, 255, 255, 0.08);
-}
+.badge.ghost { background: rgba(255, 255, 255, 0.08); }
 
 .compact-meta {
   display: flex;
@@ -633,33 +617,61 @@ button {
   flex-wrap: wrap;
 }
 
+/* ==========================================================================
+   DETAIL PANEL — slides in from right
+   ========================================================================== */
+
 .detail-panel {
   position: absolute;
-  top: 61%;
+  top: 8%;
   right: 42px;
   z-index: 20;
-  width: min(440px, 32vw);
-  min-height: 440px;
-  padding: 24px;
+  width: min(480px, 38vw);
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: 28px 24px 24px;
   border-radius: 32px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background:
-    linear-gradient(180deg, rgba(12, 12, 28, 0.32), rgba(24, 18, 51, 0.72)),
+    linear-gradient(180deg, rgba(12, 12, 28, 0.82), rgba(24, 18, 51, 0.88)),
     radial-gradient(circle at top right, rgba(215, 176, 109, 0.12), transparent 34%);
   box-shadow: 0 28px 60px rgba(3, 4, 12, 0.34);
   backdrop-filter: blur(22px);
+  /* hidden state */
   opacity: 0;
   pointer-events: none;
-  transform: translate(60px, -54%);
+  transform: translateX(80px);
   transition:
     opacity 420ms ease,
     transform 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.detail-panel.visible {
+.detail-panel--open {
   opacity: 1;
   pointer-events: auto;
-  transform: translate(0, -54%);
+  transform: translateX(0);
+}
+
+.detail-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(247, 241, 255, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.detail-close:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .detail-head h3 {
@@ -668,24 +680,28 @@ button {
   line-height: 1.32;
 }
 
-.detail-badges {
-  margin-top: 18px;
-}
+.detail-badges { margin-top: 18px; }
 
 .detail-summary {
-  margin: 24px 0 0;
+  margin: 0;
   font-size: 16px;
   line-height: 1.68;
   color: rgba(247, 241, 255, 0.92);
 }
 
-.detail-section {
-  margin-top: 24px;
+.detail-hook {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(215, 176, 109, 0.9);
+  font-style: italic;
 }
+
+.detail-section { margin-top: 24px; }
 
 .hero-detail-block {
   margin-top: 24px;
-  padding: 18px 18px 6px;
+  padding: 18px 18px 14px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -716,6 +732,21 @@ button {
 .fact-pill strong {
   font-size: 14px;
   color: rgba(247, 241, 255, 0.92);
+}
+
+.fact-pill.wide {
+  width: 100%;
+}
+
+.detail-link-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.detail-link {
+  min-height: 40px;
+  padding-inline: 14px;
 }
 
 .detail-sources li {
@@ -766,6 +797,10 @@ button {
   line-height: 1.7;
 }
 
+/* ==========================================================================
+   OTHER
+   ========================================================================== */
+
 .auth-panel {
   max-width: 560px;
   margin: 0 auto;
@@ -777,49 +812,25 @@ button {
   animation: pulse 1.4s ease infinite;
 }
 
-.hero-skeleton {
-  height: 14px;
-  width: 200px;
-  margin-top: 18px;
-}
-
-.card-skeleton {
-  gap: 12px;
-}
-
-.line {
-  height: 14px;
-  width: 100%;
-}
-
-.line.short {
-  width: 46%;
-}
+.hero-skeleton { height: 14px; width: 200px; margin-top: 18px; }
+.card-skeleton { gap: 12px; }
+.line          { height: 14px; width: 100%; }
+.line.short    { width: 46%; }
 
 @keyframes pulse {
-  0% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.55;
-  }
+  0%   { opacity: 0.55; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.55; }
 }
 
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
 @media (max-width: 720px) {
-  .topbar {
-    flex-direction: column;
-  }
-
-  .app-shell {
-    padding-inline: 16px;
-  }
-
-  .panel {
-    padding: 20px;
-  }
+  .topbar { flex-direction: column; }
+  .app-shell { padding-inline: 16px; }
+  .panel { padding: 20px; }
 
   .today-scene {
     min-height: auto;
@@ -834,9 +845,7 @@ button {
     margin-bottom: 12px;
   }
 
-  .scene-title h2 {
-    font-size: 24px;
-  }
+  .scene-title h2 { font-size: 24px; }
 
   .scene-progress,
   .scene-actions,
@@ -847,9 +856,7 @@ button {
   }
 
   .today-stage,
-  .deck-theater {
-    min-height: auto;
-  }
+  .deck-theater { min-height: auto; }
 
   .fan-deck {
     position: relative;
@@ -861,9 +868,9 @@ button {
     transform: none;
   }
 
-  .today-scene.detail-open .fan-deck {
+  .today-scene.phase-detail .fan-deck {
     transform: none;
-    opacity: 0.15;
+    opacity: 0.12;
   }
 
   .fan-card {
@@ -872,14 +879,15 @@ button {
     transform: translateX(calc(var(--offset) * 20px - 50%)) rotate(var(--rotation));
   }
 
-  .emerged-card-layer,
-  .emerged-card-layer.docked,
-  .emerged-card-layer.previewing {
+  .emerged,
+  .emerged--center,
+  .emerged--left {
     position: relative;
     top: auto;
     left: auto;
     transform: none;
-    margin: 0 auto;
+    margin: 24px auto 0;
+    animation: none;
   }
 
   .emerged-card {
@@ -888,14 +896,17 @@ button {
   }
 
   .detail-panel,
-  .detail-panel.visible {
+  .detail-panel--open {
     position: relative;
     top: auto;
     right: auto;
     width: 100%;
+    max-height: none;
     min-height: auto;
     margin-top: 24px;
     transform: none;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .hook-buttons {
@@ -903,23 +914,21 @@ button {
     flex-direction: column;
   }
 
-  .detail-facts {
-    grid-template-columns: 1fr;
-  }
+  .detail-facts { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1120px) and (min-width: 721px) {
   .fan-card {
     width: 122px;
     height: 186px;
-    transform: translateX(calc(var(--shifted-offset, var(--offset)) * 28px - 50%)) rotate(var(--rotation));
+    transform: translateX(calc(var(--offset) * 28px - 50%)) rotate(var(--rotation));
   }
 
-  .emerged-card-layer.docked {
-    left: 20%;
+  .emerged--left {
+    left: 18%;
   }
 
   .detail-panel {
-    width: min(420px, 38vw);
+    width: min(420px, 42vw);
   }
 }

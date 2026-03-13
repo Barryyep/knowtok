@@ -1,5 +1,10 @@
 from app.clients.semantic_scholar import SemanticScholarClient
-from app.services.content import build_embedding_input, ensure_safe_copy
+from app.services.content import (
+    build_embedding_input,
+    build_personalized_hook_prompt,
+    build_user_profile_hash,
+    ensure_safe_copy,
+)
 from app.services.papers import build_title_hash, mark_paper_pipeline_status
 from app.tasks.pipeline import enqueue_or_run
 
@@ -89,3 +94,30 @@ def test_semantic_scholar_normalize_maps_expected_fields() -> None:
     assert paper.influential_citation_count == 3
     assert paper.fields_of_study == ["Computer Science"]
     assert paper.open_access_pdf_url == "https://example.com/paper.pdf"
+
+
+def test_build_user_profile_hash_normalizes_profile_order() -> None:
+    first = build_user_profile_hash(
+        "user-1",
+        {"role": "学生", "interests": ["AI", "机器人"], "age_group": "18-24", "reading_preference": "直接结论"},
+    )
+    second = build_user_profile_hash(
+        "user-1",
+        {"role": "学生", "interests": ["机器人", "AI"], "age_group": "18-24", "reading_preference": "直接结论"},
+    )
+
+    assert first == second
+
+
+def test_build_personalized_hook_prompt_contains_profile_and_summary() -> None:
+    prompt = build_personalized_hook_prompt(
+        title="Paper title",
+        abstract="Paper abstract",
+        plain_summary="一句话摘要",
+        profile={"role": "产品经理", "interests": ["AI"], "age_group": "25-34", "reading_preference": "朋友型"},
+        metadata={"primary_category": "cs.AI"},
+    )
+
+    assert "User role: 产品经理" in prompt
+    assert "Paper plain summary: 一句话摘要" in prompt
+    assert "Primary category: cs.AI" in prompt

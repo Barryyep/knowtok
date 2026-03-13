@@ -6,6 +6,7 @@ import httpx
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config.settings import get_settings
+from app.services.content import build_personalized_hook_prompt, build_summary_input
 
 
 class ZhipuClient:
@@ -31,7 +32,7 @@ class ZhipuClient:
         embedding = body["data"][0]["embedding"]
         return embedding, self._build_meta(body, started_at, text)
 
-    def create_summary_and_hook(self, title: str, abstract: str) -> tuple[dict, dict]:
+    def create_summary_and_hook(self, title: str, abstract: str, metadata: dict | None = None) -> tuple[dict, dict]:
         started_at = time.perf_counter()
         prompt = (
             "You are generating content for a Chinese science news card.\n"
@@ -40,7 +41,7 @@ class ZhipuClient:
             "hook_text must be natural, careful, and non-sensational. "
             "source_refs must be a JSON array of objects with text, section, rank. "
             "Confidence must be a number between 0 and 1.\n"
-            f"Title: {title}\nAbstract: {abstract}"
+            f"{build_summary_input(title, abstract, metadata)}"
         )
         response = self._post_with_retry(
             "/chat/completions",
@@ -56,6 +57,36 @@ class ZhipuClient:
         return json.loads(content), self._build_meta(
             body, started_at, prompt
         )
+
+    def create_personalized_hook(
+        self,
+        *,
+        title: str,
+        abstract: str,
+        plain_summary: str,
+        profile: dict,
+        metadata: dict | None = None,
+    ) -> tuple[dict, dict]:
+        started_at = time.perf_counter()
+        prompt = build_personalized_hook_prompt(
+            title=title,
+            abstract=abstract,
+            plain_summary=plain_summary,
+            profile=profile,
+            metadata=metadata,
+        )
+        response = self._post_with_retry(
+            "/chat/completions",
+            {
+                "model": self.settings.chat_model,
+                "response_format": {"type": "json_object"},
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=self.settings.zhipu_chat_timeout_seconds,
+        )
+        body = response.json()
+        content = body["choices"][0]["message"]["content"]
+        return json.loads(content), self._build_meta(body, started_at, prompt)
 
     @retry(
         retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError, httpx.HTTPStatusError)),

@@ -10,8 +10,8 @@ from app.clients.db import SessionLocal
 from app.clients.semantic_scholar import SemanticScholarClient
 from app.clients.zhipu import ZhipuClient
 from app.config.settings import get_settings
-from app.models.paper import Paper
-from app.services.content import build_embedding_input, ensure_safe_copy, payload_hash
+from app.models.paper import HookCache, Paper
+from app.services.content import build_embedding_input, build_user_profile_hash, ensure_safe_copy, payload_hash
 from app.services.papers import (
     apply_semantic_scholar_enrichment,
     build_title_hash,
@@ -249,7 +249,7 @@ def summarize_paper(paper_id: str) -> dict:
         session.commit()
 
         try:
-            content, meta = zhipu.create_summary_and_hook(paper.title, paper.abstract)
+            content, meta = zhipu.create_summary_and_hook(paper.title, paper.abstract, paper.metadata_)
             plain_summary = content["plain_summary"].strip()
             hook_text = content["hook_text"].strip()
             ensure_safe_copy(plain_summary)
@@ -348,6 +348,78 @@ def generate_hook_cache(
         )
         session.commit()
     return {"paper_id": paper_id, "status": "completed"}
+
+
+@shared_task(
+    name="app.tasks.pipeline.generate_personalized_hook_cache",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    max_retries=3,
+)
+def generate_personalized_hook_cache(
+    paper_id: str,
+    *,
+    user_id: str,
+    profile: dict,
+) -> dict:
+    zhipu = ZhipuClient()
+    with SessionLocal() as session:
+        paper = _require_paper(session, paper_id)
+        generic_cache = session.scalar(
+            select(HookCache).where(
+                HookCache.paper_id == paper.id,
+                HookCache.user_profile_hash == settings.default_user_profile_hash,
+                HookCache.language == "zh-CN",
+            )
+        )
+        if generic_cache is None:
+            raise ValueError(f"Generic hook cache not found for paper: {paper_id}")
+
+        profile_hash = build_user_profile_hash(user_id, profile)
+        existing = session.scalar(
+            select(HookCache).where(
+                HookCache.paper_id == paper.id,
+                HookCache.user_profile_hash == profile_hash,
+                HookCache.template_id == settings.hook_template_id,
+                HookCache.language == "zh-CN",
+            )
+        )
+        if existing is not None:
+            return {"paper_id": paper_id, "status": "completed", "cache_hit": True}
+
+        content, meta = zhipu.create_personalized_hook(
+            title=paper.title,
+            abstract=paper.abstract,
+            plain_summary=generic_cache.plain_summary,
+            profile=profile,
+            metadata=paper.metadata_,
+        )
+        hook_text = content["hook_text"].strip()
+        confidence = float(content["confidence"])
+        ensure_safe_copy(hook_text)
+        upsert_hook_cache(
+            session,
+            paper_id=paper.id,
+            user_profile_hash=profile_hash,
+            template_id=settings.hook_template_id,
+            plain_summary=generic_cache.plain_summary,
+            hook_text=hook_text,
+            confidence=confidence,
+            source_refs=generic_cache.source_refs,
+        )
+        create_audit_log(
+            session,
+            event_type="personalized_hook_cached",
+            entity_type="paper",
+            entity_id=paper.id,
+            provider="zhipu",
+            model=settings.chat_model,
+            payload_hash=meta["payload_hash"],
+            status="success",
+            meta={"template_id": settings.hook_template_id, "user_profile_hash": profile_hash, **meta},
+        )
+        session.commit()
+    return {"paper_id": paper_id, "status": "completed", "cache_hit": False}
 
 
 def _require_paper(session, paper_id: str) -> Paper:
