@@ -30,10 +30,23 @@ export async function POST(
 
     const refresh = Boolean(parsed.data.refresh);
 
+    // Fetch user language first — needed for cache check
+    const { data: personaData, error: personaError } = await client
+      .from("user_personas")
+      .select("job_title, industry, skills, interests, manual_notes, location, age_range, language")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (personaError && personaError.code !== "PGRST116") {
+      throw personaError;
+    }
+
+    const userLanguage = ((personaData?.language as string | null) ?? "zh") as "en" | "zh";
+
     if (!refresh) {
       const { data: existingImpact, error: existingImpactError } = await client
         .from("user_paper_impacts")
-        .select("impact_text_en, language, updated_at")
+        .select("impact_text_en, updated_at")
         .eq("user_id", user.id)
         .eq("paper_id", paperId)
         .maybeSingle();
@@ -42,35 +55,34 @@ export async function POST(
         throw existingImpactError;
       }
 
-      const cachedLang = (existingImpact?.language as string | null) ?? "en";
-      if (existingImpact?.impact_text_en && cachedLang === userLanguage) {
-        await client.from("user_events").insert({
-          user_id: user.id,
-          paper_id: paperId,
-          event_type: "impact_click",
-          metadata: {
-            cached: true,
-          },
-        });
+      if (existingImpact?.impact_text_en) {
+        // Check if the cached text looks like the right language
+        const looksLikeChinese = /[\u4e00-\u9fff]/.test(existingImpact.impact_text_en);
+        const langMatches = (userLanguage === "zh" && looksLikeChinese) || (userLanguage === "en" && !looksLikeChinese);
 
-        return NextResponse.json({
-          text: existingImpact.impact_text_en,
-          cached: true,
-          updatedAt: existingImpact.updated_at,
-        });
+        if (langMatches) {
+          await client.from("user_events").insert({
+            user_id: user.id,
+            paper_id: paperId,
+            event_type: "impact_click",
+            metadata: { cached: true },
+          });
+
+          return NextResponse.json({
+            text: existingImpact.impact_text_en,
+            cached: true,
+            updatedAt: existingImpact.updated_at,
+          });
+        }
+        // Language mismatch — fall through to regenerate
       }
     }
 
-    const [paperResult, personaResult, resumeResult] = await Promise.all([
+    const [paperResult, resumeResult] = await Promise.all([
       client
         .from("papers")
         .select("title, hook_summary_en, abstract, tags")
         .eq("id", paperId)
-        .maybeSingle(),
-      client
-        .from("user_personas")
-        .select("job_title, industry, skills, interests, manual_notes, location, age_range, language")
-        .eq("user_id", user.id)
         .maybeSingle(),
       client
         .from("user_resumes")
@@ -82,9 +94,6 @@ export async function POST(
     if (paperResult.error) {
       throw paperResult.error;
     }
-    if (personaResult.error && personaResult.error.code !== "PGRST116") {
-      throw personaResult.error;
-    }
     if (resumeResult.error && resumeResult.error.code !== "PGRST116") {
       throw resumeResult.error;
     }
@@ -94,17 +103,15 @@ export async function POST(
       return NextResponse.json({ error: "Paper not found" }, { status: 404 });
     }
 
-    const userLanguage = ((personaResult.data?.language as string | null) ?? "zh") as "en" | "zh";
-
     const personaSummary = composePersonaSummary({
-      jobTitle: (personaResult.data?.job_title as string | null) ?? null,
-      industry: (personaResult.data?.industry as string | null) ?? null,
-      skills: (personaResult.data?.skills as string[] | null) ?? null,
-      interests: (personaResult.data?.interests as string[] | null) ?? null,
-      manualNotes: (personaResult.data?.manual_notes as string | null) ?? null,
+      jobTitle: (personaData?.job_title as string | null) ?? null,
+      industry: (personaData?.industry as string | null) ?? null,
+      skills: (personaData?.skills as string[] | null) ?? null,
+      interests: (personaData?.interests as string[] | null) ?? null,
+      manualNotes: (personaData?.manual_notes as string | null) ?? null,
       resumeText: (resumeResult.data?.extracted_text as string | null) ?? null,
-      location: (personaResult.data?.location as string | null) ?? null,
-      ageRange: (personaResult.data?.age_range as string | null) ?? null,
+      location: (personaData?.location as string | null) ?? null,
+      ageRange: (personaData?.age_range as string | null) ?? null,
     });
 
     let impactText = "";
@@ -140,7 +147,6 @@ export async function POST(
         user_id: user.id,
         paper_id: paperId,
         impact_text_en: impactText,
-        language: userLanguage,
         model,
         prompt_version: IMPACT_PROMPT_VERSION,
         latency_ms: latency,
