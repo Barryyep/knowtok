@@ -75,8 +75,8 @@ function OnboardingContent() {
   return (
     <>
       <section className="mb-4">
-        <h2 className="font-display text-2xl font-bold text-white">Set up your profile first</h2>
-        <p className="mt-2 text-sm text-slate-300">
+        <h2 className="text-2xl font-bold text-label-primary">Set up your profile first</h2>
+        <p className="mt-2 text-sm text-label-secondary">
           Add at least one profile field or upload a resume. This is required before entering the feed.
         </p>
       </section>

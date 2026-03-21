@@ -5,10 +5,14 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import type { DomainKey, IngestRunResult } from "@/types/domain";
 
 export type IngestMode = "daily" | "backfill";
-
-const DOMAINS: DomainKey[] = ["cs", "physics", "math"];
+// TODO: add cs domain
+const DOMAINS: DomainKey[] = ["physics", "math"];
 const DAILY_LIMIT_PER_DOMAIN = 30;
 const BACKFILL_FETCH_PER_DOMAIN = 250;
+const MAX_LLM_ERROR_LOGS_PER_DOMAIN = 5;
+const ARXIV_MIN_INTERVAL_MS = 3500;
+const ARXIV_RETRY_BASE_MS = 5000;
+const ARXIV_FETCH_RETRIES = 4;
 
 async function wait(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
@@ -49,6 +53,16 @@ function buildFallbackHookAndTags(paper: ArxivPaper): { hook: string; tags: stri
     hook: fallbackHook,
     tags: tags.length > 0 ? tags : ["research", "arxiv"],
   };
+}
+
+function logInfo(enabled: boolean | undefined, message: string) {
+  if (!enabled) return;
+  console.log(`[ingest] ${message}`);
+}
+
+function isArxiv429(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /status 429/i.test(message);
 }
 
 async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & { hookSummaryEn: string; tags: string[] }) {
@@ -135,13 +149,25 @@ async function startRunRecord(client: SupabaseClient, options: {
   };
 }
 
-function getStatus(upsertedCount: number, llmFailedCount: number): IngestRunResult["status"] {
-  if (upsertedCount === 0) {
+function getStatus(input: {
+  fetchedCount: number;
+  upsertedCount: number;
+  llmFailedCount: number;
+  skippedCount: number;
+  fetchFailedDomains: number;
+}): IngestRunResult["status"] {
+  if (input.fetchedCount === 0) {
     return "failed";
   }
-  if (llmFailedCount > 0) {
+
+  if (input.upsertedCount === 0) {
     return "partial";
   }
+
+  if (input.llmFailedCount > 0 || input.skippedCount > 0 || input.fetchFailedDomains > 0) {
+    return "partial";
+  }
+
   return "success";
 }
 
@@ -149,9 +175,12 @@ export async function runIngestPipeline(options: {
   mode: IngestMode;
   days?: number;
   triggeredBy: "cli" | "cron";
+  verbose?: boolean;
 }): Promise<IngestRunResult> {
   const serviceClient = createServiceRoleClient();
   const days = options.mode === "backfill" ? Math.max(options.days ?? 14, 1) : 1;
+  logInfo(options.verbose, `run started mode=${options.mode} days=${days} triggeredBy=${options.triggeredBy}`);
+
   const { runId, startedAt } = await startRunRecord(serviceClient, {
     mode: options.mode,
     days,
@@ -160,8 +189,10 @@ export async function runIngestPipeline(options: {
 
   let fetchedCount = 0;
   let upsertedCount = 0;
+  let unchangedCount = 0;
   let llmFailedCount = 0;
   let skippedCount = 0;
+  let fetchFailedDomains = 0;
   const log: {
     domainStats: Record<string, Record<string, number>>;
     errors: string[];
@@ -169,26 +200,56 @@ export async function runIngestPipeline(options: {
     domainStats: {},
     errors: [],
   };
+  let lastArxivFetchAt = 0;
 
   try {
     for (const domain of DOMAINS) {
+      logInfo(options.verbose, `domain=${domain} fetching papers...`);
       const domainSince = options.mode === "backfill" ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
       let papers: ArxivPaper[] = [];
       try {
-        papers = await withRetries(
-          () =>
-            fetchArxivPapers({
+        let lastFetchError: unknown = null;
+        for (let attempt = 1; attempt <= ARXIV_FETCH_RETRIES; attempt += 1) {
+          const elapsed = Date.now() - lastArxivFetchAt;
+          if (elapsed < ARXIV_MIN_INTERVAL_MS) {
+            const waitMs = ARXIV_MIN_INTERVAL_MS - elapsed;
+            logInfo(options.verbose, `domain=${domain} waiting ${waitMs}ms to respect arXiv rate limit`);
+            await wait(waitMs);
+          }
+
+          lastArxivFetchAt = Date.now();
+
+          try {
+            papers = await fetchArxivPapers({
               domain,
               maxResults: options.mode === "daily" ? DAILY_LIMIT_PER_DOMAIN : BACKFILL_FETCH_PER_DOMAIN,
               since: domainSince,
-            }),
-          4,
-        );
+            });
+            break;
+          } catch (error) {
+            lastFetchError = error;
+            if (attempt < ARXIV_FETCH_RETRIES) {
+              const backoffMs = isArxiv429(error) ? ARXIV_RETRY_BASE_MS * attempt : 1200 * attempt;
+              logInfo(
+                options.verbose,
+                `domain=${domain} fetch attempt ${attempt}/${ARXIV_FETCH_RETRIES} failed: ${(error as Error).message}. retry in ${backoffMs}ms`,
+              );
+              await wait(backoffMs);
+            }
+          }
+        }
+
+        if (papers.length === 0 && lastFetchError) {
+          throw lastFetchError;
+        }
       } catch (error) {
+        fetchFailedDomains += 1;
         log.errors.push(`Domain ${domain} fetch failed: ${(error as Error).message}`);
+        logInfo(options.verbose, `domain=${domain} fetch failed: ${(error as Error).message}`);
         log.domainStats[domain] = {
           fetched: 0,
           upserted: 0,
+          unchanged: 0,
           skipped: 0,
           llmFailed: 0,
         };
@@ -199,8 +260,11 @@ export async function runIngestPipeline(options: {
       fetchedCount += capped.length;
 
       let domainUpserted = 0;
+      let domainUnchanged = 0;
       let domainSkipped = 0;
       let domainLlmFailed = 0;
+      let domainLlmErrorLogged = 0;
+      logInfo(options.verbose, `domain=${domain} fetched=${capped.length}`);
 
       for (const paper of capped) {
         try {
@@ -218,9 +282,15 @@ export async function runIngestPipeline(options: {
             );
             hookSummaryEn = llmResult.hook;
             tags = llmResult.tags;
-          } catch {
+          } catch (llmError) {
             llmFailedCount += 1;
             domainLlmFailed += 1;
+            if (domainLlmErrorLogged < MAX_LLM_ERROR_LOGS_PER_DOMAIN) {
+              log.errors.push(
+                `Domain ${domain}, paper ${paper.arxivIdBase} llm failed: ${(llmError as Error).message}`,
+              );
+              domainLlmErrorLogged += 1;
+            }
             const fallback = buildFallbackHookAndTags(paper);
             hookSummaryEn = fallback.hook;
             tags = fallback.tags;
@@ -235,6 +305,9 @@ export async function runIngestPipeline(options: {
           if (didUpsert) {
             upsertedCount += 1;
             domainUpserted += 1;
+          } else {
+            unchangedCount += 1;
+            domainUnchanged += 1;
           }
         } catch (error) {
           skippedCount += 1;
@@ -246,13 +319,24 @@ export async function runIngestPipeline(options: {
       log.domainStats[domain] = {
         fetched: capped.length,
         upserted: domainUpserted,
+        unchanged: domainUnchanged,
         skipped: domainSkipped,
         llmFailed: domainLlmFailed,
       };
+      logInfo(
+        options.verbose,
+        `domain=${domain} done fetched=${capped.length} upserted=${domainUpserted} unchanged=${domainUnchanged} llmFailed=${domainLlmFailed} skipped=${domainSkipped}`,
+      );
     }
 
     const endedAt = new Date().toISOString();
-    const status = getStatus(upsertedCount, llmFailedCount);
+    const status = getStatus({
+      fetchedCount,
+      upsertedCount,
+      llmFailedCount,
+      skippedCount,
+      fetchFailedDomains,
+    });
 
     const { error: updateError } = await serviceClient
       .from("ingest_runs")
@@ -271,16 +355,23 @@ export async function runIngestPipeline(options: {
       throw updateError;
     }
 
+    logInfo(
+      options.verbose,
+      `run completed status=${status} fetched=${fetchedCount} upserted=${upsertedCount} unchanged=${unchangedCount} llmFailed=${llmFailedCount} skipped=${skippedCount} fetchFailedDomains=${fetchFailedDomains}`,
+    );
+
     return {
       runId,
       status,
       fetchedCount,
       upsertedCount,
+      unchangedCount,
       llmFailedCount,
       skippedCount,
+      fetchFailedDomains,
       startedAt,
       endedAt,
-      message: `Ingest ${status}: fetched=${fetchedCount}, upserted=${upsertedCount}, skipped=${skippedCount}`,
+      message: `Ingest ${status}: fetched=${fetchedCount}, upserted=${upsertedCount}, unchanged=${unchangedCount}, llmFailed=${llmFailedCount}, skipped=${skippedCount}, fetchFailedDomains=${fetchFailedDomains}`,
     };
   } catch (error) {
     const endedAt = new Date().toISOString();
@@ -305,8 +396,10 @@ export async function runIngestPipeline(options: {
       status: "failed",
       fetchedCount,
       upsertedCount,
+      unchangedCount,
       llmFailedCount,
       skippedCount,
+      fetchFailedDomains,
       startedAt,
       endedAt,
       message: `Ingest failed: ${(error as Error).message}`,

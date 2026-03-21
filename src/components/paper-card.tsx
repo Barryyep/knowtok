@@ -19,18 +19,18 @@ export function PaperCardView({
   return (
     <article className="card-surface p-6 md:p-8">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-cyan-300/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-200">
+        <span className="rounded-pill bg-accent/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
           {paper.primaryCategory || "General"}
         </span>
         {paper.tags.slice(0, 5).map((tag) => (
-          <span key={tag} className="rounded-full border border-white/20 px-3 py-1 text-xs text-slate-200">
+          <span key={tag} className="rounded-pill border border-separator px-3 py-1 text-xs text-label-tertiary">
             {tag}
           </span>
         ))}
       </div>
 
-      <h2 className="font-display text-2xl font-semibold leading-tight text-white md:text-3xl">{paper.title}</h2>
-      <p className="mt-4 text-base leading-relaxed text-slate-200 md:text-lg">{paper.hookSummaryEn}</p>
+      <h2 className="text-2xl font-semibold leading-tight text-label-primary md:text-3xl">{paper.title}</h2>
+      <p className="mt-4 text-base leading-relaxed text-label-secondary md:text-lg">{paper.hookSummaryEn}</p>
 
       <div className="mt-8 flex flex-wrap gap-3">
         <button className="pill-button" type="button" onClick={onSkip}>

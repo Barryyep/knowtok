@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/app-shell";
 import { ImpactPanel } from "@/components/impact-panel";
 import { LoadingState } from "@/components/loading-state";
-import { PaperCardView } from "@/components/paper-card";
+import { SwipeDeck } from "@/components/swipe-deck";
 import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
 import { DOMAIN_OPTIONS } from "@/lib/constants";
@@ -30,7 +31,6 @@ function FeedContent() {
   const [error, setError] = useState<string | null>(null);
   const [impact, setImpact] = useState<{ text: string; updatedAt: string | null } | null>(null);
   const [impactLoading, setImpactLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
 
   const activePaper = useMemo(() => items[activeIndex] ?? null, [items, activeIndex]);
   const activePaperId = activePaper?.id;
@@ -159,18 +159,16 @@ function FeedContent() {
     goNext();
   };
 
-  const handleSaveToggle = async () => {
+  const handleSave = async () => {
     if (!activePaper) return;
 
-    setSaveLoading(true);
     try {
-      const nextSaved = !activePaper.saved;
       const response = await authFetch(`/api/papers/${activePaper.id}/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ saved: nextSaved }),
+        body: JSON.stringify({ saved: true }),
       });
 
       const payload = await response.json();
@@ -179,11 +177,13 @@ function FeedContent() {
       }
 
       setItems((previous) =>
-        previous.map((item) => (item.id === activePaper.id ? { ...item, saved: payload.saved as boolean } : item)),
+        previous.map((item) => (item.id === activePaper.id ? { ...item, saved: true } : item)),
       );
-    } finally {
-      setSaveLoading(false);
+    } catch {
+      // silent
     }
+
+    goNext();
   };
 
   const handleImpact = async (refresh = false) => {
@@ -224,8 +224,8 @@ function FeedContent() {
   if (!activePaper) {
     return (
       <section className="card-surface p-8">
-        <h2 className="font-display text-xl font-semibold text-white">No papers available</h2>
-        <p className="mt-2 text-sm text-slate-300">
+        <h2 className="text-xl font-semibold text-label-primary">No papers available</h2>
+        <p className="mt-2 text-sm text-label-secondary">
           Try another domain filter or run ingest again to pull fresh papers.
         </p>
       </section>
@@ -234,9 +234,10 @@ function FeedContent() {
 
   return (
     <>
+      {/* Domain filter pills */}
       <section className="mb-4 flex flex-wrap items-center gap-2">
         <button
-          className={`pill-button ${domain === "" ? "border-cyan-300/70 bg-cyan-300/10" : ""}`}
+          className={`pill-button ${domain === "" ? "bg-accent text-white border-accent" : ""}`}
           type="button"
           onClick={() => setDomain("")}
         >
@@ -245,7 +246,7 @@ function FeedContent() {
         {DOMAIN_OPTIONS.map((option) => (
           <button
             key={option.key}
-            className={`pill-button ${domain === option.key ? "border-cyan-300/70 bg-cyan-300/10" : ""}`}
+            className={`pill-button ${domain === option.key ? "bg-accent text-white border-accent" : ""}`}
             type="button"
             onClick={() => setDomain(option.key)}
           >
@@ -254,30 +255,42 @@ function FeedContent() {
         ))}
       </section>
 
-      <div className="grid gap-4">
-        <PaperCardView
-          paper={activePaper}
-          onSkip={handleSkip}
-          onSaveToggle={handleSaveToggle}
-          onImpact={handleImpact}
-          impactLoading={impactLoading}
-          saveLoading={saveLoading}
-        />
+      {/* Card counter */}
+      <p className="mb-3 text-center text-xs text-label-tertiary">
+        {Math.min(activeIndex + 1, items.length)} of {items.length}
+      </p>
 
-        {impact ? <ImpactPanel text={impact.text} updatedAt={impact.updatedAt} /> : null}
+      {/* Swipeable card */}
+      <SwipeDeck
+        paper={activePaper}
+        cardKey={activePaper.id}
+        onSwipeLeft={() => void handleSkip()}
+        onSwipeRight={() => void handleSave()}
+        onImpact={(refresh) => void handleImpact(refresh)}
+        impactLoading={impactLoading}
+      />
 
-        <div className="card-surface flex items-center justify-between px-5 py-3 text-sm text-slate-300">
-          <span>
-            Card {Math.min(activeIndex + 1, items.length)} / {items.length}
-          </span>
-          <button className="pill-button" type="button" onClick={goNext}>
-            Next card
-          </button>
+      {/* Impact panel */}
+      <AnimatePresence>
+        {impact ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.3 }}
+            className="mt-4"
+          >
+            <ImpactPanel text={impact.text} updatedAt={impact.updatedAt} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {loadingMore ? (
+        <div className="mt-4">
+          <LoadingState label="Loading more papers..." />
         </div>
-
-        {loadingMore ? <LoadingState label="Loading more papers..." /> : null}
-        {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      </div>
+      ) : null}
+      {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
     </>
   );
 }

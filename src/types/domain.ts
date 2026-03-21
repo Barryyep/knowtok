@@ -22,6 +22,8 @@ export interface PaperDetail extends PaperCard {
   metadata: Record<string, unknown>;
 }
 
+export type PaperDetailPartial = Pick<PaperDetail, "abstract" | "authors">;
+
 export interface UserPersona {
   userId: string;
   jobTitle: string | null;
@@ -49,8 +51,10 @@ export interface IngestRunResult {
   status: "success" | "partial" | "failed";
   fetchedCount: number;
   upsertedCount: number;
+  unchangedCount: number;
   llmFailedCount: number;
   skippedCount: number;
+  fetchFailedDomains: number;
   startedAt: string;
   endedAt: string;
   message: string;

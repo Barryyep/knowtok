@@ -2,12 +2,13 @@ import { config as loadDotenv } from "dotenv";
 
 type IngestMode = "daily" | "backfill";
 
-loadDotenv({ path: ".env.local", override: true });
-loadDotenv({ path: ".env", override: false });
+loadDotenv({ path: ".env.local", override: true, quiet: true });
+loadDotenv({ path: ".env", override: false, quiet: true });
 
 function parseArgs(argv: string[]) {
   let mode: IngestMode = "daily";
   let days: number | undefined;
+  let verbose = true;
 
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
@@ -25,19 +26,30 @@ function parseArgs(argv: string[]) {
         i += 1;
       }
     }
+    if (token === "--quiet") {
+      verbose = false;
+    }
+    if (token === "--verbose") {
+      verbose = true;
+    }
   }
 
-  return { mode, days };
+  return { mode, days, verbose };
 }
 
 async function main() {
-  const { mode, days } = parseArgs(process.argv.slice(2));
+  const { mode, days, verbose } = parseArgs(process.argv.slice(2));
   const { runIngestPipeline } = await import("../src/lib/ingest");
+
+  if (verbose) {
+    console.log(`[ingest] env loaded. mode=${mode}${days ? ` days=${days}` : ""}`);
+  }
 
   const result = await runIngestPipeline({
     mode,
     days,
     triggeredBy: "cli",
+    verbose,
   });
 
   console.log("KnowTok ingest run complete:");

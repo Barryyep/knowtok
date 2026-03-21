@@ -29,3 +29,4 @@ test-results/
 .expo/
 .expo-shared/
 .supabase/
+.gstack/

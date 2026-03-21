@@ -11,7 +11,8 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
-    "ingest:papers": "tsx scripts/ingest-papers.ts"
+    "ingest:papers": "tsx scripts/ingest-papers.ts",
+    "ingest:logs": "tsx scripts/ingest-logs.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -19,6 +20,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
     "fast-xml-parser": "^4.5.1",
+    "framer-motion": "^12.38.0",
     "mammoth": "^1.9.1",
     "next": "^15.1.6",
     "openai": "^4.82.0",

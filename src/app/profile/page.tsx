@@ -68,8 +68,8 @@ function ProfileContent() {
   return (
     <>
       <section className="mb-4">
-        <h2 className="font-display text-2xl font-bold text-white">Profile settings</h2>
-        <p className="mt-2 text-sm text-slate-300">
+        <h2 className="text-2xl font-bold text-label-primary">Profile settings</h2>
+        <p className="mt-2 text-sm text-label-secondary">
           Update your role, interests, and resume so relevance insights can map papers to your context.
         </p>
       </section>

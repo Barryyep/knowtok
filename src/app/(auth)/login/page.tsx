@@ -74,16 +74,16 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-12">
       <section className="card-surface w-full p-8 md:p-10">
-        <p className="font-display text-xs uppercase tracking-[0.25em] text-cyan-300">KnowTok</p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white">Paper feed for real life relevance</h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-300">
+        <p className="text-sm font-semibold text-accent">KnowTok</p>
+        <h1 className="mt-2 text-3xl font-bold text-label-primary">Paper feed for real life relevance</h1>
+        <p className="mt-3 text-sm leading-relaxed text-label-secondary">
           Sign in to swipe frontier research papers and ask one question on every card: what does this mean for me?
         </p>
 
-        <div className="mt-6 inline-flex rounded-full border border-white/20 p-1">
+        <div className="mt-6 inline-flex rounded-pill border border-separator p-1">
           <button
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              mode === "signin" ? "bg-cyan-300 text-slate-900" : "text-slate-300"
+            className={`rounded-pill px-4 py-2 text-sm font-medium ${
+              mode === "signin" ? "bg-surface-tertiary text-label-primary" : "text-label-tertiary"
             }`}
             type="button"
             onClick={() => setMode("signin")}
@@ -91,8 +91,8 @@ export default function LoginPage() {
             Sign in
           </button>
           <button
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              mode === "signup" ? "bg-cyan-300 text-slate-900" : "text-slate-300"
+            className={`rounded-pill px-4 py-2 text-sm font-medium ${
+              mode === "signup" ? "bg-surface-tertiary text-label-primary" : "text-label-tertiary"
             }`}
             type="button"
             onClick={() => setMode("signup")}
@@ -102,7 +102,7 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-          <label className="block text-sm text-slate-200">
+          <label className="block text-sm text-label-secondary">
             Email
             <input
               className="input-field mt-2"
@@ -114,7 +114,7 @@ export default function LoginPage() {
             />
           </label>
 
-          <label className="block text-sm text-slate-200">
+          <label className="block text-sm text-label-secondary">
             Password
             <input
               className="input-field mt-2"
@@ -131,8 +131,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {message ? <p className="mt-4 text-sm text-emerald-300">{message}</p> : null}
-        {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
+        {message ? <p className="mt-4 text-sm text-success">{message}</p> : null}
+        {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
       </section>
     </main>
   );

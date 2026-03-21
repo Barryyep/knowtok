@@ -136,7 +136,7 @@ export function ProfileForm({
   return (
     <section className="card-surface p-6 md:p-8">
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-sm text-slate-200">
+        <label className="text-sm text-label-secondary">
           Job title
           <input
             className="input-field mt-2"
@@ -146,7 +146,7 @@ export function ProfileForm({
           />
         </label>
 
-        <label className="text-sm text-slate-200">
+        <label className="text-sm text-label-secondary">
           Industry
           <input
             className="input-field mt-2"
@@ -156,7 +156,7 @@ export function ProfileForm({
           />
         </label>
 
-        <label className="text-sm text-slate-200">
+        <label className="text-sm text-label-secondary">
           Skills (comma separated)
           <input
             className="input-field mt-2"
@@ -166,7 +166,7 @@ export function ProfileForm({
           />
         </label>
 
-        <label className="text-sm text-slate-200">
+        <label className="text-sm text-label-secondary">
           Interests (comma separated)
           <input
             className="input-field mt-2"
@@ -177,7 +177,7 @@ export function ProfileForm({
         </label>
       </div>
 
-      <label className="mt-4 block text-sm text-slate-200">
+      <label className="mt-4 block text-sm text-label-secondary">
         Notes
         <textarea
           className="input-field mt-2 min-h-[120px]"
@@ -187,10 +187,10 @@ export function ProfileForm({
         />
       </label>
 
-      <div className="mt-4 rounded-2xl border border-dashed border-white/30 p-4">
-        <p className="text-sm text-slate-300">Upload resume (PDF or DOCX, max 10MB)</p>
+      <div className="mt-4 rounded-button border border-dashed border-separator p-4">
+        <p className="text-sm text-label-secondary">Upload resume (PDF or DOCX, max 10MB)</p>
         <input
-          className="mt-2 block w-full text-sm text-slate-200 file:mr-3 file:rounded-full file:border-0 file:bg-cyan-300 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-900"
+          className="mt-2 block w-full text-sm text-label-secondary file:mr-3 file:rounded-button file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           type="file"
           accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           onChange={(event) => {
@@ -198,11 +198,11 @@ export function ProfileForm({
             void uploadResume(file);
           }}
         />
-        <p className="mt-2 text-xs text-slate-400">Resume status: {form.hasResume ? "Uploaded" : "Not uploaded"}</p>
+        <p className="mt-2 text-xs text-label-tertiary">Resume status: {form.hasResume ? "Uploaded" : "Not uploaded"}</p>
       </div>
 
-      {message ? <p className="mt-4 text-sm text-emerald-300">{message}</p> : null}
-      {error ? <p className="mt-4 text-sm text-rose-300">{error}</p> : null}
+      {message ? <p className="mt-4 text-sm text-success">{message}</p> : null}
+      {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
         <button className="primary-button" disabled={saving} onClick={saveProfile} type="button">

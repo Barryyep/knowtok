@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, IBM_Plex_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const displayFont = Space_Grotesk({
-  variable: "--font-display",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["500", "700"],
-});
-
-const bodyFont = IBM_Plex_Sans({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -26,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${displayFont.variable} ${bodyFont.variable}`}>
+      <body className={inter.variable}>
         {children}
       </body>
     </html>

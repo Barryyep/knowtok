@@ -7,7 +7,7 @@
 }
 
 body {
-  @apply bg-mesh-bg min-h-screen text-slate-100 font-body;
+  @apply bg-surface-primary min-h-screen font-sans text-label-primary antialiased;
 }
 
 a {
@@ -15,21 +15,80 @@ a {
 }
 
 a:hover {
-  @apply text-cyan-300;
+  @apply text-accent/80;
 }
 
+/* --- Card surfaces --- */
 .card-surface {
-  @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-card;
+  @apply rounded-card border border-separator bg-surface-elevated;
 }
 
+/* --- Buttons --- */
 .pill-button {
-  @apply rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan-300/60 hover:bg-cyan-300/10;
+  @apply rounded-pill border border-separator bg-surface-secondary px-4 py-2 text-sm font-medium text-label-secondary transition active:scale-[0.97] hover:bg-surface-tertiary;
 }
 
 .primary-button {
-  @apply rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-900 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-cyan-900/50 disabled:text-slate-300;
+  @apply rounded-button bg-accent px-5 py-2 text-sm font-semibold text-white transition active:scale-[0.97] hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-40;
 }
 
 .input-field {
-  @apply w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/40;
+  @apply w-full rounded-button border border-separator bg-surface-secondary px-4 py-3 text-sm text-label-primary placeholder:text-label-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40;
+}
+
+/* --- 3D Flip --- */
+.perspective-container {
+  perspective: 1200px;
+}
+
+.card-flip-inner {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-flip-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  width: 100%;
+}
+
+.card-face-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(180deg);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* --- Swipe direction indicators --- */
+.swipe-indicator {
+  @apply pointer-events-none absolute top-6 rounded-button px-4 py-2 text-sm font-bold uppercase tracking-wider opacity-0 transition-opacity;
+}
+
+.swipe-indicator-save {
+  @apply right-6 border-2 border-success text-success;
+}
+
+.swipe-indicator-skip {
+  @apply left-6 border-2 border-danger text-danger;
+}
+
+/* --- Spinner --- */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  @apply inline-block h-5 w-5 rounded-full border-2 border-label-tertiary border-t-accent;
+  animation: spin 0.8s linear infinite;
 }

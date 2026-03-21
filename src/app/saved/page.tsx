@@ -102,23 +102,23 @@ function SavedContent() {
   return (
     <section className="grid gap-4">
       <header>
-        <h2 className="font-display text-2xl font-semibold text-white">Saved papers</h2>
-        <p className="mt-2 text-sm text-slate-300">Revisit papers and regenerate relevance insights at any time.</p>
+        <h2 className="text-2xl font-semibold text-label-primary">Saved papers</h2>
+        <p className="mt-2 text-sm text-label-secondary">Revisit papers and regenerate relevance insights at any time.</p>
       </header>
 
       {items.length === 0 ? (
-        <div className="card-surface p-6 text-slate-300">No saved papers yet.</div>
+        <div className="card-surface p-6 text-label-secondary">No saved papers yet.</div>
       ) : null}
 
       {items.map((paper) => (
         <article className="card-surface p-6" key={paper.id}>
-          <p className="text-xs uppercase tracking-widest text-cyan-300">{paper.primaryCategory}</p>
-          <h3 className="mt-2 font-display text-xl font-semibold text-white">{paper.title}</h3>
-          <p className="mt-2 text-sm text-slate-200">{paper.hookSummaryEn}</p>
+          <p className="text-xs font-medium uppercase tracking-widest text-accent">{paper.primaryCategory}</p>
+          <h3 className="mt-2 text-xl font-semibold text-label-primary">{paper.title}</h3>
+          <p className="mt-2 text-sm text-label-secondary">{paper.hookSummaryEn}</p>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {paper.tags.map((tag) => (
-              <span className="rounded-full border border-white/20 px-3 py-1 text-xs text-slate-200" key={tag}>
+              <span className="rounded-pill border border-separator px-3 py-1 text-xs text-label-tertiary" key={tag}>
                 {tag}
               </span>
             ))}
@@ -152,7 +152,7 @@ function SavedContent() {
         </article>
       ))}
 
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
     </section>
   );
 }

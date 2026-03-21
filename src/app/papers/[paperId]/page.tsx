@@ -88,34 +88,34 @@ function PaperDetailContent() {
   }
 
   if (!paper) {
-    return <p className="text-sm text-rose-300">{error || "Paper not found."}</p>;
+    return <p className="text-sm text-danger">{error || "Paper not found."}</p>;
   }
 
   return (
     <section className="grid gap-4">
       <article className="card-surface p-6 md:p-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">{paper.primaryCategory}</p>
-        <h2 className="mt-2 font-display text-3xl font-bold text-white">{paper.title}</h2>
+        <p className="text-xs font-medium uppercase tracking-[0.25em] text-accent">{paper.primaryCategory}</p>
+        <h2 className="mt-2 text-3xl font-bold text-label-primary">{paper.title}</h2>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {paper.tags.map((tag) => (
-            <span className="rounded-full border border-white/20 px-3 py-1 text-xs text-slate-200" key={tag}>
+            <span className="rounded-pill border border-separator px-3 py-1 text-xs text-label-tertiary" key={tag}>
               {tag}
             </span>
           ))}
         </div>
 
-        <p className="mt-6 text-sm leading-relaxed text-slate-200">{paper.abstract}</p>
+        <p className="mt-6 text-sm leading-relaxed text-label-secondary">{paper.abstract}</p>
 
-        <div className="mt-6 grid gap-2 text-sm text-slate-300">
+        <div className="mt-6 grid gap-2 text-sm text-label-secondary">
           <p>
-            <strong className="text-slate-100">Authors:</strong> {paper.authors.join(", ")}
+            <strong className="text-label-primary">Authors:</strong> {paper.authors.join(", ")}
           </p>
           <p>
-            <strong className="text-slate-100">Published:</strong> {new Date(paper.publishedAt).toLocaleString()}
+            <strong className="text-label-primary">Published:</strong> {new Date(paper.publishedAt).toLocaleString()}
           </p>
           <p>
-            <strong className="text-slate-100">arXiv:</strong> {paper.arxivIdBase}v{paper.arxivIdVersion}
+            <strong className="text-label-primary">arXiv:</strong> {paper.arxivIdBase}v{paper.arxivIdVersion}
           </p>
         </div>
 
@@ -143,7 +143,7 @@ function PaperDetailContent() {
       </article>
 
       {impact ? <ImpactPanel text={impact.text} updatedAt={impact.updatedAt} /> : null}
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
     </section>
   );
 }
