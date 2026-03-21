@@ -63,6 +63,8 @@ export const UI_TEXT = {
     viewOnArxiv: "View on arXiv",
     published: "Published",
     loadingMore: "Loading more papers...",
+    next: "Next",
+    prev: "Previous",
     // Onboarding
     tellUsAboutYou: "Tell us about you",
     onboardingSubtitle: "We'll use this to explain why each discovery matters to your life — not just to scientists.",
@@ -106,6 +108,8 @@ export const UI_TEXT = {
     viewOnArxiv: "在 arXiv 上查看",
     published: "发表于",
     loadingMore: "加载更多...",
+    next: "下一个",
+    prev: "上一个",
     // Onboarding
     tellUsAboutYou: "告诉我们你是谁",
     onboardingSubtitle: "我们会用这些信息来解释每个新发现与你的生活有什么关系 — 不只是给科学家看的。",

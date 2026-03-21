@@ -160,6 +160,11 @@ function FeedContent() {
     setImpact(null);
   };
 
+  const goPrev = () => {
+    setActiveIndex((previous) => Math.max(previous - 1, 0));
+    setImpact(null);
+  };
+
   const handleSkip = async () => {
     if (!activePaper) return;
 
@@ -312,8 +317,8 @@ function FeedContent() {
       <SwipeDeck
         paper={activePaper}
         cardKey={activePaper.id}
-        onSwipeLeft={() => void handleSkip()}
-        onSwipeRight={() => void handleSave()}
+        onSwipeLeft={goPrev}
+        onSwipeRight={goNext}
         onImpact={(refresh) => void handleImpact(refresh)}
         impactLoading={impactLoading}
       />

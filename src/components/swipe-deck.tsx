@@ -84,13 +84,13 @@ export function SwipeDeck({
             className="swipe-indicator swipe-indicator-save"
             style={{ opacity: saveOpacity }}
           >
-            {t.save}
+            {t.next}
           </div>
           <div
             className="swipe-indicator swipe-indicator-skip"
             style={{ opacity: skipOpacity }}
           >
-            {t.skip}
+            {t.prev}
           </div>
 
           <FlipCard
