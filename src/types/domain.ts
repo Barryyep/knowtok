@@ -1,4 +1,6 @@
-export type DomainKey = "cs" | "physics" | "math";
+export type DomainKey = "cs" | "physics" | "math" | "q-bio" | "q-fin" | "econ" | "astro-ph";
+
+export type HumanCategory = "AI & Robots" | "Your Health" | "Your Money" | "Your Food" | "Climate";
 
 export interface PaperCard {
   id: string;
@@ -6,6 +8,9 @@ export interface PaperCard {
   arxivIdVersion: number;
   title: string;
   hookSummaryEn: string;
+  personalizedHook: string;
+  plainSummary: string;
+  humanCategory: string;
   tags: string[];
   primaryCategory: string;
   categories: string[];
@@ -32,6 +37,9 @@ export interface UserPersona {
   interests: string[];
   manualNotes: string | null;
   profileSource: "manual" | "resume" | "mixed";
+  location: string | null;
+  ageRange: string | null;
+  curiosityTags: string[];
   createdAt: string;
   updatedAt: string;
 }
