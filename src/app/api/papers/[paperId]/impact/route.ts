@@ -33,7 +33,7 @@ export async function POST(
     if (!refresh) {
       const { data: existingImpact, error: existingImpactError } = await client
         .from("user_paper_impacts")
-        .select("impact_text_en, updated_at")
+        .select("impact_text_en, language, updated_at")
         .eq("user_id", user.id)
         .eq("paper_id", paperId)
         .maybeSingle();
@@ -42,7 +42,8 @@ export async function POST(
         throw existingImpactError;
       }
 
-      if (existingImpact?.impact_text_en) {
+      const cachedLang = (existingImpact?.language as string | null) ?? "en";
+      if (existingImpact?.impact_text_en && cachedLang === userLanguage) {
         await client.from("user_events").insert({
           user_id: user.id,
           paper_id: paperId,
@@ -139,6 +140,7 @@ export async function POST(
         user_id: user.id,
         paper_id: paperId,
         impact_text_en: impactText,
+        language: userLanguage,
         model,
         prompt_version: IMPACT_PROMPT_VERSION,
         latency_ms: latency,
