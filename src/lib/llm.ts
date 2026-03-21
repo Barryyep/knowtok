@@ -14,9 +14,11 @@ type HookAndTags = {
 
 type PaperMetadata = {
   hook: string;
+  hookZh: string;
   tags: string[];
   humanCategory: string;
   plainSummary: string;
+  plainSummaryZh: string;
   model: string;
 } & TokenUsage;
 
@@ -103,7 +105,7 @@ export async function generatePaperMetadata(input: {
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.7,
-    max_tokens: 500,
+    max_tokens: 800,
     response_format: { type: "json_object" },
     messages: [
       {
@@ -113,17 +115,19 @@ export async function generatePaperMetadata(input: {
       {
         role: "user",
         content: [
-          "Given this research paper, generate four things:",
+          "Given this research paper, generate six things:",
           '1) "hook": one curiosity-driven sentence, 20-28 words, plain English, no jargon.',
           '2) "tags": 3-5 short English tags (1-3 words each).',
           '3) "humanCategory": classify into exactly ONE of: "AI & Robots", "Your Health", "Your Money", "Your Food", "Climate". If none fit, default to "AI & Robots".',
           '4) "plainSummary": explain this paper so a curious 14-year-old could understand it. No jargon, use concrete examples. Max 3 sentences.',
+          '5) "hookZh": 用中文写一句话（20-28个字），通俗易懂，引发好奇心。',
+          '6) "plainSummaryZh": 用中文向一个好奇的14岁少年解释这篇论文。不要用专业术语，用具体的例子。最多3句话。',
           "",
           `Title: ${input.title}`,
           `Abstract: ${input.abstract}`,
           `Categories: ${input.categories.join(", ")}`,
           "",
-          'Return strict JSON: {"hook":"...","tags":["..."],"humanCategory":"...","plainSummary":"..."}',
+          'Return strict JSON: {"hook":"...","tags":["..."],"humanCategory":"...","plainSummary":"...","hookZh":"...","plainSummaryZh":"..."}',
         ].join("\n"),
       },
     ],
@@ -132,21 +136,27 @@ export async function generatePaperMetadata(input: {
   const rawContent = completion.choices[0]?.message?.content ?? "{}";
   const parsed = JSON.parse(rawContent) as {
     hook?: string;
+    hookZh?: string;
     tags?: unknown;
     humanCategory?: string;
     plainSummary?: string;
+    plainSummaryZh?: string;
   };
 
   const hook = normalizeHook(parsed.hook || input.title);
   const tags = normalizeTags(parsed.tags);
   const humanCategory = validateCategory(parsed.humanCategory);
   const plainSummary = parsed.plainSummary?.trim() || buildFallbackPlainSummary(input.abstract);
+  const hookZh = parsed.hookZh?.trim() || "";
+  const plainSummaryZh = parsed.plainSummaryZh?.trim() || "";
 
   return {
     hook,
+    hookZh,
     tags,
     humanCategory,
     plainSummary,
+    plainSummaryZh,
     model,
     ...usageToTokens(completion.usage),
   };
@@ -170,9 +180,11 @@ export async function generatePaperHookAndTags(input: {
 
 export function buildFallbackMetadata(paper: { title: string; abstract: string; categories: string[]; primaryCategory: string }): {
   hook: string;
+  hookZh: string;
   tags: string[];
   humanCategory: string;
   plainSummary: string;
+  plainSummaryZh: string;
 } {
   const abstract = paper.abstract.replace(/\s+/g, " ").trim();
   const words = abstract.split(" ").filter(Boolean);
@@ -188,9 +200,11 @@ export function buildFallbackMetadata(paper: { title: string; abstract: string; 
 
   return {
     hook,
+    hookZh: "",
     tags: tags.length > 0 ? tags : ["research", "arxiv"],
     humanCategory: categoryFromPrefix(paper.primaryCategory),
     plainSummary: buildFallbackPlainSummary(paper.abstract),
+    plainSummaryZh: "",
   };
 }
 
@@ -199,11 +213,21 @@ export async function generatePersonalizedHook(input: {
   plainSummary: string;
   jobTitle: string;
   location: string | null;
+  language?: "en" | "zh";
 }): Promise<{ text: string } & TokenUsage> {
   const { model } = getOpenAIEnv();
   const client = getClient();
 
+  const lang = input.language || "en";
   const locationPart = input.location ? ` in ${input.location}` : "";
+
+  const systemPrompt = lang === "zh"
+    ? `根据这篇论文的摘要和读者是${input.location || ""}的${input.jobTitle}，用中文写一句话（最多25个字），解释为什么这篇论文对他们的生活有影响。要具体——提到他们的工作或日常生活。`
+    : "Write ONE sentence (max 25 words) explaining why a paper matters to a specific person. Be specific — reference their job or daily reality.";
+
+  const userPrompt = lang === "zh"
+    ? `论文摘要：${input.plainSummary}\n读者是${input.location || ""}的${input.jobTitle}。\n用中文写一句个性化的句子。`
+    : `Paper summary: ${input.plainSummary}\nThe reader is a ${input.jobTitle}${locationPart}.\nWrite one personalized sentence.`;
 
   const completion = await client.chat.completions.create({
     model,
@@ -212,11 +236,11 @@ export async function generatePersonalizedHook(input: {
     messages: [
       {
         role: "system",
-        content: "Write ONE sentence (max 25 words) explaining why a paper matters to a specific person. Be specific — reference their job or daily reality.",
+        content: systemPrompt,
       },
       {
         role: "user",
-        content: `Paper summary: ${input.plainSummary}\nThe reader is a ${input.jobTitle}${locationPart}.\nWrite one personalized sentence.`,
+        content: userPrompt,
       },
     ],
   });

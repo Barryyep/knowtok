@@ -46,8 +46,10 @@ function isArxiv429(error: unknown): boolean {
 
 async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & {
   hookSummaryEn: string;
+  hookSummaryZh: string;
   tags: string[];
   plainSummaryEn: string;
+  plainSummaryZh: string;
   humanCategory: string;
 }) {
   const { data: existing, error: existingError } = await client
@@ -77,18 +79,23 @@ async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & 
     abs_url: paper.absUrl,
     metadata: paper.metadata,
     plain_summary_en: paper.plainSummaryEn,
+    hook_summary_zh: paper.hookSummaryZh,
+    plain_summary_zh: paper.plainSummaryZh,
     human_category: paper.humanCategory,
   };
 
   if (!existing) {
+    console.log(`[upsert] INSERT new paper arxiv_id=${paper.arxivIdBase} version=${paper.arxivIdVersion} category=${paper.primaryCategory}`);
     const { error } = await client.from("papers").insert(payload);
     if (error) {
+      console.log(`[upsert] INSERT FAILED arxiv_id=${paper.arxivIdBase}: ${error.message}`);
       throw error;
     }
     return true;
   }
 
   if (paper.arxivIdVersion <= Number(existing.arxiv_id_version)) {
+    console.log(`[upsert] UNCHANGED arxiv_id=${paper.arxivIdBase} existing_v=${existing.arxiv_id_version} incoming_v=${paper.arxivIdVersion}`);
     return false;
   }
 
@@ -251,12 +258,18 @@ export async function runIngestPipeline(options: {
       let domainLlmFailed = 0;
       let domainLlmErrorLogged = 0;
       logInfo(options.verbose, `domain=${domain} fetched=${capped.length}`);
+      // Debug: log first 3 paper IDs and their primary categories
+      for (const p of capped.slice(0, 3)) {
+        console.log(`[ingest] domain=${domain} sample paper: arxiv_id=${p.arxivIdBase} primary=${p.primaryCategory} categories=${p.categories.join(",")}`);
+      }
 
       for (const paper of capped) {
         try {
           let hookSummaryEn = "";
+          let hookSummaryZh = "";
           let tags: string[] = [];
           let plainSummaryEn = "";
+          let plainSummaryZh = "";
           let humanCategory = "AI & Robots";
           try {
             const metadata = await withRetries(
@@ -269,8 +282,10 @@ export async function runIngestPipeline(options: {
               3,
             );
             hookSummaryEn = metadata.hook;
+            hookSummaryZh = metadata.hookZh;
             tags = metadata.tags;
             plainSummaryEn = metadata.plainSummary;
+            plainSummaryZh = metadata.plainSummaryZh;
             humanCategory = metadata.humanCategory;
           } catch (llmError) {
             llmFailedCount += 1;
@@ -288,16 +303,20 @@ export async function runIngestPipeline(options: {
               primaryCategory: paper.primaryCategory,
             });
             hookSummaryEn = fallback.hook;
+            hookSummaryZh = fallback.hookZh;
             tags = fallback.tags;
             plainSummaryEn = fallback.plainSummary;
+            plainSummaryZh = fallback.plainSummaryZh;
             humanCategory = fallback.humanCategory;
           }
 
           const didUpsert = await upsertPaperByVersion(serviceClient, {
             ...paper,
             hookSummaryEn,
+            hookSummaryZh,
             tags,
             plainSummaryEn,
+            plainSummaryZh,
             humanCategory,
           });
 

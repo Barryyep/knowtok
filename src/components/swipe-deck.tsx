@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import { FlipCard } from "@/components/flip-card";
+import { useLanguage } from "@/lib/language-context";
 import type { PaperCard } from "@/types/domain";
 
 const SWIPE_THRESHOLD = 120;
@@ -31,6 +32,7 @@ export function SwipeDeck({
   onImpact,
   impactLoading,
 }: SwipeDeckProps) {
+  const { t } = useLanguage();
   const [dragX, setDragX] = useState(0);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | null>(null);
 
@@ -82,13 +84,13 @@ export function SwipeDeck({
             className="swipe-indicator swipe-indicator-save"
             style={{ opacity: saveOpacity }}
           >
-            Save
+            {t.save}
           </div>
           <div
             className="swipe-indicator swipe-indicator-skip"
             style={{ opacity: skipOpacity }}
           >
-            Skip
+            {t.skip}
           </div>
 
           <FlipCard

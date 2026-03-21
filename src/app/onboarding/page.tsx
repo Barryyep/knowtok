@@ -7,6 +7,7 @@ import { LoadingState } from "@/components/loading-state";
 import { ProfileForm } from "@/components/profile-form";
 import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
+import { useLanguage } from "@/lib/language-context";
 
 type InitialProfile = {
   jobTitle: string;
@@ -34,6 +35,7 @@ const EMPTY_PROFILE: InitialProfile = {
 
 function OnboardingContent() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [initialProfile, setInitialProfile] = useState<InitialProfile>(EMPTY_PROFILE);
 
@@ -84,9 +86,9 @@ function OnboardingContent() {
   return (
     <>
       <section className="mb-4">
-        <h2 className="text-2xl font-bold text-label-primary">Tell us about you</h2>
+        <h2 className="text-2xl font-bold text-label-primary">{t.tellUsAboutYou}</h2>
         <p className="mt-2 text-sm text-label-secondary">
-          We&apos;ll use this to explain why each discovery matters to your life — not just to scientists.
+          {t.onboardingSubtitle}
         </p>
       </section>
 

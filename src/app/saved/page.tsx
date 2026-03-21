@@ -7,9 +7,11 @@ import { ImpactPanel } from "@/components/impact-panel";
 import { LoadingState } from "@/components/loading-state";
 import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
+import { useLanguage } from "@/lib/language-context";
 import type { PaperCard } from "@/types/domain";
 
 function SavedContent() {
+  const { lang, t } = useLanguage();
   const [items, setItems] = useState<PaperCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +104,7 @@ function SavedContent() {
   return (
     <section className="grid gap-4">
       <header>
-        <h2 className="text-2xl font-semibold text-label-primary">Saved papers</h2>
+        <h2 className="text-2xl font-semibold text-label-primary">{t.savedPapers}</h2>
         <p className="mt-2 text-sm text-label-secondary">Revisit papers and regenerate relevance insights at any time.</p>
       </header>
 
@@ -114,7 +116,7 @@ function SavedContent() {
         <article className="card-surface p-6" key={paper.id}>
           <p className="text-xs font-medium uppercase tracking-widest text-accent">{paper.primaryCategory}</p>
           <h3 className="mt-2 text-xl font-semibold text-label-primary">{paper.title}</h3>
-          <p className="mt-2 text-sm text-label-secondary">{paper.hookSummaryEn}</p>
+          <p className="mt-2 text-sm text-label-secondary">{lang === "zh" ? (paper.hookSummaryZh || paper.hookSummaryEn) : paper.hookSummaryEn}</p>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {paper.tags.map((tag) => (
@@ -134,7 +136,7 @@ function SavedContent() {
               disabled={impactLoadingFor === paper.id}
               onClick={() => void getImpact(paper.id, false)}
             >
-              {impactLoadingFor === paper.id ? "Thinking..." : "What does this mean for me?"}
+              {impactLoadingFor === paper.id ? "Thinking..." : t.whatThisMeans}
             </button>
             <button className="pill-button" type="button" onClick={() => void getImpact(paper.id, true)}>
               Refresh insight

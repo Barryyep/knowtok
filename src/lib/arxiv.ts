@@ -46,9 +46,7 @@ function normalizeWhitespace(value: string): string {
 }
 
 function domainQuery(domain: DomainKey) {
-  if (domain === "cs") return "cat:cs.*";
-  if (domain === "physics") return "cat:physics.*";
-  return "cat:math.*";
+  return `cat:${domain}.*`;
 }
 
 function findPdfUrl(links: Array<Record<string, string>>): string | null {

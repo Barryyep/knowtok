@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-
-const NAV_ITEMS = [
-  { href: "/feed", label: "Feed" },
-  { href: "/saved", label: "Saved" },
-  { href: "/profile", label: "Profile" },
-];
+import { useLanguage } from "@/lib/language-context";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { lang, setLang, t } = useLanguage();
+
+  const NAV_ITEMS = [
+    { href: "/feed", label: t.feed },
+    { href: "/saved", label: t.savedPapers },
+    { href: "/profile", label: t.profile },
+  ];
 
   const handleSignOut = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -41,13 +43,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <button
-          className="text-sm text-label-tertiary transition hover:text-label-primary"
-          onClick={handleSignOut}
-          type="button"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="rounded-pill border border-separator px-3 py-1.5 text-xs font-medium text-label-secondary transition hover:text-label-primary"
+            onClick={() => setLang(lang === "zh" ? "en" : "zh")}
+            type="button"
+          >
+            {lang === "zh" ? "EN" : "中"}
+          </button>
+          <button
+            className="text-sm text-label-tertiary transition hover:text-label-primary"
+            onClick={handleSignOut}
+            type="button"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
 
       <main>{children}</main>

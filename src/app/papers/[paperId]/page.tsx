@@ -8,6 +8,7 @@ import { ImpactPanel } from "@/components/impact-panel";
 import { LoadingState } from "@/components/loading-state";
 import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
+import { useLanguage } from "@/lib/language-context";
 import type { PaperDetail } from "@/types/domain";
 
 async function handleShare(paper: PaperDetail) {
@@ -37,6 +38,7 @@ async function handleShare(paper: PaperDetail) {
 function PaperDetailContent() {
   const params = useParams<{ paperId: string }>();
   const paperId = params.paperId;
+  const { lang, t } = useLanguage();
 
   const [paper, setPaper] = useState<PaperDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,8 +117,12 @@ function PaperDetailContent() {
     return <p className="text-sm text-danger">{error || "Paper not found."}</p>;
   }
 
-  const hook = paper.personalizedHook || paper.hookSummaryEn;
-  const summary = paper.plainSummary || paper.hookSummaryEn;
+  const hook = lang === "zh"
+    ? (paper.hookSummaryZh || paper.personalizedHook || paper.hookSummaryEn)
+    : (paper.personalizedHook || paper.hookSummaryEn);
+  const summary = lang === "zh"
+    ? (paper.plainSummaryZh || paper.plainSummary || paper.hookSummaryEn)
+    : (paper.plainSummary || paper.hookSummaryEn);
 
   return (
     <section className="grid gap-4">
@@ -144,7 +150,7 @@ function PaperDetailContent() {
             disabled={impactLoading}
             onClick={() => void getImpact(false)}
           >
-            {impactLoading ? "Thinking..." : "What this means for my life"}
+            {impactLoading ? "Thinking..." : t.whatThisMeans}
           </button>
           <button
             className="pill-button min-h-[44px]"
@@ -162,7 +168,7 @@ function PaperDetailContent() {
             {paper.authors.join(", ")}
           </p>
           <p className="mt-2 text-xs text-label-tertiary">
-            Published {new Date(paper.publishedAt).toLocaleString()} &middot; arXiv {paper.arxivIdBase}v{paper.arxivIdVersion}
+            {t.published} {new Date(paper.publishedAt).toLocaleString()} &middot; arXiv {paper.arxivIdBase}v{paper.arxivIdVersion}
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -175,7 +181,7 @@ function PaperDetailContent() {
 
           <div className="mt-4 flex flex-wrap gap-3">
             <Link className="pill-button min-h-[44px]" href={paper.absUrl} target="_blank" rel="noreferrer">
-              Open arXiv abstract
+              {t.viewOnArxiv}
             </Link>
             {paper.pdfUrl ? (
               <Link className="pill-button min-h-[44px]" href={paper.pdfUrl} target="_blank" rel="noreferrer">
@@ -187,7 +193,7 @@ function PaperDetailContent() {
               type="button"
               onClick={() => void handleShare(paper)}
             >
-              Share
+              {t.share}
             </button>
           </div>
         </div>

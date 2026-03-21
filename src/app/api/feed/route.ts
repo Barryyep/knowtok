@@ -10,7 +10,7 @@ const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 24;
 
 const SELECT_FIELDS =
-  "id, arxiv_id_base, arxiv_id_version, title, hook_summary_en, plain_summary_en, human_category, tags, primary_category, categories, published_at, abs_url, pdf_url";
+  "id, arxiv_id_base, arxiv_id_version, title, hook_summary_en, plain_summary_en, hook_summary_zh, plain_summary_zh, human_category, tags, primary_category, categories, published_at, abs_url, pdf_url";
 
 function mapPaperCard(
   row: Record<string, unknown>,
@@ -24,8 +24,10 @@ function mapPaperCard(
     arxivIdVersion: Number(row.arxiv_id_version ?? 1),
     title: String(row.title ?? "Untitled"),
     hookSummaryEn: globalHook,
+    hookSummaryZh: String(row.hook_summary_zh ?? ""),
     personalizedHook: personalizedHook || globalHook,
     plainSummary: String(row.plain_summary_en ?? row.abstract ?? ""),
+    plainSummaryZh: String(row.plain_summary_zh ?? ""),
     humanCategory: String(row.human_category ?? "AI & Robots"),
     tags: (row.tags as string[] | null) ?? [],
     primaryCategory: String(row.primary_category ?? ""),
@@ -62,13 +64,14 @@ export async function GET(request: Request) {
     // Get user's job title for personalized hooks
     const { data: persona } = await client
       .from("user_personas")
-      .select("job_title, location")
+      .select("job_title, location, language")
       .eq("user_id", user.id)
       .maybeSingle();
 
     const jobTitle = (persona?.job_title as string | null) ?? null;
     const jobTitleNormalized = jobTitle?.toLowerCase().trim() || null;
     const userLocation = (persona?.location as string | null) ?? null;
+    const userLanguage = ((persona?.language as string | null) ?? "zh") as "en" | "zh";
 
     // Skip events
     const skipSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -194,6 +197,7 @@ export async function GET(request: Request) {
               plainSummary: paper.plainSummary,
               jobTitle: jobTitle!,
               location: userLocation,
+              language: userLanguage,
             });
             // Cache it
             await serviceClient

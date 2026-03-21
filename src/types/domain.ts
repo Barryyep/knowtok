@@ -8,8 +8,10 @@ export interface PaperCard {
   arxivIdVersion: number;
   title: string;
   hookSummaryEn: string;
+  hookSummaryZh: string;
   personalizedHook: string;
   plainSummary: string;
+  plainSummaryZh: string;
   humanCategory: string;
   tags: string[];
   primaryCategory: string;
@@ -40,6 +42,7 @@ export interface UserPersona {
   location: string | null;
   ageRange: string | null;
   curiosityTags: string[];
+  language: "en" | "zh";
   createdAt: string;
   updatedAt: string;
 }

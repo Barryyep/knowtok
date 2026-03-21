@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { authFetch } from "@/lib/api-client";
 import { CURIOSITY_TAGS } from "@/lib/constants";
+import { useLanguage } from "@/lib/language-context";
 import { isOnboardingComplete, splitCsv } from "@/lib/profile";
 
 type ProfileState = {
@@ -35,6 +36,7 @@ export function ProfileForm({
   mode: "onboarding" | "settings";
   onDone?: () => void;
 }) {
+  const { lang, setLang, t } = useLanguage();
   const [form, setForm] = useState(initial);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +93,7 @@ export function ProfileForm({
           skills: splitCsv(form.skills),
           interests: splitCsv(form.interests),
           manualNotes: form.manualNotes || null,
+          language: lang,
         }),
       });
 
@@ -160,9 +163,30 @@ export function ProfileForm({
 
   return (
     <section className="card-surface p-6 md:p-8">
+      {/* Language selector */}
+      <div className="mb-4">
+        <p className="text-sm text-label-secondary">{t.language}</p>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            className={`pill-button min-h-[44px] ${lang === "en" ? "bg-accent text-white border-accent" : ""}`}
+            onClick={() => setLang("en")}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            className={`pill-button min-h-[44px] ${lang === "zh" ? "bg-accent text-white border-accent" : ""}`}
+            onClick={() => setLang("zh")}
+          >
+            中文
+          </button>
+        </div>
+      </div>
+
       {/* Job title */}
       <label className="block text-sm text-label-secondary">
-        Job title
+        {t.jobTitle}
         <input
           className="input-field mt-2"
           value={form.jobTitle}
@@ -173,7 +197,7 @@ export function ProfileForm({
 
       {/* Location */}
       <label className="mt-4 block text-sm text-label-secondary">
-        Location
+        {t.location}
         <input
           className="input-field mt-2"
           value={form.location}
@@ -184,7 +208,7 @@ export function ProfileForm({
 
       {/* Age range */}
       <label className="mt-4 block text-sm text-label-secondary">
-        Age range
+        {t.ageRange}
         <select
           className="input-field mt-2"
           value={form.ageRange}
@@ -201,7 +225,7 @@ export function ProfileForm({
 
       {/* Curiosity tags */}
       <div className="mt-4">
-        <p className="text-sm text-label-secondary">What are you curious about?</p>
+        <p className="text-sm text-label-secondary">{t.curiosityTags}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {CURIOSITY_TAGS.map((tag) => (
             <button
@@ -223,7 +247,7 @@ export function ProfileForm({
       {/* Secondary fields */}
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <label className="text-sm text-label-secondary">
-          Industry
+          {t.industry}
           <input
             className="input-field mt-2"
             value={form.industry}
@@ -233,7 +257,7 @@ export function ProfileForm({
         </label>
 
         <label className="text-sm text-label-secondary">
-          Skills (comma separated)
+          {t.skills}
           <input
             className="input-field mt-2"
             value={form.skills}
@@ -243,7 +267,7 @@ export function ProfileForm({
         </label>
 
         <label className="text-sm text-label-secondary">
-          Interests (comma separated)
+          {t.interests}
           <input
             className="input-field mt-2"
             value={form.interests}
@@ -255,7 +279,7 @@ export function ProfileForm({
 
       {/* Manual notes */}
       <label className="mt-4 block text-sm text-label-secondary">
-        Notes
+        {t.notes}
         <textarea
           className="input-field mt-2 min-h-[120px]"
           value={form.manualNotes}
@@ -266,7 +290,7 @@ export function ProfileForm({
 
       {/* Resume upload (optional) */}
       <div className="mt-6 rounded-button border border-dashed border-separator p-4">
-        <p className="text-sm text-label-secondary">Upload resume (optional &mdash; PDF or DOCX, max 10MB)</p>
+        <p className="text-sm text-label-secondary">{t.resume}</p>
         <input
           className="mt-2 block w-full text-sm text-label-secondary file:mr-3 file:rounded-button file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           type="file"
@@ -284,7 +308,7 @@ export function ProfileForm({
 
       <div className="mt-6 flex flex-wrap gap-3">
         <button className="primary-button min-h-[44px]" disabled={saving} onClick={saveProfile} type="button">
-          {saving ? "Saving..." : "Save profile"}
+          {saving ? "Saving..." : t.saveProfile}
         </button>
 
         <span className="pill-button min-h-[44px]">{uploading ? "Parsing resume..." : "Resume parser ready"}</span>

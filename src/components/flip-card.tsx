@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { authFetch } from "@/lib/api-client";
+import { useLanguage } from "@/lib/language-context";
 import type { PaperCard } from "@/types/domain";
 
 interface FlipCardProps {
@@ -46,6 +47,7 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
   const [flipped, setFlipped] = useState(false);
   const [detail, setDetail] = useState<PaperBackDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const { lang, t } = useLanguage();
 
   const handleFlip = async () => {
     const nextFlipped = !flipped;
@@ -70,8 +72,12 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
     }
   };
 
-  const hook = paper.personalizedHook || paper.hookSummaryEn;
-  const summary = paper.plainSummary || paper.hookSummaryEn;
+  const hook = lang === "zh"
+    ? (paper.hookSummaryZh || paper.personalizedHook || paper.hookSummaryEn)
+    : (paper.personalizedHook || paper.hookSummaryEn);
+  const summary = lang === "zh"
+    ? (paper.plainSummaryZh || paper.plainSummary || paper.hookSummaryEn)
+    : (paper.plainSummary || paper.hookSummaryEn);
   const categoryLabel = paper.humanCategory || paper.primaryCategory || "General";
 
   return (
@@ -107,7 +113,7 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
             </div>
 
             <p className="mt-6 text-center text-xs font-medium text-label-tertiary">
-              Tap to learn more
+              {t.tapToLearnMore}
             </p>
           </article>
         </div>
@@ -151,7 +157,7 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
                   className="mt-2 inline-block text-xs text-accent"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  View on arXiv
+                  {t.viewOnArxiv}
                 </Link>
               </div>
             </div>
@@ -165,7 +171,7 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
                 disabled={impactLoading}
                 onClick={() => onImpact(false)}
               >
-                {impactLoading ? "Thinking..." : "What this means for my life"}
+                {impactLoading ? "Thinking..." : t.whatThisMeans}
               </button>
 
               <button
@@ -173,7 +179,7 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
                 type="button"
                 onClick={() => onSave()}
               >
-                {paper.saved ? "Saved" : "Save"}
+                {paper.saved ? t.saved : t.save}
               </button>
 
               <button
@@ -181,7 +187,7 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
                 type="button"
                 onClick={() => onSkip()}
               >
-                Skip
+                {t.skip}
               </button>
 
               <button
@@ -189,12 +195,12 @@ export function FlipCard({ paper, onSave, onSkip, onImpact, impactLoading }: Fli
                 type="button"
                 onClick={() => void handleShare(paper)}
               >
-                Share
+                {t.share}
               </button>
             </div>
 
             <p className="mt-4 text-center text-xs font-medium text-label-tertiary">
-              Tap card to flip back
+              {t.tapToFlipBack}
             </p>
           </article>
         </div>

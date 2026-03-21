@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/loading-state";
 import { ProfileForm } from "@/components/profile-form";
 import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
+import { useLanguage } from "@/lib/language-context";
 
 type InitialProfile = {
   jobTitle: string;
@@ -32,6 +33,7 @@ const EMPTY_PROFILE: InitialProfile = {
 };
 
 function ProfileContent() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [initialProfile, setInitialProfile] = useState<InitialProfile>(EMPTY_PROFILE);
 
@@ -77,7 +79,7 @@ function ProfileContent() {
   return (
     <>
       <section className="mb-4">
-        <h2 className="text-2xl font-bold text-label-primary">Profile settings</h2>
+        <h2 className="text-2xl font-bold text-label-primary">{t.profile}</h2>
         <p className="mt-2 text-sm text-label-secondary">
           Update your role, interests, and resume so relevance insights can map papers to your context.
         </p>

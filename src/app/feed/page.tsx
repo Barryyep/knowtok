@@ -10,12 +10,22 @@ import { SwipeDeck } from "@/components/swipe-deck";
 import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
 import { uniqueById } from "@/lib/feed-mix";
-import { CATEGORY_OPTIONS } from "@/lib/constants";
+import { CATEGORY_OPTIONS, type AppLanguage } from "@/lib/constants";
+import { useLanguage } from "@/lib/language-context";
 import type { HumanCategory, PaperCard } from "@/types/domain";
+
+const categoryLabels: Record<string, Record<AppLanguage, string>> = {
+  "AI & Robots": { en: "AI & Robots", zh: "AI & 机器人" },
+  "Your Health": { en: "Your Health", zh: "健康生活" },
+  "Your Money": { en: "Your Money", zh: "财经金融" },
+  "Your Food": { en: "Your Food", zh: "食品科学" },
+  "Climate": { en: "Climate", zh: "气候环境" },
+};
 
 function FeedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { lang, t } = useLanguage();
   const [bootLoading, setBootLoading] = useState(true);
   const [personalizing, setPersonalizing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -224,7 +234,7 @@ function FeedContent() {
   if (bootLoading || personalizing) {
     return (
       <LoadingState
-        label={personalizing ? "Personalizing your feed..." : "Loading your feed..."}
+        label={personalizing ? t.personalizing : t.loading}
       />
     );
   }
@@ -235,22 +245,19 @@ function FeedContent() {
         {category ? (
           <>
             <h2 className="text-xl font-semibold text-label-primary">
-              No {category} papers today
+              {t.emptyCategory(categoryLabels[category]?.[lang] || category)}
             </h2>
-            <p className="mt-2 text-sm text-label-secondary">
-              Here&apos;s what&apos;s trending in For You!
-            </p>
             <button
               className="primary-button mt-4 min-h-[44px]"
               type="button"
               onClick={() => setCategory("")}
             >
-              Switch to For You
+              {t.switchToForYou}
             </button>
           </>
         ) : (
           <>
-            <h2 className="text-xl font-semibold text-label-primary">No papers available</h2>
+            <h2 className="text-xl font-semibold text-label-primary">{t.noResults}</h2>
             <p className="mt-2 text-sm text-label-secondary">
               Check back later for fresh discoveries.
             </p>
@@ -269,7 +276,7 @@ function FeedContent() {
           type="button"
           onClick={() => setCategory("")}
         >
-          For You
+          {t.forYou}
         </button>
         {CATEGORY_OPTIONS.map((option) => (
           <button
@@ -278,7 +285,7 @@ function FeedContent() {
             type="button"
             onClick={() => setCategory(option.key)}
           >
-            {option.label}
+            {categoryLabels[option.key]?.[lang] || option.label}
           </button>
         ))}
       </section>
@@ -315,7 +322,7 @@ function FeedContent() {
 
       {loadingMore ? (
         <div className="mt-4">
-          <LoadingState label="Loading more papers..." />
+          <LoadingState label={t.loadingMore} />
         </div>
       ) : null}
       {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
@@ -328,7 +335,7 @@ export default function FeedPage() {
     <RequireAuth fallbackLabel="Checking account access...">
       {() => (
         <AppShell>
-          <Suspense fallback={<LoadingState label="Loading your feed..." />}>
+          <Suspense fallback={<LoadingState label="Loading..." />}>
             <FeedContent />
           </Suspense>
         </AppShell>

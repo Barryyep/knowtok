@@ -13,6 +13,7 @@ const payloadSchema = z.object({
   location: z.string().trim().max(140).nullable().optional(),
   ageRange: z.string().trim().max(20).nullable().optional(),
   curiosityTags: z.array(z.string().trim().max(30)).max(10).optional(),
+  language: z.enum(["en", "zh"]).optional(),
 });
 
 function uniq(values: string[] | undefined): string[] {
@@ -32,6 +33,7 @@ function mapPersonaRow(row: Record<string, unknown> | null, userId: string) {
       location: null,
       ageRange: null,
       curiosityTags: [] as string[],
+      language: "zh" as const,
       profileSource: "manual",
       createdAt: new Date(0).toISOString(),
       updatedAt: new Date(0).toISOString(),
@@ -48,6 +50,7 @@ function mapPersonaRow(row: Record<string, unknown> | null, userId: string) {
     location: (row.location as string | null) ?? null,
     ageRange: (row.age_range as string | null) ?? null,
     curiosityTags: (row.curiosity_tags as string[] | null) ?? [],
+    language: ((row.language as string | null) ?? "zh") as "en" | "zh",
     profileSource: ((row.profile_source as string | null) ?? "manual") as "manual" | "resume" | "mixed",
     createdAt: (row.created_at as string) || new Date(0).toISOString(),
     updatedAt: (row.updated_at as string) || new Date(0).toISOString(),
@@ -134,6 +137,7 @@ export async function PUT(request: Request) {
         location: payload.location ?? null,
         age_range: payload.ageRange ?? null,
         curiosity_tags: uniq(payload.curiosityTags),
+        language: payload.language ?? "zh",
         profile_source: profileSource,
       },
       { onConflict: "user_id" },
