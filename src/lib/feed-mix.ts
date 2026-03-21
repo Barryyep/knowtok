@@ -2,7 +2,7 @@ import type { FeedCursor, PaperCard } from "@/types/domain";
 
 const DEFAULT_LATEST_RATIO = 0.7;
 
-function uniqueById(items: PaperCard[]): PaperCard[] {
+export function uniqueById(items: PaperCard[]): PaperCard[] {
   const seen = new Set<string>();
   const result: PaperCard[] = [];
   for (const item of items) {
@@ -11,6 +11,45 @@ function uniqueById(items: PaperCard[]): PaperCard[] {
       result.push(item);
     }
   }
+  return result;
+}
+
+export function weightedShuffle(
+  items: PaperCard[],
+  curiosityTags: string[],
+  tagToCategory: Record<string, string>,
+): PaperCard[] {
+  const matchingCategories = new Set(
+    curiosityTags.map(tag => tagToCategory[tag]).filter(Boolean)
+  );
+
+  // Assign weights: 3x for matching category, 1x for non-matching
+  const weighted = items.map(item => ({
+    item,
+    weight: matchingCategories.has(item.humanCategory) ? 3 : 1,
+  }));
+
+  // Weighted Fisher-Yates shuffle
+  const result: PaperCard[] = [];
+  const pool = [...weighted];
+
+  while (pool.length > 0) {
+    const totalWeight = pool.reduce((sum, w) => sum + w.weight, 0);
+    let random = Math.random() * totalWeight;
+    let selectedIndex = 0;
+
+    for (let i = 0; i < pool.length; i++) {
+      random -= pool[i].weight;
+      if (random <= 0) {
+        selectedIndex = i;
+        break;
+      }
+    }
+
+    result.push(pool[selectedIndex].item);
+    pool.splice(selectedIndex, 1);
+  }
+
   return result;
 }
 

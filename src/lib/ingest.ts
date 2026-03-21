@@ -1,12 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchArxivPapers, type ArxivPaper } from "@/lib/arxiv";
-import { generatePaperHookAndTags } from "@/lib/llm";
+import { generatePaperMetadata, buildFallbackMetadata } from "@/lib/llm";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import type { DomainKey, IngestRunResult } from "@/types/domain";
 
 export type IngestMode = "daily" | "backfill";
-// TODO: add cs domain
-const DOMAINS: DomainKey[] = ["physics", "math"];
+const DOMAINS: DomainKey[] = ["cs", "physics", "math", "q-bio", "q-fin", "econ", "astro-ph"];
 const DAILY_LIMIT_PER_DOMAIN = 30;
 const BACKFILL_FETCH_PER_DOMAIN = 250;
 const MAX_LLM_ERROR_LOGS_PER_DOMAIN = 5;
@@ -35,26 +34,6 @@ async function withRetries<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   throw lastError;
 }
 
-function buildFallbackHookAndTags(paper: ArxivPaper): { hook: string; tags: string[] } {
-  const abstract = paper.abstract.replace(/\s+/g, " ").trim();
-  const words = abstract.split(" ").filter(Boolean);
-  const fallbackHook =
-    words.length > 28
-      ? `${words.slice(0, 28).join(" ").replace(/[,.!?;:]+$/, "")}.`
-      : abstract || `${paper.title} introduces a new research direction with practical implications.`;
-
-  const categoryTags = paper.categories
-    .map((category) => category.split(".").pop() || category)
-    .map((tag) => tag.replace(/[^a-zA-Z0-9\- ]/g, "").trim())
-    .filter(Boolean);
-
-  const tags = Array.from(new Set(categoryTags)).slice(0, 5);
-  return {
-    hook: fallbackHook,
-    tags: tags.length > 0 ? tags : ["research", "arxiv"],
-  };
-}
-
 function logInfo(enabled: boolean | undefined, message: string) {
   if (!enabled) return;
   console.log(`[ingest] ${message}`);
@@ -65,7 +44,12 @@ function isArxiv429(error: unknown): boolean {
   return /status 429/i.test(message);
 }
 
-async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & { hookSummaryEn: string; tags: string[] }) {
+async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & {
+  hookSummaryEn: string;
+  tags: string[];
+  plainSummaryEn: string;
+  humanCategory: string;
+}) {
   const { data: existing, error: existingError } = await client
     .from("papers")
     .select("id, arxiv_id_version")
@@ -92,6 +76,8 @@ async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & 
     pdf_url: paper.pdfUrl,
     abs_url: paper.absUrl,
     metadata: paper.metadata,
+    plain_summary_en: paper.plainSummaryEn,
+    human_category: paper.humanCategory,
   };
 
   if (!existing) {
@@ -270,18 +256,22 @@ export async function runIngestPipeline(options: {
         try {
           let hookSummaryEn = "";
           let tags: string[] = [];
+          let plainSummaryEn = "";
+          let humanCategory = "AI & Robots";
           try {
-            const llmResult = await withRetries(
+            const metadata = await withRetries(
               () =>
-                generatePaperHookAndTags({
+                generatePaperMetadata({
                   title: paper.title,
                   abstract: paper.abstract,
                   categories: paper.categories,
                 }),
               3,
             );
-            hookSummaryEn = llmResult.hook;
-            tags = llmResult.tags;
+            hookSummaryEn = metadata.hook;
+            tags = metadata.tags;
+            plainSummaryEn = metadata.plainSummary;
+            humanCategory = metadata.humanCategory;
           } catch (llmError) {
             llmFailedCount += 1;
             domainLlmFailed += 1;
@@ -291,15 +281,24 @@ export async function runIngestPipeline(options: {
               );
               domainLlmErrorLogged += 1;
             }
-            const fallback = buildFallbackHookAndTags(paper);
+            const fallback = buildFallbackMetadata({
+              title: paper.title,
+              abstract: paper.abstract,
+              categories: paper.categories,
+              primaryCategory: paper.primaryCategory,
+            });
             hookSummaryEn = fallback.hook;
             tags = fallback.tags;
+            plainSummaryEn = fallback.plainSummary;
+            humanCategory = fallback.humanCategory;
           }
 
           const didUpsert = await upsertPaperByVersion(serviceClient, {
             ...paper,
             hookSummaryEn,
             tags,
+            plainSummaryEn,
+            humanCategory,
           });
 
           if (didUpsert) {
@@ -328,6 +327,12 @@ export async function runIngestPipeline(options: {
         `domain=${domain} done fetched=${capped.length} upserted=${domainUpserted} unchanged=${domainUnchanged} llmFailed=${domainLlmFailed} skipped=${domainSkipped}`,
       );
     }
+
+    // TTL cleanup for personalized hooks older than 7 days
+    await serviceClient
+      .from("personalized_hooks")
+      .delete()
+      .lt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
     const endedAt = new Date().toISOString();
     const status = getStatus({
