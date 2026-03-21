@@ -35,6 +35,7 @@ function FeedContent() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [impact, setImpact] = useState<{ text: string; updatedAt: string | null } | null>(null);
+  const [impactLang, setImpactLang] = useState<string>("");
   const [impactLoading, setImpactLoading] = useState(false);
 
   const activePaper = useMemo(() => items[activeIndex] ?? null, [items, activeIndex]);
@@ -206,13 +207,16 @@ function FeedContent() {
     setImpactLoading(true);
     setError(null);
 
+    // If we have a cached impact and the language changed, force refresh
+    const shouldRefresh = refresh || (impact && impactLang !== lang);
+
     try {
       const response = await authFetch(`/api/papers/${activePaper.id}/impact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refresh }),
+        body: JSON.stringify({ refresh: shouldRefresh }),
       });
 
       const payload = await response.json();
@@ -224,6 +228,7 @@ function FeedContent() {
         text: payload.text as string,
         updatedAt: (payload.updatedAt as string | null) ?? null,
       });
+      setImpactLang(lang);
     } catch (impactError) {
       setError((impactError as Error).message);
     } finally {
