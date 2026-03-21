@@ -20,6 +20,8 @@ interface SwipeDeckProps {
   cardKey: string;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  onSave: () => void;
+  onSkip: () => void;
   onImpact: (refresh?: boolean) => void;
   impactLoading: boolean;
 }
@@ -29,6 +31,8 @@ export function SwipeDeck({
   cardKey,
   onSwipeLeft,
   onSwipeRight,
+  onSave,
+  onSkip,
   onImpact,
   impactLoading,
 }: SwipeDeckProps) {
@@ -84,19 +88,19 @@ export function SwipeDeck({
             className="swipe-indicator swipe-indicator-save"
             style={{ opacity: saveOpacity }}
           >
-            {t.next}
+            {t.prev}
           </div>
           <div
             className="swipe-indicator swipe-indicator-skip"
             style={{ opacity: skipOpacity }}
           >
-            {t.prev}
+            {t.next}
           </div>
 
           <FlipCard
             paper={paper}
-            onSave={onSwipeRight}
-            onSkip={onSwipeLeft}
+            onSave={onSave}
+            onSkip={onSkip}
             onImpact={onImpact}
             impactLoading={impactLoading}
           />

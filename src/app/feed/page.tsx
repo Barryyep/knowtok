@@ -317,8 +317,10 @@ function FeedContent() {
       <SwipeDeck
         paper={activePaper}
         cardKey={activePaper.id}
-        onSwipeLeft={goPrev}
-        onSwipeRight={goNext}
+        onSwipeLeft={goNext}
+        onSwipeRight={goPrev}
+        onSave={() => void handleSave()}
+        onSkip={() => void handleSkip()}
         onImpact={(refresh) => void handleImpact(refresh)}
         impactLoading={impactLoading}
       />
