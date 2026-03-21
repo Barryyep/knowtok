@@ -10,6 +10,7 @@ export const runtime = "nodejs";
 
 const bodySchema = z.object({
   refresh: z.boolean().optional(),
+  language: z.enum(["en", "zh"]).optional(),
 });
 
 export async function POST(
@@ -41,7 +42,8 @@ export async function POST(
       throw personaError;
     }
 
-    const userLanguage = ((personaData?.language as string | null) ?? "zh") as "en" | "zh";
+    // Prefer language from request body (reflects current UI), fall back to DB
+    const userLanguage = (parsed.data.language || (personaData?.language as string | null) || "zh") as "en" | "zh";
 
     if (!refresh) {
       const { data: existingImpact, error: existingImpactError } = await client

@@ -90,7 +90,7 @@ function PaperDetailContent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refresh }),
+        body: JSON.stringify({ refresh, language: lang }),
       });
 
       const payload = await response.json();

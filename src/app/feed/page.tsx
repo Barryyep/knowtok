@@ -229,7 +229,7 @@ function FeedContent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refresh: shouldRefresh }),
+        body: JSON.stringify({ refresh: shouldRefresh, language: lang }),
       });
 
       const payload = await response.json();
