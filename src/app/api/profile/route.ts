@@ -10,6 +10,9 @@ const payloadSchema = z.object({
   skills: z.array(z.string().trim().max(60)).max(25).optional(),
   interests: z.array(z.string().trim().max(60)).max(25).optional(),
   manualNotes: z.string().trim().max(1200).nullable().optional(),
+  location: z.string().trim().max(140).nullable().optional(),
+  ageRange: z.string().trim().max(20).nullable().optional(),
+  curiosityTags: z.array(z.string().trim().max(30)).max(10).optional(),
 });
 
 function uniq(values: string[] | undefined): string[] {
@@ -26,6 +29,9 @@ function mapPersonaRow(row: Record<string, unknown> | null, userId: string) {
       skills: [] as string[],
       interests: [] as string[],
       manualNotes: null,
+      location: null,
+      ageRange: null,
+      curiosityTags: [] as string[],
       profileSource: "manual",
       createdAt: new Date(0).toISOString(),
       updatedAt: new Date(0).toISOString(),
@@ -39,6 +45,9 @@ function mapPersonaRow(row: Record<string, unknown> | null, userId: string) {
     skills: (row.skills as string[] | null) ?? [],
     interests: (row.interests as string[] | null) ?? [],
     manualNotes: (row.manual_notes as string | null) ?? null,
+    location: (row.location as string | null) ?? null,
+    ageRange: (row.age_range as string | null) ?? null,
+    curiosityTags: (row.curiosity_tags as string[] | null) ?? [],
     profileSource: ((row.profile_source as string | null) ?? "manual") as "manual" | "resume" | "mixed",
     createdAt: (row.created_at as string) || new Date(0).toISOString(),
     updatedAt: (row.updated_at as string) || new Date(0).toISOString(),
@@ -81,6 +90,7 @@ export async function GET(request: Request) {
         skills: persona.skills,
         interests: persona.interests,
         manualNotes: persona.manualNotes,
+        curiosityTags: persona.curiosityTags,
         hasResume,
       }),
     });
@@ -121,6 +131,9 @@ export async function PUT(request: Request) {
         skills: uniq(payload.skills),
         interests: uniq(payload.interests),
         manual_notes: payload.manualNotes ?? null,
+        location: payload.location ?? null,
+        age_range: payload.ageRange ?? null,
+        curiosity_tags: uniq(payload.curiosityTags),
         profile_source: profileSource,
       },
       { onConflict: "user_id" },
