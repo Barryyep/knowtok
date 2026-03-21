@@ -201,6 +201,14 @@ function FeedContent() {
     goNext();
   };
 
+  // Auto-refresh impact when language changes while impact is visible
+  useEffect(() => {
+    if (impact && impactLang && impactLang !== lang) {
+      void handleImpact(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
   const handleImpact = async (refresh = false) => {
     if (!activePaper) return;
 
