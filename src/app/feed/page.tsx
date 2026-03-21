@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/app-shell";
 import { ImpactPanel } from "@/components/impact-panel";
@@ -9,22 +9,17 @@ import { LoadingState } from "@/components/loading-state";
 import { SwipeDeck } from "@/components/swipe-deck";
 import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
-import { DOMAIN_OPTIONS } from "@/lib/constants";
-import type { DomainKey, PaperCard } from "@/types/domain";
-
-function dedupeById(items: PaperCard[]): PaperCard[] {
-  const map = new Map<string, PaperCard>();
-  for (const item of items) {
-    map.set(item.id, item);
-  }
-  return Array.from(map.values());
-}
+import { uniqueById } from "@/lib/feed-mix";
+import { CATEGORY_OPTIONS } from "@/lib/constants";
+import type { HumanCategory, PaperCard } from "@/types/domain";
 
 function FeedContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [bootLoading, setBootLoading] = useState(true);
+  const [personalizing, setPersonalizing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [domain, setDomain] = useState<DomainKey | "">("");
+  const [category, setCategory] = useState<HumanCategory | "">("");
   const [items, setItems] = useState<PaperCard[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -38,8 +33,8 @@ function FeedContent() {
   const fetchFeed = async (reset: boolean) => {
     const params = new URLSearchParams();
     params.set("limit", "12");
-    if (domain) {
-      params.set("domain", domain);
+    if (category) {
+      params.set("category", category);
     }
     if (!reset && cursor) {
       params.set("cursor", cursor);
@@ -62,7 +57,7 @@ function FeedContent() {
       setActiveIndex(0);
       setImpact(null);
     } else {
-      setItems((previous) => dedupeById([...previous, ...nextItems]));
+      setItems((previous) => uniqueById([...previous, ...nextItems]));
     }
   };
 
@@ -77,6 +72,15 @@ function FeedContent() {
         if (!profilePayload.onboardingComplete) {
           router.replace("/onboarding");
           return;
+        }
+
+        // Show personalizing state for first-time users (arriving from onboarding)
+        const fromOnboarding = searchParams.get("from") === "onboarding";
+        if (fromOnboarding && active) {
+          setPersonalizing(true);
+          // Brief delay to show the personalizing message
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          if (active) setPersonalizing(false);
         }
 
         await fetchFeed(true);
@@ -97,7 +101,7 @@ function FeedContent() {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, [router, searchParams]);
 
   useEffect(() => {
     if (!activePaperId) return;
@@ -138,7 +142,7 @@ function FeedContent() {
       .catch((loadError) => setError((loadError as Error).message))
       .finally(() => setLoadingMore(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain]);
+  }, [category]);
 
   const goNext = () => {
     setActiveIndex((previous) => Math.min(previous + 1, Math.max(items.length - 1, 0)));
@@ -217,38 +221,62 @@ function FeedContent() {
     }
   };
 
-  if (bootLoading) {
-    return <LoadingState label="Loading your research feed..." />;
+  if (bootLoading || personalizing) {
+    return (
+      <LoadingState
+        label={personalizing ? "Personalizing your feed..." : "Loading your feed..."}
+      />
+    );
   }
 
   if (!activePaper) {
     return (
       <section className="card-surface p-8">
-        <h2 className="text-xl font-semibold text-label-primary">No papers available</h2>
-        <p className="mt-2 text-sm text-label-secondary">
-          Try another domain filter or run ingest again to pull fresh papers.
-        </p>
+        {category ? (
+          <>
+            <h2 className="text-xl font-semibold text-label-primary">
+              No {category} papers today
+            </h2>
+            <p className="mt-2 text-sm text-label-secondary">
+              Here&apos;s what&apos;s trending in For You!
+            </p>
+            <button
+              className="primary-button mt-4 min-h-[44px]"
+              type="button"
+              onClick={() => setCategory("")}
+            >
+              Switch to For You
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-xl font-semibold text-label-primary">No papers available</h2>
+            <p className="mt-2 text-sm text-label-secondary">
+              Check back later for fresh discoveries.
+            </p>
+          </>
+        )}
       </section>
     );
   }
 
   return (
     <>
-      {/* Domain filter pills */}
-      <section className="mb-4 flex flex-wrap items-center gap-2">
+      {/* Category filter pills */}
+      <section className="mb-4 flex items-center gap-2 overflow-x-auto scrollbar-hide">
         <button
-          className={`pill-button ${domain === "" ? "bg-accent text-white border-accent" : ""}`}
+          className={`pill-button min-h-[44px] shrink-0 ${category === "" ? "bg-accent text-white border-accent" : ""}`}
           type="button"
-          onClick={() => setDomain("")}
+          onClick={() => setCategory("")}
         >
-          All
+          For You
         </button>
-        {DOMAIN_OPTIONS.map((option) => (
+        {CATEGORY_OPTIONS.map((option) => (
           <button
             key={option.key}
-            className={`pill-button ${domain === option.key ? "bg-accent text-white border-accent" : ""}`}
+            className={`pill-button min-h-[44px] shrink-0 ${category === option.key ? "bg-accent text-white border-accent" : ""}`}
             type="button"
-            onClick={() => setDomain(option.key)}
+            onClick={() => setCategory(option.key)}
           >
             {option.label}
           </button>
@@ -300,7 +328,9 @@ export default function FeedPage() {
     <RequireAuth fallbackLabel="Checking account access...">
       {() => (
         <AppShell>
-          <FeedContent />
+          <Suspense fallback={<LoadingState label="Loading your feed..." />}>
+            <FeedContent />
+          </Suspense>
         </AppShell>
       )}
     </RequireAuth>

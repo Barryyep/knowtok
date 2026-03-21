@@ -10,6 +10,9 @@ import { authFetch } from "@/lib/api-client";
 
 type InitialProfile = {
   jobTitle: string;
+  location: string;
+  ageRange: string;
+  curiosityTags: string[];
   industry: string;
   skills: string;
   interests: string;
@@ -19,6 +22,9 @@ type InitialProfile = {
 
 const EMPTY_PROFILE: InitialProfile = {
   jobTitle: "",
+  location: "",
+  ageRange: "",
+  curiosityTags: [],
   industry: "",
   skills: "",
   interests: "",
@@ -48,6 +54,9 @@ function OnboardingContent() {
 
         setInitialProfile({
           jobTitle: payload.persona?.jobTitle || "",
+          location: payload.persona?.location || "",
+          ageRange: payload.persona?.ageRange || "",
+          curiosityTags: payload.persona?.curiosityTags || [],
           industry: payload.persona?.industry || "",
           skills: payload.persona?.skills?.join(", ") || "",
           interests: payload.persona?.interests?.join(", ") || "",
@@ -75,9 +84,9 @@ function OnboardingContent() {
   return (
     <>
       <section className="mb-4">
-        <h2 className="text-2xl font-bold text-label-primary">Set up your profile first</h2>
+        <h2 className="text-2xl font-bold text-label-primary">Tell us about you</h2>
         <p className="mt-2 text-sm text-label-secondary">
-          Add at least one profile field or upload a resume. This is required before entering the feed.
+          We&apos;ll use this to explain why each discovery matters to your life — not just to scientists.
         </p>
       </section>
 
@@ -85,7 +94,7 @@ function OnboardingContent() {
         initial={initialProfile}
         mode="onboarding"
         onDone={() => {
-          router.push("/feed");
+          router.push("/feed?from=onboarding");
         }}
       />
     </>

@@ -15,7 +15,7 @@ const config: Config = {
         "surface-tertiary": "#3A3A3C",
         "label-primary": "#FFFFFF",
         "label-secondary": "#AEAEB2",
-        "label-tertiary": "#636366",
+        "label-tertiary": "#8E8E93",
         separator: "#38383A",
         accent: "#0A84FF",
         success: "#30D158",

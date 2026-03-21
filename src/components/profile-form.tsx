@@ -2,16 +2,29 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { authFetch } from "@/lib/api-client";
+import { CURIOSITY_TAGS } from "@/lib/constants";
 import { isOnboardingComplete, splitCsv } from "@/lib/profile";
 
 type ProfileState = {
   jobTitle: string;
+  location: string;
+  ageRange: string;
+  curiosityTags: string[];
   industry: string;
   skills: string;
   interests: string;
   manualNotes: string;
   hasResume: boolean;
 };
+
+const AGE_RANGE_OPTIONS = [
+  "Under 18",
+  "18-24",
+  "25-34",
+  "35-44",
+  "45-54",
+  "55+",
+];
 
 export function ProfileForm({
   initial,
@@ -45,8 +58,17 @@ export function ProfileForm({
     [form],
   );
 
-  const updateField = (key: keyof ProfileState, value: string | boolean) => {
+  const updateField = (key: keyof ProfileState, value: string | boolean | string[]) => {
     setForm((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const toggleCuriosityTag = (tag: string) => {
+    setForm((previous) => {
+      const tags = previous.curiosityTags.includes(tag)
+        ? previous.curiosityTags.filter((t) => t !== tag)
+        : [...previous.curiosityTags, tag];
+      return { ...previous, curiosityTags: tags };
+    });
   };
 
   const saveProfile = async () => {
@@ -62,6 +84,9 @@ export function ProfileForm({
         },
         body: JSON.stringify({
           jobTitle: form.jobTitle || null,
+          location: form.location || null,
+          ageRange: form.ageRange || null,
+          curiosityTags: form.curiosityTags,
           industry: form.industry || null,
           skills: splitCsv(form.skills),
           interests: splitCsv(form.interests),
@@ -135,17 +160,68 @@ export function ProfileForm({
 
   return (
     <section className="card-surface p-6 md:p-8">
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-sm text-label-secondary">
-          Job title
-          <input
-            className="input-field mt-2"
-            value={form.jobTitle}
-            onChange={(event) => updateField("jobTitle", event.target.value)}
-            placeholder="e.g. Product Manager"
-          />
-        </label>
+      {/* Job title */}
+      <label className="block text-sm text-label-secondary">
+        Job title
+        <input
+          className="input-field mt-2"
+          value={form.jobTitle}
+          onChange={(event) => updateField("jobTitle", event.target.value)}
+          placeholder="e.g. Product Manager"
+        />
+      </label>
 
+      {/* Location */}
+      <label className="mt-4 block text-sm text-label-secondary">
+        Location
+        <input
+          className="input-field mt-2"
+          value={form.location}
+          onChange={(event) => updateField("location", event.target.value)}
+          placeholder="e.g. San Francisco, CA"
+        />
+      </label>
+
+      {/* Age range */}
+      <label className="mt-4 block text-sm text-label-secondary">
+        Age range
+        <select
+          className="input-field mt-2"
+          value={form.ageRange}
+          onChange={(event) => updateField("ageRange", event.target.value)}
+        >
+          <option value="">Select age range</option>
+          {AGE_RANGE_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {/* Curiosity tags */}
+      <div className="mt-4">
+        <p className="text-sm text-label-secondary">What are you curious about?</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {CURIOSITY_TAGS.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className={`pill-button min-h-[44px] ${
+                form.curiosityTags.includes(tag)
+                  ? "bg-accent text-white border-accent"
+                  : ""
+              }`}
+              onClick={() => toggleCuriosityTag(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Secondary fields */}
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
         <label className="text-sm text-label-secondary">
           Industry
           <input
@@ -177,6 +253,7 @@ export function ProfileForm({
         </label>
       </div>
 
+      {/* Manual notes */}
       <label className="mt-4 block text-sm text-label-secondary">
         Notes
         <textarea
@@ -187,8 +264,9 @@ export function ProfileForm({
         />
       </label>
 
-      <div className="mt-4 rounded-button border border-dashed border-separator p-4">
-        <p className="text-sm text-label-secondary">Upload resume (PDF or DOCX, max 10MB)</p>
+      {/* Resume upload (optional) */}
+      <div className="mt-6 rounded-button border border-dashed border-separator p-4">
+        <p className="text-sm text-label-secondary">Upload resume (optional &mdash; PDF or DOCX, max 10MB)</p>
         <input
           className="mt-2 block w-full text-sm text-label-secondary file:mr-3 file:rounded-button file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
           type="file"
@@ -205,14 +283,14 @@ export function ProfileForm({
       {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <button className="primary-button" disabled={saving} onClick={saveProfile} type="button">
+        <button className="primary-button min-h-[44px]" disabled={saving} onClick={saveProfile} type="button">
           {saving ? "Saving..." : "Save profile"}
         </button>
 
-        <span className="pill-button">{uploading ? "Parsing resume..." : "Resume parser ready"}</span>
+        <span className="pill-button min-h-[44px]">{uploading ? "Parsing resume..." : "Resume parser ready"}</span>
 
         {mode === "onboarding" ? (
-          <button className="pill-button" onClick={continueNext} type="button">
+          <button className="pill-button min-h-[44px]" onClick={continueNext} type="button">
             Continue to feed
           </button>
         ) : null}

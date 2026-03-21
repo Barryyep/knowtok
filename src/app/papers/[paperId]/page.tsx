@@ -10,6 +10,30 @@ import { RequireAuth } from "@/components/require-auth";
 import { authFetch } from "@/lib/api-client";
 import type { PaperDetail } from "@/types/domain";
 
+async function handleShare(paper: PaperDetail) {
+  const shareData = {
+    title: paper.personalizedHook || paper.title,
+    text: paper.plainSummary || paper.hookSummaryEn,
+    url: paper.absUrl,
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch {
+      // User cancelled or share failed, fall through to clipboard
+    }
+  }
+
+  // Clipboard fallback
+  try {
+    await navigator.clipboard.writeText(`${shareData.title}\n\n${shareData.url}`);
+  } catch {
+    // silent
+  }
+}
+
 function PaperDetailContent() {
   const params = useParams<{ paperId: string }>();
   const paperId = params.paperId;
@@ -91,54 +115,81 @@ function PaperDetailContent() {
     return <p className="text-sm text-danger">{error || "Paper not found."}</p>;
   }
 
+  const hook = paper.personalizedHook || paper.hookSummaryEn;
+  const summary = paper.plainSummary || paper.hookSummaryEn;
+
   return (
     <section className="grid gap-4">
       <article className="card-surface p-6 md:p-8">
-        <p className="text-xs font-medium uppercase tracking-[0.25em] text-accent">{paper.primaryCategory}</p>
-        <h2 className="mt-2 text-3xl font-bold text-label-primary">{paper.title}</h2>
+        {/* Category badge */}
+        <p className="text-xs font-medium uppercase tracking-[0.25em] text-accent">
+          {paper.humanCategory || paper.primaryCategory}
+        </p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {paper.tags.map((tag) => (
-            <span className="rounded-pill border border-separator px-3 py-1 text-xs text-label-tertiary" key={tag}>
-              {tag}
-            </span>
-          ))}
-        </div>
+        {/* Layer 1: Personalized hook (hero) */}
+        <h2 className="mt-2 text-xl font-bold leading-tight text-label-primary md:text-3xl">
+          {hook}
+        </h2>
 
-        <p className="mt-6 text-sm leading-relaxed text-label-secondary">{paper.abstract}</p>
+        {/* Layer 2: Plain summary */}
+        <p className="mt-4 text-base leading-relaxed text-label-secondary">
+          {summary}
+        </p>
 
-        <div className="mt-6 grid gap-2 text-sm text-label-secondary">
-          <p>
-            <strong className="text-label-primary">Authors:</strong> {paper.authors.join(", ")}
-          </p>
-          <p>
-            <strong className="text-label-primary">Published:</strong> {new Date(paper.publishedAt).toLocaleString()}
-          </p>
-          <p>
-            <strong className="text-label-primary">arXiv:</strong> {paper.arxivIdBase}v{paper.arxivIdVersion}
-          </p>
-        </div>
-
+        {/* Layer 3: Impact brief */}
         <div className="mt-6 flex flex-wrap gap-3">
           <button
-            className="primary-button"
+            className="primary-button min-h-[44px]"
             type="button"
             disabled={impactLoading}
             onClick={() => void getImpact(false)}
           >
-            {impactLoading ? "Thinking..." : "What does this mean for me?"}
+            {impactLoading ? "Thinking..." : "What this means for my life"}
           </button>
-          <button className="pill-button" type="button" onClick={() => void getImpact(true)}>
+          <button
+            className="pill-button min-h-[44px]"
+            type="button"
+            onClick={() => void getImpact(true)}
+          >
             Refresh insight
           </button>
-          <Link className="pill-button" href={paper.absUrl} target="_blank" rel="noreferrer">
-            Open arXiv abstract
-          </Link>
-          {paper.pdfUrl ? (
-            <Link className="pill-button" href={paper.pdfUrl} target="_blank" rel="noreferrer">
-              Open PDF
+        </div>
+
+        {/* Source footer */}
+        <div className="mt-6 border-t border-separator pt-4">
+          <p className="text-sm font-medium text-label-primary">{paper.title}</p>
+          <p className="mt-1 text-sm text-label-secondary">
+            {paper.authors.join(", ")}
+          </p>
+          <p className="mt-2 text-xs text-label-tertiary">
+            Published {new Date(paper.publishedAt).toLocaleString()} &middot; arXiv {paper.arxivIdBase}v{paper.arxivIdVersion}
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {paper.tags.map((tag) => (
+              <span className="rounded-pill border border-separator px-3 py-1 text-xs text-label-tertiary" key={tag}>
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link className="pill-button min-h-[44px]" href={paper.absUrl} target="_blank" rel="noreferrer">
+              Open arXiv abstract
             </Link>
-          ) : null}
+            {paper.pdfUrl ? (
+              <Link className="pill-button min-h-[44px]" href={paper.pdfUrl} target="_blank" rel="noreferrer">
+                Open PDF
+              </Link>
+            ) : null}
+            <button
+              className="pill-button min-h-[44px]"
+              type="button"
+              onClick={() => void handleShare(paper)}
+            >
+              Share
+            </button>
+          </div>
         </div>
       </article>
 

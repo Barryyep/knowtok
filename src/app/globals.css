@@ -92,3 +92,12 @@ a:hover {
   @apply inline-block h-5 w-5 rounded-full border-2 border-label-tertiary border-t-accent;
   animation: spin 0.8s linear infinite;
 }
+
+/* --- Scrollbar hide utility --- */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

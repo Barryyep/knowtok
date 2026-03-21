@@ -9,6 +9,9 @@ import { authFetch } from "@/lib/api-client";
 
 type InitialProfile = {
   jobTitle: string;
+  location: string;
+  ageRange: string;
+  curiosityTags: string[];
   industry: string;
   skills: string;
   interests: string;
@@ -18,6 +21,9 @@ type InitialProfile = {
 
 const EMPTY_PROFILE: InitialProfile = {
   jobTitle: "",
+  location: "",
+  ageRange: "",
+  curiosityTags: [],
   industry: "",
   skills: "",
   interests: "",
@@ -35,6 +41,9 @@ function ProfileContent() {
 
     setInitialProfile({
       jobTitle: payload.persona?.jobTitle || "",
+      location: payload.persona?.location || "",
+      ageRange: payload.persona?.ageRange || "",
+      curiosityTags: payload.persona?.curiosityTags || [],
       industry: payload.persona?.industry || "",
       skills: payload.persona?.skills?.join(", ") || "",
       interests: payload.persona?.interests?.join(", ") || "",
