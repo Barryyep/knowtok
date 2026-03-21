@@ -68,7 +68,7 @@ export async function POST(
         .maybeSingle(),
       client
         .from("user_personas")
-        .select("job_title, industry, skills, interests, manual_notes")
+        .select("job_title, industry, skills, interests, manual_notes, location, age_range, language")
         .eq("user_id", user.id)
         .maybeSingle(),
       client
@@ -93,6 +93,8 @@ export async function POST(
       return NextResponse.json({ error: "Paper not found" }, { status: 404 });
     }
 
+    const userLanguage = ((personaResult.data?.language as string | null) ?? "zh") as "en" | "zh";
+
     const personaSummary = composePersonaSummary({
       jobTitle: (personaResult.data?.job_title as string | null) ?? null,
       industry: (personaResult.data?.industry as string | null) ?? null,
@@ -100,6 +102,8 @@ export async function POST(
       interests: (personaResult.data?.interests as string[] | null) ?? null,
       manualNotes: (personaResult.data?.manual_notes as string | null) ?? null,
       resumeText: (resumeResult.data?.extracted_text as string | null) ?? null,
+      location: (personaResult.data?.location as string | null) ?? null,
+      ageRange: (personaResult.data?.age_range as string | null) ?? null,
     });
 
     let impactText = "";
@@ -115,6 +119,7 @@ export async function POST(
         abstract: String(paper.abstract || ""),
         tags: (paper.tags as string[] | null) ?? [],
         personaSummary,
+        language: userLanguage,
       });
       impactText = llm.text;
       model = llm.model;

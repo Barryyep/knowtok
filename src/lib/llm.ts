@@ -304,25 +304,29 @@ export async function generateImpactBrief(input: {
   abstract: string;
   tags: string[];
   personaSummary: string;
+  language?: "en" | "zh";
 }): Promise<ImpactResult> {
   const { model } = getOpenAIEnv();
   const client = getClient();
+  const lang = input.language || "en";
+
+  const systemPrompt = lang === "zh"
+    ? "你是一个科研解读专家。用中文写3句话（60-90字）。不要重复论文的摘要或标题。第一句：这项研究会如何具体改变这个人的工作或日常生活（举一个真实场景）。第二句：这个变化大概什么时候会发生，或者已经在发生。第三句：这个人现在可以做的一件具体的事。语言要口语化、接地气，不要学术腔。"
+    : "You explain how frontier research will concretely change someone's life. Write exactly 3 sentences, 50-80 words. Do NOT repeat the paper summary or hook — go deeper. Sentence 1: a specific real-world scenario of how this affects the person's job or daily life. Sentence 2: when this change is likely to happen (or is already happening). Sentence 3: one concrete action the person can take right now. Be specific, practical, conversational — not academic.";
 
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.6,
-    max_tokens: 140,
+    max_tokens: 200,
     messages: [
       {
         role: "system",
-        content:
-          "You explain how frontier research matters to a person. Output exactly two sentences in plain English, 35-55 words total. Sentence 1: why it matters for the person. Sentence 2: one concrete next action. No hype or absolute claims.",
+        content: systemPrompt,
       },
       {
         role: "user",
         content: [
           `Paper title: ${input.title}`,
-          `Paper hook: ${input.hookSummaryEn}`,
           `Paper abstract: ${input.abstract}`,
           `Paper tags: ${input.tags.join(", ")}`,
           `User profile: ${input.personaSummary}`,
