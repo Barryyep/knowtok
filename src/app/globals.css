@@ -58,18 +58,25 @@ a:hover {
   width: 100%;
 }
 
-.card-flip-inner:not(.flipped) .card-face-back {
-  display: none;
-}
-
-.card-flip-inner.flipped .card-face {
-  display: none;
-}
-
 .card-face-back {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform: rotateY(180deg);
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
+}
+
+/* When flipped: hide front, show back in normal flow */
+.card-flip-inner.flipped .card-face {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
+
+.card-flip-inner.flipped .card-face-back {
+  position: relative;
 }
 
 /* --- Swipe direction indicators --- */
