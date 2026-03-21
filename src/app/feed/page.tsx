@@ -208,7 +208,7 @@ function FeedContent() {
     setError(null);
 
     // If we have a cached impact and the language changed, force refresh
-    const shouldRefresh = refresh || (impact && impactLang !== lang);
+    const shouldRefresh = refresh || Boolean(impact && impactLang !== lang);
 
     try {
       const response = await authFetch(`/api/papers/${activePaper.id}/impact`, {
