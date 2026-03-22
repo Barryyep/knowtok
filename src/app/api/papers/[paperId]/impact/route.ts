@@ -134,8 +134,10 @@ export async function POST(
       tokenInput = llm.tokenInput;
       tokenOutput = llm.tokenOutput;
     } catch (llmError) {
-      console.error("[impact] LLM failed:", llmError);
-      impactText = buildFallbackImpact({
+      const errMsg = llmError instanceof Error ? llmError.message : String(llmError);
+      console.error("[impact] LLM failed:", errMsg);
+      // Include error info in fallback so we can debug
+      impactText = `[LLM Error: ${errMsg.slice(0, 100)}] ` + buildFallbackImpact({
         title: String(paper.title),
         tags: (paper.tags as string[] | null) ?? [],
       });
