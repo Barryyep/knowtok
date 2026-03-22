@@ -133,7 +133,8 @@ export async function POST(
       model = llm.model;
       tokenInput = llm.tokenInput;
       tokenOutput = llm.tokenOutput;
-    } catch {
+    } catch (llmError) {
+      console.error("[impact] LLM failed:", llmError);
       impactText = buildFallbackImpact({
         title: String(paper.title),
         tags: (paper.tags as string[] | null) ?? [],
