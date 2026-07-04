@@ -94,7 +94,30 @@ export function categoryFromPrefix(primaryCategory: string): string {
   return "AI & Robots";
 }
 
+/**
+ * Meta-description phrasing that disqualifies a hook: the hook must state
+ * the fact itself, never describe the paper/method.
+ */
+const META_HOOK_PATTERN =
+  /这个新?(方法|技术|模型|模拟器|系统|研究)|一种新(方法|技术|模型)|该研究|这项(研究|技术)|this (new )?(method|model|approach|technique|study|simulator|system)|the (researchers|study|paper)/i;
+
 export async function generatePaperMetadata(input: {
+  title: string;
+  abstract: string;
+  categories: string[];
+}): Promise<PaperMetadata> {
+  const first = await generatePaperMetadataOnce(input);
+  if (!META_HOOK_PATTERN.test(first.hookZh) && !META_HOOK_PATTERN.test(first.hook)) {
+    return first;
+  }
+  // One retry: small models occasionally slip back into describing the paper.
+  const second = await generatePaperMetadataOnce(input);
+  const secondClean =
+    !META_HOOK_PATTERN.test(second.hookZh) && !META_HOOK_PATTERN.test(second.hook);
+  return secondClean ? second : first;
+}
+
+async function generatePaperMetadataOnce(input: {
   title: string;
   abstract: string;
   categories: string[];
@@ -116,11 +139,11 @@ export async function generatePaperMetadata(input: {
         role: "user",
         content: [
           "Given this research paper, generate six things:",
-          '1) "hook": ONE surprise you could blurt out mid-conversation to make someone go "wait, really?". Plain spoken English, ≤120 characters. Lead with the single most startling concrete thing — a number, a sharp before/after contrast, or what is now at stake. Talk like a person at a dinner table, not a press release. NO jargon, NO hedging ("may", "could suggest"), NO template openers: never start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered", "A study shows". Just say the striking fact.',
+          '1) "hook": ONE surprise you could blurt out mid-conversation to make someone go "wait, really?". Plain spoken English, ≤120 characters. State the FACT ITSELF — what happens in the world — never describe the paper: any phrasing like "this method/model/simulator/approach/study/technique can..." is FORBIDDEN. Must contain at least one concrete detail (a number, a named thing, a sharp before/after). Talk like a person at a dinner table. NO jargon, NO hedging, NO template openers ("Did you know", "Imagine", "What if", "New research", "Scientists found").',
           '2) "tags": 3-5 short English tags (1-3 words each).',
           '3) "humanCategory": classify into exactly ONE of: "AI & Robots", "Your Health", "Your Money", "Your Food", "Climate". If none fit, default to "AI & Robots".',
           '4) "plainSummary": explain this paper so a curious 14-year-old could understand it. No jargon, use concrete examples. Max 3 sentences.',
-          '5) "hookZh": 用中文写一句能在聊天里直接讲出口、让人"啊？真的假的"的惊讶点。不超过50个汉字，口语、通俗、别用术语、别用"可能/或许"这类含糊词。直接抛出最令人意外的具体内容——一个数字、一个前后反差、或者利害关系。绝对不要用套路开头：不要以"你知道吗""想象""如果我告诉你""最新研究""科学家发现""一项研究表明"之类开头。直接说出那个惊人的事实本身。',
+          '5) "hookZh": 用中文写一句能在聊天里直接讲出口、让人"啊？真的假的"的惊讶点。不超过50个汉字，口语通俗。必须说"世界上发生了什么"这个事实本身，严禁描述论文——凡是"这个方法/这项技术/这个模型/新方法/该研究 能……"式的句子一律不合格。必须包含至少一个具体细节（数字、具体对象、鲜明的前后反差）。禁用含糊词（可能/或许）和一切套路开头（你知道吗/想象/最新研究/科学家发现）。',
           '6) "plainSummaryZh": 用中文向一个好奇的14岁少年解释这篇论文。不要用专业术语，用具体的例子。最多3句话。',
           "",
           "Examples of the hook style:",
@@ -128,6 +151,8 @@ export async function generatePaperMetadata(input: {
           'BAD hook: "New research investigates the environmental resource footprint of large language model inference." — jargon, template opener, no surprise.',
           'GOOD hookZh: "训练一个大模型排的碳，相当于五辆车从出厂到报废的全部排放。" — 有具体数字和反差，能直接讲给人听。',
           'BAD hookZh: "最新研究探讨了大型语言模型在推理过程中的资源消耗问题。" — 套路开头、术语堆砌、没有惊讶点。',
+          'BAD hookZh: "这个新方法可以把任何视频变成4D体验，制作沉浸式内容更简单了。" — 在描述论文（"这个新方法"），不是在说事实；没有让人惊讶的具体点。',
+          'GOOD hookZh: "一段普通手机视频，现在能直接变成可以绕着走的立体场景。" — 说的是发生了什么，画面感强，讲出来别人能接话。',
           "",
           `Title: ${input.title}`,
           `Abstract: ${input.abstract}`,
