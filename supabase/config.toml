@@ -6,3 +6,21 @@ enable_signup = true
 [auth.email]
 enable_signup = true
 enable_confirmations = false
+
+# Sign in with Apple — native id-token flow from the iOS app.
+# client_id is the app's bundle id (the "authorized client id"); the native
+# flow needs no OAuth secret because Apple signs the id-token for our app.
+[auth.external.apple]
+enabled = true
+client_id = "com.knowtok.daily"
+
+# Sign in with Google — native id-token flow from Android + iOS.
+# skip_nonce_check is required because the native SDKs don't round-trip a nonce.
+# client_id/secret come from env at `supabase config push` time; until the
+# founder creates the OAuth clients (see mobile/README.md → 第三方登录) these
+# env vars are unset and this block must stay commented out or push will fail.
+# [auth.external.google]
+# enabled = true
+# skip_nonce_check = true
+# client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+# secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"

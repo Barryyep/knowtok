@@ -84,6 +84,34 @@ mobile/
 | `EXPO_PUBLIC_GOODVISION_API_KEY` | goodvision key;公开发布前必须挪到服务端 |
 | `EXPO_PUBLIC_GOODVISION_MODEL` | 默认 `claude-sonnet-4-6`(无 fable-5) |
 
+## 第三方登录(Sign in with Apple / Google)
+
+登录页除了邮箱密码,还提供 Apple(仅 iOS)和 Google(iOS + Android)一键登录,走 Supabase 原生 id-token 流程(`supabase.auth.signInWithIdToken`)。原生模块不能跑 Expo Go,需要 dev build。
+
+**Apple —— 已可用,无需额外配置。**
+- `app.json` 已加 `ios.usesAppleSignIn: true` + `expo-apple-authentication` 插件;`supabase config push` 已把 `[auth.external.apple]` 打开,`client_id = "com.knowtok.daily"`(即 bundle id,原生流程不需要 secret)。
+- 真机构建需要在 Apple Developer 后台给这个 App ID 勾上 **Sign In with Apple** capability(EAS/Xcode 构建时会随 entitlements 一起要求)。
+
+**Google —— 代码已就绪,但需要创始人手动创建 OAuth 客户端后才会显示按钮。**
+
+按钮的显示条件:`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` 存在才渲染 Google 按钮;不填就自动隐藏,登录页只剩邮箱 + Apple。创始人需要做:
+
+1. **Google Cloud Console → APIs & Services → Credentials**,创建 OAuth 2.0 Client IDs:
+   - 一个 **Web application** 类型 → 得到 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`(Supabase 用它来校验 id-token,**必填**)。
+   - 一个 **iOS** 类型,bundle id 填 `com.knowtok.daily` → 得到 `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`。
+   - 一个 **Android** 类型,package `com.knowtok.daily` + 你的签名 SHA-1(原生库自动用它,无需写进 env)。
+2. 把两个 id 填进 `mobile/.env`:
+   ```
+   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=xxxx.apps.googleusercontent.com
+   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=xxxx.apps.googleusercontent.com
+   ```
+3. **在 Supabase 打开 Google provider**。两种方式二选一:
+   - **Dashboard(最简单)**:Authentication → Providers → Google → 打开 → 填 Web client id 作为 "Authorized Client IDs"、勾上 "Skip nonce check"(原生 SDK 不回传 nonce)。
+   - **CLI**:在 `supabase/config.toml` 里取消注释 `[auth.external.google]` 块,并在环境里提供 `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` / `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` 后再 `supabase config push`(否则 env 未设置会 push 失败——这也是当前默认注释掉它的原因)。
+4. 重新 `npx expo run:ios` / `run:android` 生成 dev build,Google 按钮就会出现。
+
+> Apple 已经 push 生效,Google 目前是「代码路径完整、按钮隐藏」的状态,等上面 4 步做完自动亮起。
+
 ## 已知限制 / 下一步
 
 - iOS 组件跨天刷新依赖打开 app(V2:background task / 推送);安卓组件后台自刷新。

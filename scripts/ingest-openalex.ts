@@ -66,9 +66,12 @@ const TARGET_PER_CATEGORY = (() => {
   return 28; // a little headroom above the ≥25 target
 })();
 
-// How many OA works to pull per category before filtering/LLM. High-signal
-// ordering (most-cited first) surfaces the strongest recent work; we then
-// keep the first TARGET that reconstruct into a usable abstract.
+// How many OA works to pull per category before filtering/LLM. We order
+// newest-first (publication_date desc) so that each daily run surfaces works
+// that did NOT exist yesterday — sorting by citations would keep returning the
+// same evergreen top-cited papers, which alreadyExists() would just skip, so
+// daily runs would stop bringing anything new. We then keep the first TARGET
+// that reconstruct into a usable abstract.
 const FETCH_PER_CATEGORY = 90;
 
 type OpenAlexWork = {
@@ -129,8 +132,10 @@ async function fetchWorks(fieldIds: number[]): Promise<OpenAlexWork[]> {
   ].join(",");
   const params = new URLSearchParams({
     filter,
-    // Most-cited-first among recent OA works = high-signal selection.
-    sort: "cited_by_count:desc",
+    // Newest-first so daily runs ingest works published since the last run
+    // (idempotent: alreadyExists() + upsert-on-conflict skip anything already
+    // stored). cited_by_count desc would re-surface the same evergreen papers.
+    sort: "publication_date:desc",
     per_page: String(FETCH_PER_CATEGORY),
     select:
       "id,doi,title,display_name,publication_date,updated_date,cited_by_count,language,abstract_inverted_index,primary_location,primary_topic",

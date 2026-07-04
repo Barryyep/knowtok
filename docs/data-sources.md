@@ -77,3 +77,29 @@ This also gives a clean upsell line: free = "interesting fact near your world"; 
 **Phase 3 (later, on signal):** GDELT freshness lane for "in the news for your profession" (zh-capable); niche enrichers where engagement warrants — CourtListener (律师, US law), USDA FoodData Central (厨师); OpenAlex bulk snapshot for backfill if the live API pagination gets slow.
 
 **Explicit non-goals:** Semantic Scholar, CORE, DOAJ, NASA ADS, NewsAPI — superseded or too narrow/throttled for our shape of product.
+
+## 3. Daily ingest pipeline (GitHub Actions)
+
+`/.github/workflows/daily-ingest.yml` runs the content refresh automatically.
+
+- **Schedule:** cron `0 22 * * *` → **22:00 UTC = 06:00 Asia/Shanghai**, so fresh facts are in the DB before people wake up in China. Also runnable on demand via **workflow_dispatch** (Actions tab → "Daily data ingest" → Run workflow).
+- **Steps:** `npm ci` → `npm run ingest:papers -- --mode daily` (arXiv) → `npx tsx scripts/ingest-openalex.ts` (OpenAlex: health / money / food / climate).
+- **Idempotency:** both scripts upsert on the papers unique key (`arxiv_id_base` / `(source, source_id)`), so re-runs never duplicate. OpenAlex now sorts **newest-first** (`publication_date:desc`) instead of by citations, so each daily run brings works that didn't exist yesterday rather than re-scanning the same evergreen top-cited papers.
+
+### GitHub secrets the founder must add
+
+Repo → **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Required | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | The **new** Supabase project URL (`https://ohtgyzviwfnnhdoepjwp.supabase.co`). |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Service-role key — writes to `papers`, bypasses RLS. Keep secret. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Required because `createServiceRoleClient()` also reads the anon env; the run throws without it. |
+| `OPENAI_API_KEY` | ✅ | Used by `generatePaperMetadata` for hooks/summaries. |
+| `OPENAI_MODEL_LOW_COST` | optional | Defaults to `gpt-4o-mini` if unset. |
+
+> The two **critical** ones to not forget are `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY`; the two `NEXT_PUBLIC_*` values are the same public strings already in the app's `.env`.
+
+### ⚠️ Vercel env update (deployed web app)
+
+The deployed web app still points at the **dead old Supabase project**. Before/along with turning this pipeline on, update the Vercel project env (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) to the new project `ohtgyzviwfnnhdoepjwp` and redeploy — otherwise the website reads/writes a different (dead) database than this ingest writes to.
