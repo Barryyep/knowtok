@@ -41,9 +41,13 @@ export function FactWidget({ fact, language }: Props) {
           justifyContent: "space-between",
         }}
       >
+        {/* NOTE: react-native-android-widget's renderer cannot handle React
+            fragments (<>…</> throws "Symbol(react.fragment) is not a
+            function") — children must be an array or direct elements. */}
         {fact ? (
-          <>
+          [
             <FlexWidget
+              key="top"
               style={{
                 width: "match_parent",
                 flexDirection: "row",
@@ -55,18 +59,20 @@ export function FactWidget({ fact, language }: Props) {
                 style={{ fontSize: 13, color: colors.persimmon, fontWeight: "bold" }}
               />
               <TextWidget text={fact.date} style={{ fontSize: 11, color: colors.marigold }} />
-            </FlexWidget>
+            </FlexWidget>,
             <TextWidget
+              key="fact"
               text={fact.fact}
               maxLines={4}
               style={{ fontSize: 15, color: colors.paraInk, marginTop: 6 }}
-            />
+            />,
             <TextWidget
+              key="source"
               text={sourceLine}
               maxLines={1}
               style={{ fontSize: 11, color: colors.postmark, marginTop: 6 }}
-            />
-          </>
+            />,
+          ]
         ) : (
           <TextWidget text={empty} style={{ fontSize: 14, color: colors.paraSoft }} />
         )}
