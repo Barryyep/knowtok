@@ -88,6 +88,13 @@ final class PhoneSync: NSObject, WCSessionDelegate, ObservableObject {
 struct ContentView: View {
   @ObservedObject var sync: PhoneSync
 
+  private func sourceStamp(_ source: FactSource?) -> String? {
+    guard let source else { return nil }
+    if let label = source.label, !label.isEmpty { return "⌖ \(label) ✓" }
+    if let arxiv = source.arxivId, !arxiv.isEmpty { return "⌖ arXiv:\(arxiv) ✓" }
+    return nil
+  }
+
   var body: some View {
     ScrollView {
       if let fact = sync.fact {
@@ -105,15 +112,15 @@ struct ContentView: View {
           Text(fact.fact)
             .font(.system(.body, design: .serif))
             .foregroundStyle(paraInk)
-          if let source = fact.source, let arxiv = source.arxivId, !arxiv.isEmpty {
-            Text("⌖ arXiv:\(arxiv) ✓")
+          if let stamp = sourceStamp(fact.source) {
+            Text(stamp)
               .font(.system(.caption2, design: .monospaced))
               .foregroundStyle(postmark)
           }
         }
         .padding(10)
         .background(paper)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
       } else {
         VStack(spacing: 8) {
           Text("在 iPhone 上打开 KnowTok\n同步今日信笺")

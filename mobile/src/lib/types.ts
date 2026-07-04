@@ -63,6 +63,7 @@ export interface DailyFact {
 /** Row shape returned from the papers table (fields we select). */
 export interface PaperRow {
   id: string;
+  source: string | null;
   arxiv_id_base: string;
   title: string;
   hook_summary_en: string;

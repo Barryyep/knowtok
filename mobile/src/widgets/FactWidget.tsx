@@ -2,20 +2,12 @@ import { FlexWidget, TextWidget } from "react-native-android-widget";
 
 import type { AppLanguage, DailyFact } from "../lib/types";
 import { dispatchNumber } from "../components/slipUtils";
+import { colors } from "../theme";
 
 interface Props {
   fact: DailyFact | null;
   language: AppLanguage;
 }
-
-// The Daily Dispatch — the widget IS a cream slip now.
-const PAPER = "#F3E9D6";
-const PAPER_EDGE = "#E4D6BC";
-const PARA_INK = "#241E15";
-const PARA_SOFT = "#6B5E48";
-const PERSIMMON = "#EC4A24";
-const MARIGOLD = "#F2A63B";
-const POSTMARK = "#1C5C63";
 
 /**
  * Android home-screen widget. Rendered headlessly by
@@ -35,7 +27,7 @@ export function FactWidget({ fact, language }: Props) {
       style={{
         height: "match_parent",
         width: "match_parent",
-        backgroundColor: PAPER,
+        backgroundColor: colors.paper0,
         borderRadius: 22,
         flexDirection: "column",
       }}
@@ -60,27 +52,27 @@ export function FactWidget({ fact, language }: Props) {
             >
               <TextWidget
                 text={`№ ${dispatchNumber(fact.source.factId)}`}
-                style={{ fontSize: 13, color: PERSIMMON, fontWeight: "bold" }}
+                style={{ fontSize: 13, color: colors.persimmon, fontWeight: "bold" }}
               />
-              <TextWidget text={fact.date} style={{ fontSize: 11, color: MARIGOLD }} />
+              <TextWidget text={fact.date} style={{ fontSize: 11, color: colors.marigold }} />
             </FlexWidget>
             <TextWidget
               text={fact.fact}
               maxLines={4}
-              style={{ fontSize: 15, color: PARA_INK, marginTop: 6 }}
+              style={{ fontSize: 15, color: colors.paraInk, marginTop: 6 }}
             />
             <TextWidget
               text={sourceLine}
               maxLines={1}
-              style={{ fontSize: 11, color: POSTMARK, marginTop: 6 }}
+              style={{ fontSize: 11, color: colors.postmark, marginTop: 6 }}
             />
           </>
         ) : (
-          <TextWidget text={empty} style={{ fontSize: 14, color: PARA_SOFT }} />
+          <TextWidget text={empty} style={{ fontSize: 14, color: colors.paraSoft }} />
         )}
       </FlexWidget>
       {/* fold edge */}
-      <FlexWidget style={{ height: 4, width: "match_parent", backgroundColor: PAPER_EDGE }} />
+      <FlexWidget style={{ height: 4, width: "match_parent", backgroundColor: colors.paperEdge }} />
     </FlexWidget>
   );
 }

@@ -28,12 +28,14 @@ export function buildWhyCarePrompt(profile: Profile, fact: DailyFact): WhyCarePr
     profileLines.length > 0 ? profileLines.join("\n") : "(no profile)",
     "",
     "Paper:",
-    `Title: ${fact.source.title}`,
+    fact.source.title ? `Title: ${fact.source.title}` : null,
     `Gist: ${fact.fact}`,
     `Category: ${fact.topic}`,
     "",
     isZh ? "写出那一句话(中文):" : "Write the sentence (English):",
-  ].join("\n");
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 
   return { system, user };
 }

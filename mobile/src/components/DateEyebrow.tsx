@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2,
   },
-  dots: { flexDirection: "row", alignItems: "center", gap: 5 },
+  dots: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   dot: {
     width: 6,
     height: 6,

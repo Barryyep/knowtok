@@ -12,7 +12,7 @@ import {
 import { SpaceMono_400Regular, SpaceMono_700Bold } from "@expo-google-fonts/space-mono";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -45,7 +45,7 @@ const navTheme = {
 type TabIcon = keyof typeof Ionicons.glyphMap;
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Fraunces_500Medium,
     Fraunces_600SemiBold,
     InstrumentSans_400Regular,
@@ -99,8 +99,35 @@ export default function App() {
   const language = profile?.language ?? systemLanguage();
   const strings = t(language);
 
+  // Stable per-screen renderers so the tab navigator doesn't see a new
+  // function identity every render (would remount the screens). Keyed on
+  // profile — the only value they close over.
+  const renderToday = useCallback(
+    () => (profile ? <TodayScreen profile={profile} /> : null),
+    [profile],
+  );
+  const renderHistory = useCallback(
+    () => (profile ? <HistoryScreen profile={profile} /> : null),
+    [profile],
+  );
+  const renderSettings = useCallback(
+    () =>
+      profile ? (
+        <SettingsScreen profile={profile} onEditProfile={() => setEditingProfile(true)} />
+      ) : null,
+    [profile],
+  );
+
+  // If a font fails to load, don't hang on the splash forever — log and render
+  // with system fonts (treat as loaded).
+  useEffect(() => {
+    if (fontError) {
+      console.error("Font loading failed — falling back to system fonts:", fontError);
+    }
+  }, [fontError]);
+
   // Plain dark desk while the fonts (and session) settle.
-  if (!fontsLoaded || booting) {
+  if ((!fontsLoaded && !fontError) || booting) {
     return (
       <View style={styles.splash}>
         <ActivityIndicator color={colors.persimmon} size="large" />
@@ -147,7 +174,7 @@ export default function App() {
               ),
             }}
           >
-            {() => <TodayScreen profile={profile} />}
+            {renderToday}
           </Tab.Screen>
           <Tab.Screen
             name="history"
@@ -158,7 +185,7 @@ export default function App() {
               ),
             }}
           >
-            {() => <HistoryScreen profile={profile} />}
+            {renderHistory}
           </Tab.Screen>
           <Tab.Screen
             name="settings"
@@ -169,9 +196,7 @@ export default function App() {
               ),
             }}
           >
-            {() => (
-              <SettingsScreen profile={profile} onEditProfile={() => setEditingProfile(true)} />
-            )}
+            {renderSettings}
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>

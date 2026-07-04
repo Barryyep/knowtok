@@ -136,8 +136,8 @@ export async function POST(
     } catch (llmError) {
       const errMsg = llmError instanceof Error ? llmError.message : String(llmError);
       console.error("[impact] LLM failed:", errMsg);
-      // Include error info in fallback so we can debug
-      impactText = `[LLM Error: ${errMsg.slice(0, 100)}] ` + buildFallbackImpact({
+      // Keep the user-visible/persisted text clean; the error is logged above.
+      impactText = buildFallbackImpact({
         title: String(paper.title),
         tags: (paper.tags as string[] | null) ?? [],
       });

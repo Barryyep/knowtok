@@ -285,6 +285,12 @@ export async function generatePersonalizedHook(input: {
 
   if (!referencesJob) {
     // Try once more with explicit prompt
+    const retrySystemPrompt = lang === "zh"
+      ? `你必须在回答中提到读者的职业"${input.jobTitle}"。用中文写一句话（最多25个字），解释这篇论文为什么对他们有影响。`
+      : `You MUST mention the reader's job "${input.jobTitle}" in your response. Write ONE sentence (max 25 words) explaining why this paper matters to them.`;
+    const retryUserPrompt = lang === "zh"
+      ? `论文摘要：${input.plainSummary}`
+      : `Paper: ${input.plainSummary}`;
     const retry = await client.chat.completions.create({
       model,
       temperature: 0.8,
@@ -292,11 +298,11 @@ export async function generatePersonalizedHook(input: {
       messages: [
         {
           role: "system",
-          content: `You MUST mention the reader's job "${input.jobTitle}" in your response. Write ONE sentence (max 25 words) explaining why this paper matters to them.`,
+          content: retrySystemPrompt,
         },
         {
           role: "user",
-          content: `Paper: ${input.plainSummary}`,
+          content: retryUserPrompt,
         },
       ],
     });

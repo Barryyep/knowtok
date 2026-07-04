@@ -68,7 +68,7 @@ export function TodayScreen({ profile }: Props) {
         // The personalized line arrives async; UI never blocks on the LLM.
         const withWhy = await generateWhyCare(profile, next);
         setFact((current) =>
-          current?.source.paperId === withWhy.source.paperId ? withWhy : current,
+          current?.source.factId === withWhy.source.factId ? withWhy : current,
         );
         await syncAndroidWidget(withWhy, profile);
       } catch (err) {
@@ -186,10 +186,14 @@ export function TodayScreen({ profile }: Props) {
                 {strings.refresh}
               </Text>
             </Pressable>
+            {/* Disabled while the whyCare line is still pending, so the share
+                image can't capture the placeholder text. */}
             <Pressable
-              style={styles.shareButton}
+              style={[styles.shareButton, fact.whyCare === "" && styles.shareButtonDisabled]}
               onPress={() => void onShare()}
+              disabled={fact.whyCare === ""}
               accessibilityLabel={strings.share}
+              accessibilityState={{ disabled: fact.whyCare === "" }}
               hitSlop={8}
             >
               <Ionicons name="share-outline" color={colors.marigold} size={20} />
@@ -260,4 +264,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  shareButtonDisabled: { opacity: 0.35 },
 });

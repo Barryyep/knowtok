@@ -107,7 +107,10 @@ export function FactCard({ fact, language, whyCarePending = false, compact = fal
 
       <View style={styles.stampRow}>
         {hasUrl ? (
-          <Pressable onPress={() => void Linking.openURL(fact.source.url!)} hitSlop={6}>
+          <Pressable
+            onPress={() => void Linking.openURL(fact.source.url!)}
+            hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
+          >
             {Stamp}
           </Pressable>
         ) : (
@@ -161,7 +164,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.persimmon,
     borderRadius: radius.stamp,
-    paddingHorizontal: 5,
+    paddingHorizontal: spacing.xs,
     paddingVertical: 1,
   },
   sealText: {
@@ -177,7 +180,6 @@ const styles = StyleSheet.create({
     color: colors.paraSoft,
     flexShrink: 0,
   },
-  emoji: { fontSize: 26, marginTop: spacing.md, marginBottom: spacing.xs },
   factText: {
     color: colors.paraInk,
     fontSize: 23,

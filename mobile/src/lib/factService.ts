@@ -87,6 +87,13 @@ async function buildGeneralFact(
   cached: DailyFact | null,
   forceRefresh: boolean,
 ): Promise<DailyFact> {
+  // Without a key, generateGeneralFact would throw deep inside generateText.
+  // Keep the cached fact instead of surfacing that failure to the UI.
+  if (!resolveApiKey(profile) && cached) {
+    console.warn("general track: no goodvision key — keeping cached fact");
+    return cached;
+  }
+
   const recentFacts = history.map((f) => f.topic).filter(Boolean);
   if (forceRefresh && cached) {
     recentFacts.unshift(cached.topic, cached.fact);

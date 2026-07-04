@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getIngestSecret } from "@/lib/env";
+import { verifyIngestSecret } from "@/lib/ingest-auth";
 import { runIngestPipeline } from "@/lib/ingest";
 import { badRequest, jsonError } from "@/lib/http";
 
@@ -13,8 +13,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const incomingSecret = request.headers.get("x-ingest-secret");
-    if (!incomingSecret || incomingSecret !== getIngestSecret()) {
+    if (!verifyIngestSecret(request.headers.get("x-ingest-secret"))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

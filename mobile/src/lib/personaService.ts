@@ -8,9 +8,13 @@ import type { AppLanguage, Profile } from "./types";
  * we need (job_title, interests, language).
  */
 export async function fetchRemotePersona(): Promise<Profile | null> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) return null;
   const { data, error } = await supabase
     .from("user_personas")
     .select("job_title, interests, language, manual_notes")
+    .eq("user_id", uid)
     .maybeSingle();
   if (error || !data) return null;
   return {

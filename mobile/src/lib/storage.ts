@@ -47,10 +47,14 @@ function normalizeStoredFact(fact: DailyFact | null | undefined): DailyFact | nu
   const kind: FactKind =
     source.kind ?? (source.paperId || source.arxivId ? "paper" : "general");
 
-  return {
-    ...fact,
-    source: { ...source, factId, kind, label: source.label ?? "" } as FactSource,
-  };
+  // A general entry must not carry paper-only ids — a legacy row that kept a
+  // stray paperId/arxivId would otherwise be misclassified back as "paper".
+  const rebuilt: FactSource =
+    kind === "general"
+      ? { ...source, factId, kind, label: source.label ?? "", paperId: undefined, arxivId: undefined }
+      : ({ ...source, factId, kind, label: source.label ?? "" } as FactSource);
+
+  return { ...fact, source: rebuilt };
 }
 
 export async function loadStoredFact(): Promise<DailyFact | null> {
@@ -107,12 +111,11 @@ export async function saveFact(fact: DailyFact): Promise<void> {
 
 /** Update the whyCare line on an already-saved fact (async arrival). */
 export async function updateStoredWhyCare(fact: DailyFact): Promise<void> {
-  const current = await loadStoredFact();
+  const [current, history] = await Promise.all([loadStoredFact(), loadFactHistory()]);
   if (current && current.source.factId === fact.source.factId) {
     await AsyncStorage.setItem(FACT_KEY, JSON.stringify(fact));
     syncNativeSurfaces(fact);
   }
-  const history = await loadFactHistory();
   const nextHistory = history.map((f) =>
     f.source.factId === fact.source.factId ? fact : f,
   );

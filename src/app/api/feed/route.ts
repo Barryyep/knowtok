@@ -265,6 +265,7 @@ export async function GET(request: Request) {
                 plainSummary: paper.plainSummary,
                 jobTitle: jobTitle!,
                 location: userLocation,
+                language: userLanguage,
               });
               await serviceClient
                 .from("personalized_hooks")

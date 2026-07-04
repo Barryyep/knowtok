@@ -93,6 +93,10 @@ export async function generateText({
     throw new GoodvisionError(`goodvision returned non-JSON body: ${bodyText.slice(0, 300)}`);
   }
 
+  if (parsed.error) {
+    throw new GoodvisionError(parsed.error.message ?? "upstream API error");
+  }
+
   const text = parsed.content
     ?.filter((block) => block.type === "text" && typeof block.text === "string")
     .map((block) => block.text)

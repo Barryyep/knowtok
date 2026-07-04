@@ -1,15 +1,12 @@
 import { ENV_API_KEY } from "./config";
 import { generateText } from "./goodvision";
+import { extractJson, hashStringToNumber } from "./jsonUtils";
 import type { AppLanguage, DailyFact, Profile } from "./types";
 import { fetchWikiGrounding, type WikiGrounding } from "./wikipedia";
 
 /** Deterministic base36 hash so a general fact has a stable dedup id. */
 function hashString(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (h * 31 + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h).toString(36);
+  return hashStringToNumber(s).toString(36);
 }
 
 interface GeneralFactJson {
@@ -17,17 +14,6 @@ interface GeneralFactJson {
   topic?: string;
   emoji?: string;
   whyCare?: string;
-}
-
-function extractJson<T>(raw: string): T | null {
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1 || end < start) return null;
-  try {
-    return JSON.parse(raw.slice(start, end + 1)) as T;
-  } catch {
-    return null;
-  }
 }
 
 function buildSystem(isZh: boolean): string {

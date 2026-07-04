@@ -1,4 +1,5 @@
 import { categoryEmoji, categoryLabel } from "./categories";
+import { hashStringToNumber } from "./jsonUtils";
 import { supabase } from "./supabase";
 import type { AppLanguage, DailyFact, PaperRow } from "./types";
 
@@ -40,15 +41,6 @@ export async function fetchCandidatePapers(
   return (data ?? []) as unknown as CandidatePaper[];
 }
 
-/** Deterministic small hash so the daily pick is stable within a day. */
-function hashString(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (h * 31 + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
 /**
  * Pick today's paper: stable for (user, date) so reopening the app shows
  * the same fact, excluding papers already shown recently ("换一条" adds
@@ -63,7 +55,7 @@ export function pickDailyPaper(
   const pool = papers.filter((p) => !excludeIds.includes(p.id));
   const candidates = pool.length > 0 ? pool : papers;
   if (candidates.length === 0) return null;
-  return candidates[hashString(`${userId}:${dateStr}`) % candidates.length];
+  return candidates[hashStringToNumber(`${userId}:${dateStr}`) % candidates.length];
 }
 
 /** Source-aware citation line: arXiv id for arXiv, journal/venue for OpenAlex. */
@@ -80,6 +72,9 @@ export function paperToFact(paper: CandidatePaper, language: AppLanguage, dateSt
   const hook = language === "zh" ? paper.hook_summary_zh : paper.hook_summary_en;
   const summary = language === "zh" ? paper.plain_summary_zh : paper.plain_summary_en;
   const publishedDate = (paper.published_at ?? "").slice(0, 10);
+  // Only arXiv rows carry a real arXiv id; OpenAlex reuses arxiv_id_base as a
+  // W-id, so it must NOT be surfaced with an "arXiv:" label.
+  const isArxiv = paper.source == null || paper.source.toLowerCase() === "arxiv";
   return {
     date: dateStr,
     emoji: categoryEmoji(paper.human_category),
@@ -90,7 +85,7 @@ export function paperToFact(paper: CandidatePaper, language: AppLanguage, dateSt
       kind: "paper",
       factId: paper.id,
       paperId: paper.id,
-      arxivId: paper.arxiv_id_base,
+      ...(isArxiv ? { arxivId: paper.arxiv_id_base } : {}),
       title: paper.title,
       url: paper.abs_url,
       publishedAt: paper.published_at,

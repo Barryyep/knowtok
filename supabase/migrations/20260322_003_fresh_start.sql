@@ -1,3 +1,4 @@
+-- DESTRUCTIVE: full drop-and-recreate. Never run against an environment with data you care about without a pg_dump backup. Applied to ohtgyzviwfnnhdoepjwp as version 20260322.
 -- ============================================================
 -- FRESH START MIGRATION
 -- Drops old tables and creates the full schema the app needs.

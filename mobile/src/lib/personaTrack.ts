@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ENV_API_KEY } from "./config";
 import { generateText } from "./goodvision";
+import { extractJson } from "./jsonUtils";
 import type { FactKind, PersonaTrack, Profile } from "./types";
 
 const CACHE_PREFIX = "knowtok:personaTrack:v1:";
@@ -29,18 +30,6 @@ export function personaHash(profile: Profile): string {
     h = (h * 31 + basis.charCodeAt(i)) | 0;
   }
   return Math.abs(h).toString(36);
-}
-
-/** Pull the first balanced-looking JSON object out of a model reply. */
-function extractJson<T>(raw: string): T | null {
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1 || end < start) return null;
-  try {
-    return JSON.parse(raw.slice(start, end + 1)) as T;
-  } catch {
-    return null;
-  }
 }
 
 function coerceTrack(value: unknown): FactKind | null {
@@ -82,7 +71,12 @@ function buildUserPrompt(profile: Profile): string {
   ].join("\n");
 }
 
-async function classify(profile: Profile): Promise<PersonaTrack> {
+/**
+ * Classify a persona into a track. Returns null when both LLM attempts fail —
+ * the caller substitutes a safe default WITHOUT caching it, so the next call
+ * re-attempts rather than serving a wrong fallback forever.
+ */
+async function classify(profile: Profile): Promise<PersonaTrack | null> {
   const hash = personaHash(profile);
   const apiKey = profile.apiKey?.trim() || ENV_API_KEY;
 
@@ -116,8 +110,8 @@ async function classify(profile: Profile): Promise<PersonaTrack> {
     console.warn("persona track classify failed (attempt 2):", err);
   }
 
-  // Safe default: keep everyone on the paper track with no category filter.
-  return { personaHash: hash, track: "paper", categories: [] };
+  // Classification failed — signal the caller so it does NOT persist a guess.
+  return null;
 }
 
 /**
@@ -141,6 +135,12 @@ export async function getPersonaTrack(profile: Profile): Promise<PersonaTrack> {
   }
 
   const resolved = await classify(profile);
-  await AsyncStorage.setItem(cacheKey, JSON.stringify(resolved));
-  return resolved;
+  if (resolved) {
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(resolved));
+    return resolved;
+  }
+
+  // Classification failed: serve a safe default (paper track, no filter) but do
+  // NOT cache it, so the next call re-attempts once the LLM is reachable again.
+  return { personaHash: hash, track: "paper", categories: [] };
 }

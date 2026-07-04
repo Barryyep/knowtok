@@ -9,7 +9,7 @@ module.exports = {
     "com.apple.security.application-groups": ["group.com.knowtok.daily"],
   },
   colors: {
-    widgetBackground: { color: "#0B0F1A", darkColor: "#0B0F1A" },
-    widgetAccent: { color: "#7C9EFF", darkColor: "#7C9EFF" },
+    widgetBackground: { color: "#14110D", darkColor: "#14110D" },
+    widgetAccent: { color: "#EC4A24", darkColor: "#EC4A24" },
   },
 };

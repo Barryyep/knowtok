@@ -152,14 +152,18 @@ async function fetchWorks(fieldIds: number[]): Promise<OpenAlexWork[]> {
   return data.results ?? [];
 }
 
-async function alreadyExists(sourceId: string): Promise<boolean> {
+/**
+ * One bulk lookup per category (instead of a per-work SELECT): returns the set
+ * of source_ids already stored for these OpenAlex works.
+ */
+async function fetchExistingSourceIds(sourceIds: string[]): Promise<Set<string>> {
+  if (sourceIds.length === 0) return new Set();
   const { data } = await supabase
     .from("papers")
-    .select("id")
+    .select("source_id")
     .eq("source", "openalex")
-    .eq("source_id", sourceId)
-    .maybeSingle();
-  return Boolean(data);
+    .in("source_id", sourceIds);
+  return new Set((data ?? []).map((row) => row.source_id as string));
 }
 
 async function main() {
@@ -179,6 +183,8 @@ async function main() {
     }
     console.log(`[openalex] fetched ${works.length} candidate works`);
 
+    const existingIds = await fetchExistingSourceIds(works.map((w) => shortId(w.id)));
+
     let inserted = 0;
     for (const work of works) {
       if (inserted >= TARGET_PER_CATEGORY) break;
@@ -192,7 +198,7 @@ async function main() {
       const landing = work.doi || work.primary_location?.landing_page_url || work.id;
 
       try {
-        if (await alreadyExists(sid)) continue;
+        if (existingIds.has(sid)) continue;
 
         const meta = await generatePaperMetadata({
           title,

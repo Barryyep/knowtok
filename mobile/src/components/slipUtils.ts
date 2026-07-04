@@ -26,8 +26,6 @@ export function formatDispatch(factId: string): string {
   return `№ ${dispatchNumber(factId)}`;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /** Local YYYY-MM-DD for a Date (matches how facts store their date). */
 function localDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -44,7 +42,11 @@ export function streakCount(history: DailyFact[]): number {
   const window = new Set<string>();
   const now = new Date();
   for (let i = 0; i < 7; i += 1) {
-    window.add(localDateKey(new Date(now.getTime() - i * DAY_MS)));
+    // Calendar-aware: step back i whole days, immune to DST offset shifts that
+    // a fixed 86400000-ms subtraction would smear across a date boundary.
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    window.add(localDateKey(d));
   }
   const hit = new Set<string>();
   for (const f of history) {

@@ -24,6 +24,16 @@ func dispatchNumber(_ id: String) -> Int {
   return 1000 + Int(h % 9000)
 }
 
+/// Today's local date as yyyy-MM-dd (Calendar.current), to match how the app
+/// stores fact.date. Used to detect a stale (yesterday's) fact on the widget.
+func todayLocalDateString() -> String {
+  let formatter = DateFormatter()
+  formatter.calendar = Calendar.current
+  formatter.locale = Locale(identifier: "en_US_POSIX")
+  formatter.dateFormat = "yyyy-MM-dd"
+  return formatter.string(from: Date())
+}
+
 // Mirrors the DailyFact shape written by the React Native app.
 struct FactSource: Codable {
   var kind: String?
@@ -100,8 +110,8 @@ struct FactWidgetView: View {
 
   private func stampText(_ source: FactSource?) -> String? {
     guard let source else { return nil }
-    if let arxiv = source.arxivId, !arxiv.isEmpty { return "⌖ arXiv:\(arxiv) ✓" }
     if let label = source.label, !label.isEmpty { return "⌖ \(label) ✓" }
+    if let arxiv = source.arxivId, !arxiv.isEmpty { return "⌖ arXiv:\(arxiv) ✓" }
     return nil
   }
 
@@ -147,9 +157,11 @@ struct FactWidgetView: View {
           .fontWeight(.bold)
           .foregroundStyle(persimmon)
         Spacer()
+        // Stale signal: a fact from a prior day shows its date in muted gray
+        // instead of marigold — a subtle cue the app hasn't refreshed today.
         Text(fact.date)
           .font(.system(.caption2, design: .monospaced))
-          .foregroundStyle(marigold)
+          .foregroundStyle(fact.date == todayLocalDateString() ? marigold : paraSoft)
       }
       Text(fact.fact)
         .font(.system(big ? .subheadline : .footnote, design: .serif))

@@ -64,6 +64,7 @@ async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & 
 
   const payload = {
     source: "arxiv",
+    source_id: paper.arxivIdBase,
     arxiv_id_base: paper.arxivIdBase,
     arxiv_id_version: paper.arxivIdVersion,
     title: paper.title,
@@ -258,9 +259,12 @@ export async function runIngestPipeline(options: {
       let domainLlmFailed = 0;
       let domainLlmErrorLogged = 0;
       logInfo(options.verbose, `domain=${domain} fetched=${capped.length}`);
-      // Debug: log first 3 paper IDs and their primary categories
+      // Debug: log first 3 paper IDs and their primary categories (verbose only)
       for (const p of capped.slice(0, 3)) {
-        console.log(`[ingest] domain=${domain} sample paper: arxiv_id=${p.arxivIdBase} primary=${p.primaryCategory} categories=${p.categories.join(",")}`);
+        logInfo(
+          options.verbose,
+          `domain=${domain} sample paper: arxiv_id=${p.arxivIdBase} primary=${p.primaryCategory} categories=${p.categories.join(",")}`,
+        );
       }
 
       for (const paper of capped) {
@@ -347,11 +351,16 @@ export async function runIngestPipeline(options: {
       );
     }
 
-    // TTL cleanup for personalized hooks older than 7 days
-    await serviceClient
-      .from("personalized_hooks")
-      .delete()
-      .lt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+    // TTL cleanup for personalized hooks older than 7 days. A failed cleanup
+    // must not fail the whole ingest run — log and continue.
+    try {
+      await serviceClient
+        .from("personalized_hooks")
+        .delete()
+        .lt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+    } catch (err) {
+      console.error("[ingest] personalized_hooks TTL cleanup failed:", err);
+    }
 
     const endedAt = new Date().toISOString();
     const status = getStatus({
