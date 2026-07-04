@@ -1,8 +1,8 @@
 name: Daily data ingest
 
-# Pulls fresh papers into Supabase every morning (China time). arXiv first,
-# then OpenAlex for the non-CS categories. Both steps upsert idempotently,
-# so a manual re-run is always safe.
+# Pulls fresh content into Supabase every morning (China time). arXiv first,
+# then Our World in Data (the consumer-domain backbone), then OpenAlex
+# (Climate-only). All steps upsert idempotently, so a manual re-run is safe.
 on:
   schedule:
     # 22:00 UTC == 06:00 Asia/Shanghai — content is ready before people wake up.
@@ -38,5 +38,8 @@ jobs:
       - name: Ingest arXiv papers (daily)
         run: npm run ingest:papers -- --mode daily
 
-      - name: Ingest OpenAlex works
+      - name: Ingest Our World in Data insights
+        run: npx tsx scripts/ingest-owid.ts
+
+      - name: Ingest OpenAlex works (Climate-only)
         run: npx tsx scripts/ingest-openalex.ts

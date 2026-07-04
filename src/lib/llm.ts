@@ -193,6 +193,101 @@ async function generatePaperMetadataOnce(input: {
   };
 }
 
+type OwidDomain = { id: string; zh: string; en: string };
+
+type OwidInsight = {
+  domainId: string;
+  hook: string;
+  hookZh: string;
+  plainSummary: string;
+  plainSummaryZh: string;
+  model: string;
+} & TokenUsage;
+
+/**
+ * Classify + rewrite one Our World in Data "Data Insight" for Ohlo.
+ *
+ * Unlike generatePaperMetadata (which classifies into the 5 legacy paper
+ * categories), this assigns ONE taxonomy DOMAIN id from the OWID-capable set
+ * passed in, and writes bilingual hooks/summaries under the SAME hook style
+ * rules as the paper generator (fact-first, deadpan, no banned openers,
+ * zh ≤50 chars). The domain list is passed in so taxonomy.ts stays the single
+ * source of truth.
+ */
+export async function generateOwidInsight(input: {
+  title: string;
+  body: string;
+  domains: OwidDomain[];
+}): Promise<OwidInsight> {
+  const { model } = getOpenAIEnv();
+  const client = getClient();
+
+  const domainMenu = input.domains
+    .map((d) => `- "${d.id}": ${d.en} / ${d.zh}`)
+    .join("\n");
+  const validIds = new Set(input.domains.map((d) => d.id));
+  const fallbackId = input.domains[0]?.id ?? "society";
+
+  const completion = await client.chat.completions.create({
+    model,
+    temperature: 0.7,
+    max_tokens: 800,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "You turn a data-driven fact from Our World in Data into a punchy, sayable snippet for a general audience. Output JSON only.",
+      },
+      {
+        role: "user",
+        content: [
+          "Given this Our World in Data insight, generate five things:",
+          `1) "domainId": classify the insight into EXACTLY ONE of these domain ids (pick the single best fit):`,
+          domainMenu,
+          '2) "hook": ONE surprise you could blurt out mid-conversation to make someone go "wait, really?". Plain spoken English, ≤120 characters. State the FACT ITSELF — what is true in the world — never describe the dataset or article: any phrasing like "this data/chart/study shows..." is FORBIDDEN. Must contain at least one concrete detail (a number, a named place, a sharp before/after). Deadpan: the surprise comes from the fact itself — NO editorializing ("shocking", "amazing") and NO exclamation marks; end with a period. NO template openers ("Did you know", "Imagine", "What if", "New data", "Data shows").',
+          '3) "hookZh": 用中文写一句能在聊天里直接讲出口、让人"啊？真的假的"的惊讶点。不超过50个汉字，口语通俗。必须说事实本身，严禁描述数据集或文章（"这组数据/这张图表明……"一律不合格）。必须包含至少一个具体细节（数字、具体地点、鲜明的前后反差）。语气克制冷静，禁止情绪化词尾（太夸张了/惊呆了）和感叹号，用句号收尾。禁用套路开头（你知道吗/想象/最新数据/数据显示）。',
+          '4) "plainSummary": explain this insight so a curious 14-year-old could understand it. No jargon, concrete examples. Max 3 sentences.',
+          '5) "plainSummaryZh": 用中文向一个好奇的14岁少年解释这条洞察。不要用专业术语，用具体的例子。最多3句话。',
+          "",
+          'GOOD hookZh: "巴基斯坦的肥胖率,20年里翻了三倍。" — 有具体数字和反差，能直接讲给人听。',
+          'BAD hookZh: "这组数据显示了肥胖率的变化趋势。" — 在描述数据，不是在说事实。',
+          "",
+          `Insight title: ${input.title}`,
+          `Insight body: ${input.body}`,
+          "",
+          'Return strict JSON: {"domainId":"...","hook":"...","hookZh":"...","plainSummary":"...","plainSummaryZh":"..."}',
+        ].join("\n"),
+      },
+    ],
+  });
+
+  const rawContent = completion.choices[0]?.message?.content ?? "{}";
+  const parsed = JSON.parse(rawContent) as {
+    domainId?: string;
+    hook?: string;
+    hookZh?: string;
+    plainSummary?: string;
+    plainSummaryZh?: string;
+  };
+
+  const domainId = parsed.domainId && validIds.has(parsed.domainId) ? parsed.domainId : fallbackId;
+  const hook = normalizeHook(parsed.hook || input.title);
+  const hookZh = parsed.hookZh?.trim() || "";
+  const plainSummary = parsed.plainSummary?.trim() || buildFallbackPlainSummary(input.body);
+  const plainSummaryZh = parsed.plainSummaryZh?.trim() || "";
+
+  return {
+    domainId,
+    hook,
+    hookZh,
+    plainSummary,
+    plainSummaryZh,
+    model,
+    ...usageToTokens(completion.usage),
+  };
+}
+
 /** @deprecated Use generatePaperMetadata instead. Kept for backwards compatibility. */
 export async function generatePaperHookAndTags(input: {
   title: string;

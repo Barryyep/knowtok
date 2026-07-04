@@ -21,6 +21,7 @@ async function main() {
     name: "测试用户",
     occupation: "建筑工人",
     interests: "混凝土, 建筑安全",
+    curiosityDomains: [] as string[],
     language: "zh" as const,
   };
 
