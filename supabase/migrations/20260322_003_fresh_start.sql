@@ -242,6 +242,11 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "Users can read own resume objects" ON storage.objects;
+DROP POLICY IF EXISTS "Users can insert own resume objects" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own resume objects" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own resume objects" ON storage.objects;
+
 CREATE POLICY "Users can read own resume objects" ON storage.objects
 FOR SELECT USING (bucket_id = 'resumes' AND auth.uid()::text = (storage.foldername(name))[1]);
 

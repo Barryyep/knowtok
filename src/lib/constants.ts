@@ -130,6 +130,6 @@ export const UI_TEXT = {
     // Language
     language: "语言",
   },
-} as const;
+};
 
 export type AppLanguage = "en" | "zh";

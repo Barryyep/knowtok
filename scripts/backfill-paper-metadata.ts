@@ -1,9 +1,14 @@
 /**
- * Backfill script: generates plain_summary_en and human_category
- * for existing papers that don't have them.
+ * Backfill script: generates plain_summary, human_category, and Chinese
+ * content for existing papers that are missing them.
  *
  * Usage: npx tsx scripts/backfill-paper-metadata.ts
  */
+
+import { config as loadDotenv } from "dotenv";
+
+loadDotenv({ path: ".env.local", override: true });
+loadDotenv({ path: ".env", override: false });
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -21,6 +26,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function generateMetadata(title: string, abstract: string, categories: string[]): Promise<{
   plainSummary: string;
+  plainSummaryZh: string;
+  hookZh: string;
   humanCategory: string;
 }> {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -32,7 +39,7 @@ async function generateMetadata(title: string, abstract: string, categories: str
     body: JSON.stringify({
       model: MODEL,
       temperature: 0.7,
-      max_tokens: 400,
+      max_tokens: 600,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -42,15 +49,17 @@ async function generateMetadata(title: string, abstract: string, categories: str
         {
           role: "user",
           content: [
-            "Given this research paper, generate two things:",
+            "Given this research paper, generate four things:",
             '1) "humanCategory": classify into exactly ONE of: "AI & Robots", "Your Health", "Your Money", "Your Food", "Climate". If none fit, default to "AI & Robots".',
-            '2) "plainSummary": explain this paper so a curious 14-year-old could understand it. No jargon, use concrete examples. Max 3 sentences.',
+            '2) "plainSummary": explain this paper so a curious 14-year-old could understand it. No jargon, use concrete examples. Max 3 sentences. In English.',
+            '3) "hookZh": 用中文写一句话，不超过50个汉字，通俗易懂、不用专业术语。直接抛出最令人意外的具体内容——数字、反差、或利害关系。绝对不要用套路开头：不要以"你知道吗""想象""如果我告诉你""最新研究""科学家发现"之类开头，直接说出惊人的事实本身。',
+            '4) "plainSummaryZh": 用中文向一个好奇的14岁少年解释这篇论文。不要用专业术语，用具体的例子。最多3句话。',
             "",
             `Title: ${title}`,
             `Abstract: ${abstract.slice(0, 1500)}`,
             `Categories: ${categories.join(", ")}`,
             "",
-            'Return strict JSON: {"humanCategory":"...","plainSummary":"..."}',
+            'Return strict JSON: {"humanCategory":"...","plainSummary":"...","hookZh":"...","plainSummaryZh":"..."}',
           ].join("\n"),
         },
       ],
@@ -71,17 +80,20 @@ async function generateMetadata(title: string, abstract: string, categories: str
     : "AI & Robots";
 
   const plainSummary = parsed.plainSummary?.trim() || abstract.split(/[.!?]+/).slice(0, 3).join(". ").trim() + ".";
+  const hookZh = parsed.hookZh?.trim() || "";
+  const plainSummaryZh = parsed.plainSummaryZh?.trim() || "";
 
-  return { humanCategory, plainSummary };
+  return { humanCategory, plainSummary, hookZh, plainSummaryZh };
 }
 
 async function main() {
-  console.log("Fetching papers without plain_summary_en...");
+  // Find papers missing Chinese content OR plain_summary
+  console.log("Fetching papers missing Chinese content or plain summary...");
 
   const { data: papers, error } = await supabase
     .from("papers")
-    .select("id, title, abstract, categories, primary_category")
-    .is("plain_summary_en", null)
+    .select("id, title, abstract, categories, primary_category, hook_summary_zh, plain_summary_en")
+    .or("plain_summary_en.is.null,hook_summary_zh.is.null")
     .limit(500);
 
   if (error) {
@@ -96,7 +108,7 @@ async function main() {
 
   for (const paper of papers) {
     try {
-      const { humanCategory, plainSummary } = await generateMetadata(
+      const { humanCategory, plainSummary, hookZh, plainSummaryZh } = await generateMetadata(
         paper.title,
         paper.abstract,
         paper.categories,
@@ -107,6 +119,8 @@ async function main() {
         .update({
           plain_summary_en: plainSummary,
           human_category: humanCategory,
+          hook_summary_zh: hookZh,
+          plain_summary_zh: plainSummaryZh,
         })
         .eq("id", paper.id);
 
@@ -114,7 +128,7 @@ async function main() {
         console.error(`  [FAIL] ${paper.id}: ${updateError.message}`);
         failed++;
       } else {
-        console.log(`  [OK] ${paper.id} → ${humanCategory}`);
+        console.log(`  [OK] ${paper.id} → ${humanCategory} | zh: ${hookZh.slice(0, 30)}...`);
         updated++;
       }
 

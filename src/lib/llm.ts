@@ -116,11 +116,11 @@ export async function generatePaperMetadata(input: {
         role: "user",
         content: [
           "Given this research paper, generate six things:",
-          '1) "hook": one curiosity-driven sentence, 20-28 words, plain English, no jargon.',
+          '1) "hook": ONE punchy sentence in plain English, ≤120 characters. Lead DIRECTLY with the single most surprising, concrete thing — a number, a sharp contrast, or what is at stake. NO template openers: never start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered". Just state the striking fact itself.',
           '2) "tags": 3-5 short English tags (1-3 words each).',
           '3) "humanCategory": classify into exactly ONE of: "AI & Robots", "Your Health", "Your Money", "Your Food", "Climate". If none fit, default to "AI & Robots".',
           '4) "plainSummary": explain this paper so a curious 14-year-old could understand it. No jargon, use concrete examples. Max 3 sentences.',
-          '5) "hookZh": 用中文写一句话（20-28个字），通俗易懂，引发好奇心。',
+          '5) "hookZh": 用中文写一句话，不超过50个汉字，通俗易懂。直接抛出最令人意外的具体内容——一个数字、一个反差、或者利害关系。绝对不要用套路开头：不要以"你知道吗""想象""如果我告诉你""最新研究""科学家发现"之类开头。直接说出那个惊人的事实本身。',
           '6) "plainSummaryZh": 用中文向一个好奇的14岁少年解释这篇论文。不要用专业术语，用具体的例子。最多3句话。',
           "",
           `Title: ${input.title}`,
