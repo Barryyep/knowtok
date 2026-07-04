@@ -27,8 +27,8 @@ const profile = {
 
 const system =
   lang === "zh"
-    ? "你是 KnowTok 的每日冷知识作者。你为一位特定用户写一条量身定制的 fun fact:必须真实、具体、出人意料。只输出严格 JSON,不要任何其他文字。"
-    : "You are KnowTok's daily fun-fact writer. Write one tailored, true, surprising fun fact. Output strict JSON only.";
+    ? "你是 Ohlo 的每日冷知识作者。你为一位特定用户写一条量身定制的 fun fact:必须真实、具体、出人意料。只输出严格 JSON,不要任何其他文字。"
+    : "You are Ohlo's daily fun-fact writer. Write one tailored, true, surprising fun fact. Output strict JSON only.";
 
 const user = [
   `Today's date: ${new Date().toISOString().slice(0, 10)}`,

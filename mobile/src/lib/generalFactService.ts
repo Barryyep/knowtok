@@ -19,7 +19,7 @@ interface GeneralFactJson {
 function buildSystem(isZh: boolean): string {
   if (isZh) {
     return [
-      "你为 KnowTok 生成一条真实、可核实的常识（不是学术论文），并根据读者的职业量身定制。",
+      "你为 Ohlo 生成一条真实、可核实的常识（不是学术论文），并根据读者的职业量身定制。",
       "只讲一条冷知识/常识，须来自读者职业相邻的领域，真实且经得起查证，不要编造。",
       "fact 要求：中文，不超过50个汉字，直接抛出最令人意外的具体内容（数字、反差、利害关系）。",
       "绝对不要用套路开头：不要以“你知道吗”“想象”“如果我告诉你”“最新研究”“科学家发现”之类开头。",
@@ -77,7 +77,7 @@ function deriveSearchTerms(profile: Profile, isZh: boolean): string[] {
 function buildGroundedSystem(isZh: boolean): string {
   if (isZh) {
     return [
-      "你为 KnowTok 生成一条真实、可核实的常识，并根据读者的职业量身定制。",
+      "你为 Ohlo 生成一条真实、可核实的常识，并根据读者的职业量身定制。",
       "下面会给你一段来自维基百科的资料。你写的 fact 必须完全基于这段资料、并能被它支持，绝对不能编造资料里没有的内容。",
       "fact 要求：中文，不超过50个汉字，直接抛出资料里最令人意外的具体内容（数字、反差、利害关系）。",
       "绝对不要用套路开头：不要以“你知道吗”“想象”“如果我告诉你”“最新研究”“科学家发现”之类开头。",

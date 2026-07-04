@@ -68,7 +68,7 @@ export interface UIStrings {
 }
 
 const en: UIStrings = {
-  appName: "KnowTok Daily",
+  appName: "Ohlo",
   tagline: "One research fact a day, made for you",
   // Auth
   welcomeTitle: "Research,\nmade personal.",
@@ -121,12 +121,12 @@ const en: UIStrings = {
   settingsProfile: "Profile",
   settingsWidgetTitle: "Widgets & watch",
   settingsWidgetHint:
-    "Add the KnowTok widget to your home or lock screen — and your watch face.",
-  settingsAbout: "KnowTok Daily · facts from arXiv papers, personalized for you",
+    "Add the Ohlo widget to your home or lock screen — and your watch face.",
+  settingsAbout: "Ohlo · facts from arXiv papers, personalized for you",
 };
 
 const zh: UIStrings = {
-  appName: "KnowTok Daily",
+  appName: "Ohlo",
   tagline: "每天一条,来自真实论文的冷知识",
   // Auth
   welcomeTitle: "科研发现,\n为你而来。",
@@ -177,8 +177,8 @@ const zh: UIStrings = {
   // Settings
   settingsProfile: "个人画像",
   settingsWidgetTitle: "组件与手表",
-  settingsWidgetHint: "把 KnowTok 组件添加到主屏幕、锁屏和手表表盘。",
-  settingsAbout: "KnowTok Daily · 冷知识来自 arXiv 论文,为你个性化解读",
+  settingsWidgetHint: "把 Ohlo 组件添加到主屏幕、锁屏和手表表盘。",
+  settingsAbout: "Ohlo · 冷知识来自 arXiv 论文,为你个性化解读",
 };
 
 const UI_TEXT: Record<AppLanguage, UIStrings> = { en, zh };

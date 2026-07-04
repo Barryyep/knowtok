@@ -1,7 +1,7 @@
-# KnowTok Daily — widget-first mobile app
+# Ohlo — widget-first mobile app
 
 每天一条来自**真实 arXiv 论文**的冷知识,附出处,为你个性化解读——显示在手机主屏/锁屏组件和手表表盘上,不用打开 app。
-iOS + Android 一套代码(Expo / React Native),数据与账号和 knowtok 网页版共用同一个 Supabase。
+iOS + Android 一套代码(Expo / React Native),数据与账号和 ohlo 网页版共用同一个 Supabase。
 
 ## 架构
 
@@ -44,7 +44,7 @@ npx expo run:android   # 需要 Android SDK
 
 ```bash
 # 配对手表模拟器后,手表 app 内嵌在 iOS app 的 Watch/ 目录里:
-xcrun simctl install <watch-udid> ios/build/.../KnowTokDaily.app/Watch/KnowTokWatch.app
+xcrun simctl install <watch-udid> ios/build/.../Ohlo.app/Watch/OhloWatch.app
 ```
 
 ⚠️ 不要用 `CODE_SIGNING_ALLOWED=NO` 手动 xcodebuild——会丢 entitlements,App Group 会被系统移除,组件读不到数据。
@@ -89,7 +89,7 @@ mobile/
 登录页除了邮箱密码,还提供 Apple(仅 iOS)和 Google(iOS + Android)一键登录,走 Supabase 原生 id-token 流程(`supabase.auth.signInWithIdToken`)。原生模块不能跑 Expo Go,需要 dev build。
 
 **Apple —— 已可用,无需额外配置。**
-- `app.json` 已加 `ios.usesAppleSignIn: true` + `expo-apple-authentication` 插件;`supabase config push` 已把 `[auth.external.apple]` 打开,`client_id = "com.knowtok.daily"`(即 bundle id,原生流程不需要 secret)。
+- `app.json` 已加 `ios.usesAppleSignIn: true` + `expo-apple-authentication` 插件;`supabase config push` 已把 `[auth.external.apple]` 打开,`client_id = "com.ohlo.daily"`(即 bundle id,原生流程不需要 secret)。
 - 真机构建需要在 Apple Developer 后台给这个 App ID 勾上 **Sign In with Apple** capability(EAS/Xcode 构建时会随 entitlements 一起要求)。
 
 **Google —— 代码已就绪,但需要创始人手动创建 OAuth 客户端后才会显示按钮。**
@@ -98,8 +98,8 @@ mobile/
 
 1. **Google Cloud Console → APIs & Services → Credentials**,创建 OAuth 2.0 Client IDs:
    - 一个 **Web application** 类型 → 得到 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`(Supabase 用它来校验 id-token,**必填**)。
-   - 一个 **iOS** 类型,bundle id 填 `com.knowtok.daily` → 得到 `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`。
-   - 一个 **Android** 类型,package `com.knowtok.daily` + 你的签名 SHA-1(原生库自动用它,无需写进 env)。
+   - 一个 **iOS** 类型,bundle id 填 `com.ohlo.daily` → 得到 `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`。
+   - 一个 **Android** 类型,package `com.ohlo.daily` + 你的签名 SHA-1(原生库自动用它,无需写进 env)。
 2. 把两个 id 填进 `mobile/.env`:
    ```
    EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=xxxx.apps.googleusercontent.com

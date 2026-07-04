@@ -7,7 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  * purpose — this is pure presentation state, not part of the frozen data
  * contract.
  */
-const SEEN_KEY = "knowtok:firstClassHintSeen:v1";
+const SEEN_KEY = "ohlo:firstClassHintSeen:v1";
 
 /** Has the first-class explainer already been dismissed? */
 export async function firstClassHintSeen(): Promise<boolean> {

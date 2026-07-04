@@ -6,9 +6,9 @@ import { APP_GROUP, FACT_HISTORY_SIZE, WIDGET_FACT_KEY } from "./config";
 import { sendFactToWatch } from "./watchSync";
 import type { DailyFact, FactKind, FactSource, Profile } from "./types";
 
-const PROFILE_KEY = "knowtok:profile:v2";
-const FACT_KEY = "knowtok:todayFact:v2";
-const HISTORY_KEY = "knowtok:factHistory:v2";
+const PROFILE_KEY = "ohlo:profile:v2";
+const FACT_KEY = "ohlo:todayFact:v2";
+const HISTORY_KEY = "ohlo:factHistory:v2";
 
 // No-ops safely on Android (the native module is iOS-only).
 const iosSharedStorage = new ExtensionStorage(APP_GROUP);

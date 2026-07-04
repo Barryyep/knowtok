@@ -1,7 +1,7 @@
 # Content Data Sources — Evaluation & Recommendation
 
 **Date:** 2026-07-03 · **Status:** Decision-ready
-**Context:** KnowTok Daily shows one persona-tailored daily fact. Premium (会员) = professional real-time research; Free (普通) = broad general knowledge. Pipeline today: `scripts/ingest-papers.ts` → `src/lib/ingest.ts` → arXiv Atom API → LLM (`generatePaperMetadata`) generates en+zh hooks/summaries → Supabase `papers` table.
+**Context:** Ohlo shows one persona-tailored daily fact. Premium (会员) = professional real-time research; Free (普通) = broad general knowledge. Pipeline today: `scripts/ingest-papers.ts` → `src/lib/ingest.ts` → arXiv Atom API → LLM (`generatePaperMetadata`) generates en+zh hooks/summaries → Supabase `papers` table.
 
 **Two grounding facts from our own codebase:**
 1. Our zh content is **LLM-generated at ingest** from English source text — so native-Chinese source metadata is *not* a hard requirement for premium. It IS a requirement for free-tier *attribution links* (users must land on a page they can read).

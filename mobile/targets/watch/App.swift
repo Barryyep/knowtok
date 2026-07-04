@@ -3,7 +3,7 @@ import WatchConnectivity
 import WidgetKit
 
 // Must match the phone app (src/lib/config.ts) and the complication.
-let appGroup = "group.com.knowtok.daily"
+let appGroup = "group.com.ohlo.daily"
 let factKey = "todayFact"
 
 struct FactSource: Codable {
@@ -123,7 +123,7 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
       } else {
         VStack(spacing: 8) {
-          Text("在 iPhone 上打开 KnowTok\n同步今日信笺")
+          Text("在 iPhone 上打开 Ohlo\n同步今日信笺")
             .font(.system(.footnote, design: .serif))
             .multilineTextAlignment(.center)
             .foregroundStyle(.gray)
@@ -135,7 +135,7 @@ struct ContentView: View {
 }
 
 @main
-struct KnowTokWatchApp: App {
+struct OhloWatchApp: App {
   @StateObject private var sync = PhoneSync()
 
   var body: some Scene {

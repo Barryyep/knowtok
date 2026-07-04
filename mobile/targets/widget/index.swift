@@ -2,7 +2,7 @@ import WidgetKit
 import SwiftUI
 
 // Must match APP_GROUP / WIDGET_FACT_KEY in src/lib/config.ts.
-let appGroup = "group.com.knowtok.daily"
+let appGroup = "group.com.ohlo.daily"
 let factKey = "todayFact"
 
 // The Daily Dispatch palette — the widget IS a cream slip on the dark desk.
@@ -138,7 +138,7 @@ struct FactWidgetView: View {
           slip(fact, big: true)
         }
       } else {
-        Text("打开 KnowTok 生成今日信笺")
+        Text("打开 Ohlo 生成今日信笺")
           .font(.system(.footnote, design: .serif))
           .foregroundStyle(paraSoft)
       }
@@ -187,12 +187,12 @@ struct FactWidgetView: View {
   }
 }
 
-struct KnowTokWidget: Widget {
+struct OhloWidget: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "KnowTokDailyFact", provider: FactProvider()) { entry in
+    StaticConfiguration(kind: "OhloDailyFact", provider: FactProvider()) { entry in
       FactWidgetView(entry: entry)
     }
-    .configurationDisplayName("KnowTok Daily")
+    .configurationDisplayName("Ohlo")
     .description("每日一条为你定制的冷知识")
     .supportedFamilies([
       .systemSmall, .systemMedium,
@@ -202,8 +202,8 @@ struct KnowTokWidget: Widget {
 }
 
 @main
-struct KnowTokWidgetBundle: WidgetBundle {
+struct OhloWidgetBundle: WidgetBundle {
   var body: some Widget {
-    KnowTokWidget()
+    OhloWidget()
   }
 }

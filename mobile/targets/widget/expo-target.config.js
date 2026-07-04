@@ -1,12 +1,12 @@
 /** @type {import('@bacons/apple-targets').Config} */
 module.exports = {
   type: "widget",
-  name: "KnowTokWidget",
-  displayName: "KnowTok Daily",
+  name: "OhloWidget",
+  displayName: "Ohlo",
   bundleIdentifier: ".widget",
   deploymentTarget: "17.0",
   entitlements: {
-    "com.apple.security.application-groups": ["group.com.knowtok.daily"],
+    "com.apple.security.application-groups": ["group.com.ohlo.daily"],
   },
   colors: {
     widgetBackground: { color: "#14110D", darkColor: "#14110D" },

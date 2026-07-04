@@ -14,7 +14,7 @@ interface Props {
  * react-native-android-widget — only widget primitives allowed here.
  */
 export function FactWidget({ fact, language }: Props) {
-  const empty = language === "zh" ? "打开 KnowTok 生成今日信笺" : "Open KnowTok for today's dispatch";
+  const empty = language === "zh" ? "打开 Ohlo 生成今日信笺" : "Open Ohlo for today's dispatch";
   const sourceLine = fact
     ? fact.source.arxivId
       ? `⌖ arXiv:${fact.source.arxivId} ✓`

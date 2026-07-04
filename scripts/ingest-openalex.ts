@@ -1,5 +1,5 @@
 /**
- * OpenAlex ingest — broadens KnowTok beyond arXiv into disciplines arXiv
+ * OpenAlex ingest — broadens Ohlo beyond arXiv into disciplines arXiv
  * barely covers (clinical health, personal finance, food science, climate).
  *
  * Pipeline mirrors the arXiv one:
@@ -32,7 +32,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Polite-pool contact (OpenAlex asks for a mailto so they can reach you).
-const MAILTO = "hello@knowtok.app";
+const MAILTO = "hello@ohlo.app";
 const OPENALEX_WORKS = "https://api.openalex.org/works";
 
 /**
@@ -143,7 +143,7 @@ async function fetchWorks(fieldIds: number[]): Promise<OpenAlexWork[]> {
   });
 
   const res = await fetch(`${OPENALEX_WORKS}?${params.toString()}`, {
-    headers: { "User-Agent": `KnowTok/0.1 (${MAILTO})` },
+    headers: { "User-Agent": `Ohlo/0.1 (${MAILTO})` },
   });
   if (!res.ok) {
     throw new Error(`OpenAlex HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);

@@ -74,7 +74,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-12">
       <section className="card-surface w-full p-8 md:p-10">
-        <p className="text-sm font-semibold text-accent">KnowTok</p>
+        <p className="text-sm font-semibold text-accent">Ohlo</p>
         <h1 className="mt-2 text-3xl font-bold text-label-primary">Paper feed for real life relevance</h1>
         <p className="mt-3 text-sm leading-relaxed text-label-secondary">
           Sign in to swipe frontier research papers and ask one question on every card: what does this mean for me?

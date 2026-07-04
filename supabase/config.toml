@@ -12,7 +12,7 @@ enable_confirmations = false
 # flow needs no OAuth secret because Apple signs the id-token for our app.
 [auth.external.apple]
 enabled = true
-client_id = "com.knowtok.daily"
+client_id = "com.ohlo.daily"
 
 # Sign in with Google — native id-token flow from Android + iOS.
 # skip_nonce_check is required because the native SDKs don't round-trip a nonce.

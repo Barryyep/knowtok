@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto min-h-screen w-full max-w-2xl px-4 py-6 md:px-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <p className="text-lg font-semibold text-label-primary">KnowTok</p>
+        <p className="text-lg font-semibold text-label-primary">Ohlo</p>
 
         <nav className="flex items-center gap-1 rounded-pill border border-separator bg-surface-elevated p-1">
           {NAV_ITEMS.map((item) => (

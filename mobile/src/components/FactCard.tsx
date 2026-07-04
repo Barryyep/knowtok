@@ -119,7 +119,7 @@ export function FactCard({ fact, language, whyCarePending = false, compact = fal
       </View>
 
       {!compact && (
-        <Text style={styles.wordmark}>KNOWTOK · DAILY DISPATCH</Text>
+        <Text style={styles.wordmark}>OHLO · DAILY DISPATCH</Text>
       )}
     </Animated.View>
   );

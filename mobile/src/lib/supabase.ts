@@ -10,7 +10,7 @@ if (!url || !anonKey) {
 }
 
 /**
- * Same Supabase project as the knowtok web app — accounts are shared.
+ * Same Supabase project as the ohlo web app — accounts are shared.
  * RLS lets authenticated users read `papers` and manage their own
  * `user_personas`, so the app talks to the database directly.
  */

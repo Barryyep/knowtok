@@ -21,7 +21,7 @@ export function SettingsScreen({ profile, onEditProfile }: Props) {
       style={styles.root}
       contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.md }]}
     >
-      <Text style={styles.eyebrow}>KNOWTOK · DAILY DISPATCH</Text>
+      <Text style={styles.eyebrow}>OHLO · DAILY DISPATCH</Text>
       <Text style={[styles.heading, { fontFamily: ui("bold") }]}>{strings.tabSettings}</Text>
 
       <View style={styles.group}>

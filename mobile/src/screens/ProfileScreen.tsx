@@ -65,7 +65,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
             </Text>
           </Pressable>
         )}
-        <Text style={styles.eyebrow}>KNOWTOK · DAILY DISPATCH</Text>
+        <Text style={styles.eyebrow}>OHLO · DAILY DISPATCH</Text>
         <Text style={[styles.title, { fontFamily: ui("bold") }]}>{strings.profileTitle}</Text>
         <Text style={[styles.subtitle, { fontFamily: ui() }]}>{strings.profileSubtitle}</Text>
 

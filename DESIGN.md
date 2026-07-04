@@ -1,4 +1,4 @@
-# Design System — KnowTok Daily 「每日信笺 · The Daily Dispatch」
+# Design System — Ohlo 「每日信笺 · The Daily Dispatch」
 
 ## Product Context
 - **What this is:** Widget-first mobile app (iOS/Android/Apple Watch, Expo RN) delivering ONE personalized fun-fact per day from real sources (papers / Wikipedia).
@@ -43,7 +43,7 @@
 - **Today screen:** dark desk; marigold date eyebrow + streak dots; cream slip (№, fact, dashed divider, 跟你有什么关系, source stamp); persimmon pill 换一条; dark tab bar (今日/历史/设置).
 - **Widget (4×2 + lock):** cream slip look: № + date/streak line, 2-3 line fact (never truncate mid-clause), tiny source line. Lock-screen (monochrome): № + one clause, stamp-typeset.
 - **Watch:** same hierarchy at complication scale: topic accent line, fact body, label footer.
-- **Share card:** the card IS the share asset — screenshot-perfect: slip + № + source stamp + tiny `KNOWTOK · DAILY DISPATCH` wordmark in the fold. Every shared card is a self-attributing growth unit.
+- **Share card:** the card IS the share asset — screenshot-perfect: slip + № + source stamp + tiny `OHLO · DAILY DISPATCH` wordmark in the fold. Every shared card is a self-attributing growth unit.
 - **Premium (会员/paper track):** "头等信笺" — 4px persimmon left seal-edge + small `FIRST CLASS` tag; free tier = plain slip. Richer stationery, never a crown.
 - **Numbering:** every fact carries a global dispatch № (collectible framing).
 

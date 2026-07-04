@@ -52,7 +52,7 @@ async function main() {
     verbose,
   });
 
-  console.log("KnowTok ingest run complete:");
+  console.log("Ohlo ingest run complete:");
   console.log(JSON.stringify(result, null, 2));
 
   if (result.status === "failed") {

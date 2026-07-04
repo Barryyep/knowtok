@@ -8,7 +8,7 @@ import type { AppLanguage } from "./types";
  * Wikimedia REQUIRES a descriptive User-Agent with a contact — sending one is
  * mandatory, not optional.
  */
-const USER_AGENT = "KnowTok/0.1 (https://knowtok.app; contact: hello@knowtok.app)";
+const USER_AGENT = "Ohlo/0.1 (https://ohlo.app; contact: hello@ohlo.app)";
 const FETCH_TIMEOUT_MS = 8_000;
 
 export interface WikiGrounding {

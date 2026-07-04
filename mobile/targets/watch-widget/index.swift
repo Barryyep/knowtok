@@ -2,7 +2,7 @@ import WidgetKit
 import SwiftUI
 
 // Must match the watch app / phone app.
-let appGroup = "group.com.knowtok.daily"
+let appGroup = "group.com.ohlo.daily"
 let factKey = "todayFact"
 
 struct FactSource: Codable {
@@ -84,10 +84,10 @@ struct ComplicationView: View {
           Text(fact.topic)
         case .accessoryCircular:
           VStack(spacing: 0) {
-            Text("K").font(.system(.title3, design: .serif)).fontWeight(.bold)
+            Text("O").font(.system(.title3, design: .serif)).fontWeight(.bold)
           }
         case .accessoryCorner:
-          Text("K")
+          Text("O")
             .font(.system(.title3, design: .serif))
             .fontWeight(.bold)
             .widgetLabel(fact.topic)
@@ -102,7 +102,7 @@ struct ComplicationView: View {
           }
         }
       } else {
-        Text("K").font(.system(.title3, design: .serif)).fontWeight(.bold)
+        Text("O").font(.system(.title3, design: .serif)).fontWeight(.bold)
       }
     }
     .containerBackground(for: .widget) { Color.black }
@@ -110,12 +110,12 @@ struct ComplicationView: View {
 }
 
 @main
-struct KnowTokWatchWidget: Widget {
+struct OhloWatchWidget: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "KnowTokWatchFact", provider: FactProvider()) { entry in
+    StaticConfiguration(kind: "OhloWatchFact", provider: FactProvider()) { entry in
       ComplicationView(entry: entry)
     }
-    .configurationDisplayName("KnowTok Daily")
+    .configurationDisplayName("Ohlo")
     .description("每日一条为你定制的冷知识")
     .supportedFamilies([
       .accessoryInline, .accessoryRectangular, .accessoryCircular, .accessoryCorner,

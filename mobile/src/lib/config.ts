@@ -20,7 +20,7 @@ export const GOODVISION_MODEL =
 export const ENV_API_KEY = process.env.EXPO_PUBLIC_GOODVISION_API_KEY ?? "";
 
 /** iOS App Group shared between the app and the widget extension. */
-export const APP_GROUP = "group.com.knowtok.daily";
+export const APP_GROUP = "group.com.ohlo.daily";
 
 /** Key inside shared storage that the iOS widget reads. */
 export const WIDGET_FACT_KEY = "todayFact";

@@ -139,7 +139,7 @@ export function AuthScreen({ language }: Props) {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Image source={require("../../assets/icon.png")} style={styles.logo} />
-        <Text style={styles.eyebrow}>KNOWTOK · DAILY DISPATCH</Text>
+        <Text style={styles.eyebrow}>OHLO · DAILY DISPATCH</Text>
         <Text style={[styles.title, { fontFamily: heroFont(language) }]}>{strings.welcomeTitle}</Text>
         <Text style={[styles.subtitle, { fontFamily: uiFont(language) }]}>
           {strings.welcomeSubtitle}

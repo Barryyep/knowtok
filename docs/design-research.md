@@ -1,4 +1,4 @@
-# KnowTok Daily — Design Research
+# Ohlo — Design Research
 
 **Date:** 2026-07-03  
 **Status:** Research complete, ready for design-consultation pass
@@ -9,7 +9,7 @@
 
 ### Readwise (daily highlight review)
 
-**What they do well:** Readwise's dark-marketing theme is the closest analogue to KnowTok's use case. A single piece of saved text is foregrounded each session, with all chrome stripped out.
+**What they do well:** Readwise's dark-marketing theme is the closest analogue to Ohlo's use case. A single piece of saved text is foregrounded each session, with all chrome stripped out.
 
 **Concrete details:**
 - Background: `#000000` (pure black), but document area stays lighter
@@ -21,7 +21,7 @@
 - "Brutally minimal" philosophy: no visible chrome during the reading moment
 - Warm highlight palette (yellow `#FBDA83`, coral `#E4938E`, blue `#8DBBFF`) creates a paper-book feel without leaving the dark theme
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - The "one thing per session" mental model maps perfectly — we need the same zero-chrome approach on the Today card
 - Inter at heavier weights on dark is proven readable; worth loading over system default
 - A warm secondary accent (amber/gold) layered on a cool dark base creates visual warmth without leaving the premium dark aesthetic
@@ -42,7 +42,7 @@
 - 3D-press button effect: thick bottom-border disappears on tap → tactile without native haptics
 - Mascot carries emotional state (healthy / worried / celebrating) in notifications
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - Weekly calendar row with filled/empty day-dots is a single-row component that takes ~24px height — low visual cost, high habit reinforcement
 - Two-state streak: "today complete" (filled dot, amber) vs "pending" (outline dot, dim) is enough — no need for the full Duolingo complexity
 - Evening urgency nudge is notification-layer, not UI-layer — the UI just needs the streak counter visible
@@ -61,7 +61,7 @@
 - Premium = more data layers, not a different visual language
 - iOS 26 update adopted Liquid Glass — translucent navigation layer, content behind it
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - "Peek and reveal" pattern works for our Today card: the top of the card visible in the widget/lock-screen, tap to reveal full fact + why-care + source
 - Premium differentiation via data density (more layers, not different colors) — free gets the fact, premium gets the fact + real-time paper metadata + why-care + full citation
 - Deep black (`#0B0B0F`) is visually distinct from our current `#0B0F1A` navy — our navy actually has better warmth and is less harsh
@@ -81,7 +81,7 @@
 - Recent update refreshed the typeface specifically for reading comfort
 - Rating: 5/5 for design, specifically praised for "no mislaid element"
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - Color-block panel for the daily "hero moment" — a saturated stripe or block gives the Today card a sense of editorial weight
 - The "Figure of the Day" / "Quote of the Day" pattern is exactly our structure — a single statement with provenance below it
 - Progress through a finishable set (we have one fact, but history scrolls) creates completion satisfaction
@@ -101,7 +101,7 @@
 - Audio controls integrated into card without crowding — icon-only until tapped
 - Typography: heavy weight for title (700+), medium for insight (400–500), light/muted for metadata
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - Topic pill + hero text + body + metadata is our exact card structure — Blinkist proves this hierarchy is readable at mobile scale
 - Progress indicator at top of card (thin, 2px) communicates "you're in a sequence" — useful for our history feed
 - Elevation via background lightness (not border) is cleaner on dark: card bg slightly lighter than page bg, no border needed
@@ -120,7 +120,7 @@
 - Widget: shows today's artwork thumbnail + title
 - Light/dark widget variants
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - The "horizontal swipe through past days" pattern is more natural than a list for a daily-drop app — our history screen could be a horizontal swipe (or at minimum, feel like a timeline)
 - Date as primary navigation label: DailyArt shows the date as the page's identity, not the title
 - Category tags as tappable chips for exploration is a pattern worth adding to history view
@@ -139,7 +139,7 @@
 - Widget supports four font variants
 - Gesture-driven (swipe to mark read, dismiss, archive)
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - Offering a "Serif" reading mode for the fact text could be a premium toggle — serif on dark creates a journal/magazine feel (NYT, Economist vibe)
 - Gesture layer (swipe left = older, swipe right = newer) is more native than buttons — already partially implemented in the current app
 - Widget font choice matters: use a medium/semibold weight for the fact text so it reads at glance from a home screen
@@ -156,14 +156,14 @@
 - Lock screen and home screen widget variants
 - Lingo widget: dark + light themes, "Cool & Minimal" widget look, verified sources, topic pills
 
-**Reusable takeaways for KnowTok:**
+**Reusable takeaways for Ohlo:**
 - The "verified source" badge next to the attribution line builds trust for knowledge apps — a small checkmark or "Verified" label on academic sources
 - Pure-type widgets (no imagery) are cleaner for knowledge content than image backgrounds
 - Lock-screen widget (small, 1-2 lines) should show the fact's opening clause only — tap to see full
 
 ---
 
-## 2. Synthesized Design Direction for KnowTok Daily
+## 2. Synthesized Design Direction for Ohlo
 
 This is specific enough to hand to an implementing agent. All values are for React Native / Expo.
 
@@ -351,7 +351,7 @@ This is a visual system where premium feels editorially richer without requiring
 
 ### Available design-related skills in `~/.claude/skills/gstack/`
 
-| Skill | What it does | Fit for KnowTok |
+| Skill | What it does | Fit for Ohlo |
 |---|---|---|
 | `design-consultation` | Creates a `DESIGN.md` design system from scratch: researches the landscape, proposes palette/typography/layout/spacing/motion, generates font+color preview. Interactive — asks clarifying questions. | **(a) YES — primary first step.** Feed it this research doc as context. Output is a complete `DESIGN.md` token system tuned for this RN app. |
 | `design-review` | Live visual audit: takes screenshots of the running app, finds inconsistencies/hierarchy problems/AI-slop patterns, fixes them in source, commits atomically, re-verifies. Requires app running in simulator or on device. | **(b) YES — post-implementation polish.** Run after the design system is implemented. |

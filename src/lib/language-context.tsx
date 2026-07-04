@@ -19,7 +19,7 @@ export function LanguageProvider({ children, initialLang = "zh" }: { children: R
   const [lang, setLang] = useState<AppLanguage>(initialLang);
 
   useEffect(() => {
-    const stored = localStorage.getItem("knowtok-lang") as AppLanguage | null;
+    const stored = localStorage.getItem("ohlo-lang") as AppLanguage | null;
     if (stored && (stored === "en" || stored === "zh")) {
       setLang(stored);
     }
@@ -27,7 +27,7 @@ export function LanguageProvider({ children, initialLang = "zh" }: { children: R
 
   const handleSetLang = (newLang: AppLanguage) => {
     setLang(newLang);
-    localStorage.setItem("knowtok-lang", newLang);
+    localStorage.setItem("ohlo-lang", newLang);
   };
 
   return (

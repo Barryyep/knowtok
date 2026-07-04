@@ -72,7 +72,7 @@ export async function fetchArxivPapers(options: {
 
   const response = await fetch(`${ARXIV_API_URL}?${params.toString()}`, {
     headers: {
-      "User-Agent": "KnowTok/0.1 (arXiv ingestion)",
+      "User-Agent": "Ohlo/0.1 (arXiv ingestion)",
     },
   });
 

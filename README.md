@@ -1,6 +1,6 @@
-# KnowTok Web MVP
+# Ohlo Web MVP
 
-KnowTok is a web-first research feed built on arXiv + Supabase + OpenAI.
+Ohlo is a web-first research feed built on arXiv + Supabase + OpenAI.
 
 ## What this MVP includes
 

@@ -1,6 +1,6 @@
 # TODOS
 
-## Mobile (KnowTok Daily app)
+## Mobile (Ohlo app)
 
 ### Set up a mobile test framework (vitest or jest for mobile/)
 **Priority:** P1

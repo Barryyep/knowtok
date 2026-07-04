@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- **Renamed product from KnowTok to Ohlo.** Same product; new name, no other functional changes. Updates app display name, bundle id (`com.knowtok.daily` → `com.ohlo.daily`), App Group, URL scheme, widget/watch target identifiers, storage key prefixes, and all user-facing copy across web + mobile. Historical entries below still refer to the product by its former name.
+
 ## v0.2.0.0 — 2026-07-04
 
 KnowTok Daily: the widget-first mobile product.

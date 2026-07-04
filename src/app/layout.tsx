@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "KnowTok | Research Feed",
+  title: "Ohlo | Research Feed",
   description: "Swipe fresh arXiv papers and see what they mean for your work and life.",
 };
 

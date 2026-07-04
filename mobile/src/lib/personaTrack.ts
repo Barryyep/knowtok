@@ -5,7 +5,7 @@ import { generateText } from "./goodvision";
 import { extractJson } from "./jsonUtils";
 import type { FactKind, PersonaTrack, Profile } from "./types";
 
-const CACHE_PREFIX = "knowtok:personaTrack:v1:";
+const CACHE_PREFIX = "ohlo:personaTrack:v1:";
 
 /** The human_category values a paper-track persona can be routed to. */
 const VALID_CATEGORIES = [
@@ -51,7 +51,7 @@ function coerceCategories(value: unknown): string[] {
 // 律师 (lawyer) and 建筑工人 (construction worker) — stay on the "general"
 // (Wikipedia-grounded) track until Phase 2 adds their premium sources.
 const SYSTEM_PROMPT = [
-  "You route a person to the right daily-content track for KnowTok.",
+  "You route a person to the right daily-content track for Ohlo.",
   "Two tracks exist:",
   '- "paper": frontier research summaries, only in these categories: "AI & Robots", "Your Health", "Your Money", "Your Food", "Climate".',
   '- "general": broad, verified general knowledge, for people whom research in those categories does not personally serve.',

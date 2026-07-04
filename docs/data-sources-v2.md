@@ -131,7 +131,7 @@ OWID has a public, no-key API and a CC-BY license. Two useful surfaces:
 5. "US and Chinese companies train almost all of the world's most-used AI models" → **AI**
    (also: "A woman's risk of dying in pregnancy or childbirth varies hugely by country" → Health)
 
-These are *exactly* the KnowTok format: one surprising, comprehensible, sourced fact. **Usable rate ~85–90%**, and they map cleanly to Health / Food / Money / Climate.
+These are *exactly* the Ohlo format: one surprising, comprehensible, sourced fact. **Usable rate ~85–90%**, and they map cleanly to Health / Food / Money / Climate.
 
 **Grapher data API** (per-chart, no key) — for building your own facts with a citation:
 - Metadata: `https://ourworldindata.org/grapher/{slug}.metadata.json` → returns `title`, `citation` (e.g. "Riley (2005); Zijdeman et al. (2015); HMD (2025); UN WPP (2024)"), units, and a plain-language `descriptionShort`.
