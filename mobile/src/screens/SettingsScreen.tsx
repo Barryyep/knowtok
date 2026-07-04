@@ -46,6 +46,19 @@ export function SettingsScreen({ profile, onEditProfile }: Props) {
         </Pressable>
       </View>
 
+      <View style={styles.group}>
+        <View style={styles.row}>
+          <View style={styles.rowTextWrap}>
+            <Text style={[styles.rowTitle, { fontFamily: ui("semibold") }]}>
+              {strings.settingsWidgetTitle}
+            </Text>
+            <Text style={[styles.rowDetail, { fontFamily: ui() }]}>
+              {strings.settingsWidgetHint}
+            </Text>
+          </View>
+        </View>
+      </View>
+
       <Text style={[styles.about, { fontFamily: ui() }]}>{strings.settingsAbout}</Text>
     </ScrollView>
   );
@@ -68,6 +81,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.slip,
     overflow: "hidden",
+    marginBottom: spacing.md,
   },
   row: {
     padding: spacing.md,

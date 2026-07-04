@@ -63,14 +63,19 @@ export function FactCard({ fact, language, whyCarePending = false, compact = fal
       style={[styles.slip, isPaper && styles.slipPaper, compact && styles.slipCompact, motion]}
     >
       <View style={styles.topRow}>
-        <Text style={[styles.dispatch, compact && styles.dispatchCompact]}>
-          {formatDispatch(fact.source.factId)}
+        <View style={styles.topLeft}>
+          <Text style={[styles.dispatch, compact && styles.dispatchCompact]}>
+            {formatDispatch(fact.source.factId)}
+          </Text>
+          {isPaper && (
+            <View style={styles.seal}>
+              <Text style={styles.sealText}>{strings.firstClassSeal}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.topic} numberOfLines={1}>
+          {fact.topic}
         </Text>
-        {isPaper ? (
-          <Text style={styles.firstClass}>FIRST CLASS</Text>
-        ) : (
-          <Text style={styles.topic}>{fact.topic}</Text>
-        )}
       </View>
 
       <Text
@@ -136,6 +141,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: spacing.sm,
+  },
+  topLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    flexShrink: 1,
   },
   dispatch: {
     fontFamily: fonts.monoBold,
@@ -144,10 +156,18 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   dispatchCompact: { fontSize: 12 },
-  firstClass: {
+  // 头等件 seal — a tiny persimmon-bordered mono tag next to the №.
+  seal: {
+    borderWidth: 1,
+    borderColor: colors.persimmon,
+    borderRadius: radius.stamp,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  sealText: {
     fontFamily: fonts.mono,
-    fontSize: 10,
-    letterSpacing: 1.5,
+    fontSize: 8.5,
+    letterSpacing: 1,
     color: colors.persimmon,
   },
   topic: {
@@ -155,6 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.5,
     color: colors.paraSoft,
+    flexShrink: 0,
   },
   emoji: { fontSize: 26, marginTop: spacing.md, marginBottom: spacing.xs },
   factText: {

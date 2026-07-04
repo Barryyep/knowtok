@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -9,7 +9,13 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from "react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
+import {
+  GoogleSignin,
+  isSuccessResponse,
+} from "@react-native-google-signin/google-signin";
 
 import { t } from "../i18n";
 import { supabase } from "../lib/supabase";
@@ -20,6 +26,21 @@ interface Props {
   language: AppLanguage;
 }
 
+// Google needs OAuth client IDs that only the founder can mint in Google Cloud
+// Console. The Web client id is the one Supabase verifies id-tokens against, so
+// without it the Google button is meaningless — hide it until env is present.
+// See mobile/README.md → 第三方登录.
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const googleEnabled = Boolean(GOOGLE_WEB_CLIENT_ID);
+
+if (googleEnabled) {
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+  });
+}
+
 export function AuthScreen({ language }: Props) {
   const strings = t(language);
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
@@ -28,6 +49,13 @@ export function AuthScreen({ language }: Props) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === "ios") {
+      AppleAuthentication.isAvailableAsync().then(setAppleAvailable).catch(() => {});
+    }
+  }, []);
 
   const submit = async () => {
     setBusy(true);
@@ -49,6 +77,60 @@ export function AuthScreen({ language }: Props) {
       setBusy(false);
     }
   };
+
+  const signInWithApple = async () => {
+    setError(null);
+    setNotice(null);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        throw new Error("Apple did not return an identity token.");
+      }
+      const { error: err } = await supabase.auth.signInWithIdToken({
+        provider: "apple",
+        token: credential.identityToken,
+      });
+      if (err) throw err;
+      // Success → onAuthStateChange in App.tsx swaps in the main app.
+    } catch (err) {
+      // User taps Cancel → the library throws with code ERR_REQUEST_CANCELED.
+      if ((err as { code?: string })?.code === "ERR_REQUEST_CANCELED") {
+        return;
+      }
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    setError(null);
+    setNotice(null);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) {
+        return; // user cancelled
+      }
+      const idToken = response.data.idToken;
+      if (!idToken) {
+        throw new Error("Google did not return an id token.");
+      }
+      const { error: err } = await supabase.auth.signInWithIdToken({
+        provider: "google",
+        token: idToken,
+      });
+      if (err) throw err;
+      // Success → onAuthStateChange in App.tsx swaps in the main app.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const showSocial = (Platform.OS === "ios" && appleAvailable) || googleEnabled;
 
   return (
     <KeyboardAvoidingView
@@ -106,6 +188,38 @@ export function AuthScreen({ language }: Props) {
             {mode === "signIn" ? strings.switchToSignUp : strings.switchToSignIn}
           </Text>
         </Pressable>
+
+        {showSocial && (
+          <>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={[styles.dividerText, { fontFamily: uiFont(language) }]}>
+                {strings.orDivider}
+              </Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {Platform.OS === "ios" && appleAvailable && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                cornerRadius={radius.pill}
+                style={styles.appleButton}
+                onPress={signInWithApple}
+              />
+            )}
+
+            {googleEnabled && (
+              <Pressable style={styles.googleButton} onPress={signInWithGoogle}>
+                <Text
+                  style={[styles.googleButtonText, { fontFamily: uiFont(language, "semibold") }]}
+                >
+                  {strings.continueWithGoogle}
+                </Text>
+              </Pressable>
+            )}
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -152,4 +266,24 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: colors.paper0, fontSize: 16 },
   switchLink: { alignItems: "center", marginTop: spacing.lg },
   switchLinkText: { color: colors.marigold, fontSize: 14 },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.inkLine },
+  dividerText: {
+    color: colors.inkMuted,
+    fontSize: 13,
+    marginHorizontal: spacing.md,
+  },
+  appleButton: { height: 50, width: "100%", marginBottom: spacing.md },
+  googleButton: {
+    backgroundColor: colors.paper0,
+    borderRadius: radius.pill,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  googleButtonText: { color: colors.ink900, fontSize: 16 },
 });

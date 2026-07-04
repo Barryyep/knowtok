@@ -10,6 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.knowtok.daily",
+      "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.com.knowtok.daily"
@@ -50,7 +51,10 @@
       ],
       "@bacons/apple-targets",
       "expo-localization",
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }
