@@ -9,10 +9,14 @@ import type { DailyFact } from "../lib/types";
  * are ASCII (uuids / hex), for which charCodeAt == the UTF-8 byte.
  */
 export function dispatchNumber(factId: string): number {
+  // Defensive: stale/legacy cached facts may have no source.factId. Never let
+  // an undefined id crash the render (factId.length → "Cannot read property
+  // 'length' of undefined"); fall back to an empty string → deterministic 1000.
+  const id = factId ?? "";
   let h = 5381 >>> 0;
-  for (let i = 0; i < factId.length; i += 1) {
+  for (let i = 0; i < id.length; i += 1) {
     // h = h * 33 + c, wrapping at 2^32 (Math.imul matches Swift's &* / &+).
-    h = (Math.imul(h, 33) + factId.charCodeAt(i)) >>> 0;
+    h = (Math.imul(h, 33) + id.charCodeAt(i)) >>> 0;
   }
   return 1000 + (h % 9000);
 }
