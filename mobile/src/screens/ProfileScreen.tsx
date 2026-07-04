@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 
+import { Ionicons } from "@expo/vector-icons";
+
 import { systemLanguage, t } from "../i18n";
 import { savePersonaEverywhere } from "../lib/personaService";
 import type { AppLanguage, Profile } from "../lib/types";
@@ -21,9 +23,11 @@ interface Props {
   /** First-run setup shows the big CTA; from Settings it's just "Save". */
   isFirstRun: boolean;
   onSaved: (profile: Profile) => void;
+  /** Back affordance when opened from Settings (absent on first run). */
+  onCancel?: () => void;
 }
 
-export function ProfileScreen({ initial, isFirstRun, onSaved }: Props) {
+export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props) {
   const [profile, setProfile] = useState<Profile>(
     initial ?? { name: "", occupation: "", interests: "", language: systemLanguage() },
   );
@@ -53,6 +57,14 @@ export function ProfileScreen({ initial, isFirstRun, onSaved }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        {onCancel && (
+          <Pressable onPress={onCancel} hitSlop={12} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={22} color={colors.marigold} />
+            <Text style={[styles.backText, { fontFamily: ui() }]}>
+              {profile.language === "zh" ? "返回" : "Back"}
+            </Text>
+          </Pressable>
+        )}
         <Text style={styles.eyebrow}>KNOWTOK · DAILY DISPATCH</Text>
         <Text style={[styles.title, { fontFamily: ui("bold") }]}>{strings.profileTitle}</Text>
         <Text style={[styles.subtitle, { fontFamily: ui() }]}>{strings.profileSubtitle}</Text>
@@ -157,6 +169,14 @@ function Field({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ink900 },
   scroll: { padding: spacing.lg, paddingTop: spacing.xl * 2 },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginBottom: spacing.md,
+    marginLeft: -6,
+  },
+  backText: { color: colors.marigold, fontSize: 15 },
   eyebrow: {
     color: colors.marigold,
     fontFamily: fonts.mono,

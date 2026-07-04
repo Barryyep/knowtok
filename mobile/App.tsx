@@ -120,6 +120,7 @@ export default function App() {
           setProfile(saved);
           setEditingProfile(false);
         }}
+        onCancel={profile ? () => setEditingProfile(false) : undefined}
       />
     );
   } else {
