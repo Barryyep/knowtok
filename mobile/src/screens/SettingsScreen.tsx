@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { t } from "../i18n";
 import { supabase } from "../lib/supabase";
@@ -12,10 +13,14 @@ interface Props {
 
 export function SettingsScreen({ profile, onEditProfile }: Props) {
   const strings = t(profile.language);
+  const insets = useSafeAreaInsets();
   const ui = (w?: "regular" | "medium" | "semibold" | "bold") => uiFont(profile.language, w);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.scroll}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.md }]}
+    >
       <Text style={styles.eyebrow}>KNOWTOK · DAILY DISPATCH</Text>
       <Text style={[styles.heading, { fontFamily: ui("bold") }]}>{strings.tabSettings}</Text>
 

@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { requestWidgetUpdate } from "react-native-android-widget";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { t } from "../i18n";
 import { ANDROID_WIDGET_NAME } from "../lib/config";
@@ -76,8 +77,13 @@ export function TodayScreen({ profile }: Props) {
     void load(false);
   }, [load]);
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.scroll}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.md }]}
+    >
       {loading && (
         <View style={styles.centerBox}>
           <ActivityIndicator color={colors.persimmon} size="large" />

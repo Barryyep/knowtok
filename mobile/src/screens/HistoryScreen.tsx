@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { t } from "../i18n";
 import { loadFactHistory } from "../lib/storage";
@@ -14,6 +15,7 @@ interface Props {
 
 export function HistoryScreen({ profile }: Props) {
   const strings = t(profile.language);
+  const insets = useSafeAreaInsets();
   const [history, setHistory] = useState<DailyFact[]>([]);
 
   useFocusEffect(
@@ -27,7 +29,7 @@ export function HistoryScreen({ profile }: Props) {
       <FlatList
         data={history}
         keyExtractor={(item) => item.source.factId}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingTop: insets.top + spacing.md }]}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.eyebrow}>ARCHIVE</Text>
