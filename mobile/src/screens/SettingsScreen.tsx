@@ -2,16 +2,18 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { t } from "../i18n";
+import { readerTypeLabel, readingStyleLabel } from "../lib/onboarding";
 import { supabase } from "../lib/supabase";
-import type { Profile } from "../lib/types";
+import type { AppLanguage, Profile } from "../lib/types";
 import { colors, fonts, radius, spacing, uiFont } from "../theme";
 
 interface Props {
   profile: Profile;
   onEditProfile: () => void;
+  onChangeLanguage: (lang: AppLanguage) => void;
 }
 
-export function SettingsScreen({ profile, onEditProfile }: Props) {
+export function SettingsScreen({ profile, onEditProfile, onChangeLanguage }: Props) {
   const strings = t(profile.language);
   const insets = useSafeAreaInsets();
   const ui = (w?: "regular" | "medium" | "semibold" | "bold") => uiFont(profile.language, w);
@@ -24,6 +26,7 @@ export function SettingsScreen({ profile, onEditProfile }: Props) {
       <Text style={styles.eyebrow}>OHLO · DAILY DISPATCH</Text>
       <Text style={[styles.heading, { fontFamily: ui("bold") }]}>{strings.tabSettings}</Text>
 
+      {/* Profile group */}
       <View style={styles.group}>
         <Pressable style={styles.row} onPress={onEditProfile}>
           <View style={styles.rowTextWrap}>
@@ -31,7 +34,16 @@ export function SettingsScreen({ profile, onEditProfile }: Props) {
               {strings.settingsProfile}
             </Text>
             <Text style={[styles.rowDetail, { fontFamily: ui() }]}>
-              {[profile.occupation, profile.interests].filter(Boolean).join(" · ") || "—"}
+              {[
+                profile.occupation
+                  ? readerTypeLabel(profile.occupation, profile.language)
+                  : "",
+                profile.interests
+                  ? readingStyleLabel(profile.interests, profile.language)
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" · ") || "—"}
             </Text>
           </View>
           <Text style={styles.chevron}>›</Text>
@@ -46,6 +58,39 @@ export function SettingsScreen({ profile, onEditProfile }: Props) {
         </Pressable>
       </View>
 
+      {/* Language group */}
+      <View style={styles.group}>
+        <View style={styles.row}>
+          <View style={styles.rowTextWrap}>
+            <Text style={[styles.rowTitle, { fontFamily: ui("semibold") }]}>
+              {strings.languageLabel}
+            </Text>
+          </View>
+          <View style={langToggleStyles.pillRow}>
+            {(["zh", "en"] as AppLanguage[]).map((lang) => (
+              <Pressable
+                key={lang}
+                onPress={() => onChangeLanguage(lang)}
+                style={[
+                  langToggleStyles.pill,
+                  profile.language === lang && langToggleStyles.pillActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    langToggleStyles.pillText,
+                    profile.language === lang && langToggleStyles.pillTextActive,
+                  ]}
+                >
+                  {lang === "zh" ? "中文" : "English"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {/* Widget group */}
       <View style={styles.group}>
         <View style={styles.row}>
           <View style={styles.rowTextWrap}>
@@ -63,6 +108,20 @@ export function SettingsScreen({ profile, onEditProfile }: Props) {
     </ScrollView>
   );
 }
+
+const langToggleStyles = StyleSheet.create({
+  pillRow: { flexDirection: "row", gap: spacing.xs },
+  pill: {
+    borderColor: colors.inkLine,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+  },
+  pillActive: { backgroundColor: colors.persimmon, borderColor: colors.persimmon },
+  pillText: { color: colors.inkMuted, fontSize: 14 },
+  pillTextActive: { color: colors.paper0, fontWeight: "600" },
+});
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ink900 },

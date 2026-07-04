@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ENV_API_KEY } from "./config";
 import { generateText } from "./goodvision";
 import { extractJson } from "./jsonUtils";
+import { interestsForPrompt, occupationForPrompt } from "./onboarding";
 import { domainsToCategories } from "./paperService";
 import { domainById } from "./taxonomy";
 import type { AppLanguage, FactKind, PersonaTrack, Profile } from "./types";
@@ -26,7 +27,7 @@ const VALID_CATEGORIES = [
  */
 export function personaHash(profile: Profile): string {
   const basis = [
-    profile.occupation,
+    profile.occupation, // raw stored value — hash must differ when the id itself changes
     profile.interests,
     (profile.curiosityDomains ?? []).slice().sort().join(","),
   ]
@@ -108,8 +109,8 @@ const SYSTEM_PROMPT = [
 
 function buildUserPrompt(profile: Profile): string {
   return [
-    `Occupation: ${profile.occupation || "(unknown)"}`,
-    `Interests: ${profile.interests || "(none given)"}`,
+    `Occupation: ${profile.occupation ? occupationForPrompt(profile.occupation) : "(unknown)"}`,
+    `Interests: ${profile.interests ? interestsForPrompt(profile.interests) : "(none given)"}`,
     "",
     "Classify this person. Return the JSON only.",
   ].join("\n");

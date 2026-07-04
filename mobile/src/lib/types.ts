@@ -2,10 +2,19 @@ export type AppLanguage = "en" | "zh";
 
 /** Local mirror of the Supabase user_personas row (subset the app uses). */
 export interface Profile {
+  /** LEGACY — no longer collected by onboarding; kept for old personas. */
   name: string;
-  /** Maps to user_personas.job_title. */
+  /**
+   * Maps to user_personas.job_title. New onboarding stores a ReaderType id
+   * (onboarding.ts); legacy profiles hold free text. Always resolve via
+   * occupationForPrompt/readerTypeLabel, never use raw.
+   */
   occupation: string;
-  /** Comma-separated free text; maps to user_personas.interests[]. */
+  /**
+   * Maps to user_personas.interests[]. New onboarding stores a ReadingStyle
+   * id (onboarding.ts); legacy profiles hold comma-separated free text.
+   * Always resolve via interestsForPrompt/readingStyleLabel.
+   */
   interests: string;
   /**
    * The user's declared curiosity spot — domain ids from taxonomy.ts,
@@ -16,6 +25,11 @@ export interface Profile {
   curiosityDomains: string[];
   /** Maps to user_personas.age_range (optional, e.g. "25-34"). */
   ageRange?: string;
+  /**
+   * When the user tends to read (quiz Q12): "cracks" | "night". Local-only
+   * for now (no remote column yet); will drive notification/widget timing.
+   */
+  readingMoment?: string;
   language: AppLanguage;
   /** Optional goodvision key override (else EXPO_PUBLIC_GOODVISION_API_KEY). */
   apiKey?: string;

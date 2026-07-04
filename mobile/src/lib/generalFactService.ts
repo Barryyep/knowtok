@@ -1,6 +1,7 @@
 import { ENV_API_KEY } from "./config";
 import { generateText } from "./goodvision";
 import { extractJson, hashStringToNumber } from "./jsonUtils";
+import { interestsForPrompt, isReadingStyleId, occupationForPrompt, readerTypeById } from "./onboarding";
 import type { AppLanguage, DailyFact, Profile } from "./types";
 import { fetchWikiGrounding, type WikiGrounding } from "./wikipedia";
 
@@ -41,8 +42,8 @@ function buildUser(profile: Profile, recentFacts: string[], isZh: boolean, focus
   const avoid = recentFacts.filter(Boolean).slice(0, 20);
   const profileLines = [
     focusDomain ? (isZh ? `今天的主题领域：${focusDomain}` : `Today's focus domain: ${focusDomain}`) : null,
-    profile.occupation ? `Occupation: ${profile.occupation}` : null,
-    profile.interests ? `Interests: ${profile.interests}` : null,
+    profile.occupation ? `Occupation: ${occupationForPrompt(profile.occupation)}` : null,
+    profile.interests ? `Interests: ${interestsForPrompt(profile.interests)}` : null,
   ].filter(Boolean);
 
   return [
@@ -68,10 +69,17 @@ function buildUser(profile: Profile, recentFacts: string[], isZh: boolean, focus
 function deriveSearchTerms(profile: Profile, isZh: boolean, focusDomain?: string): string[] {
   const terms: string[] = [];
   if (focusDomain?.trim()) terms.push(focusDomain.trim());
-  if (profile.occupation?.trim()) terms.push(profile.occupation.trim());
-  for (const interest of (profile.interests || "").split(/[,，、;；]/)) {
-    const t = interest.trim();
-    if (t) terms.push(t);
+  // ReaderType ids (e.g. "professional") must not become wiki search terms;
+  // the rotated domain label already leads.
+  if (profile.occupation?.trim() && !readerTypeById(profile.occupation)) {
+    terms.push(profile.occupation.trim());
+  }
+  // ReadingStyle ids (e.g. "social_currency") are not meaningful search terms.
+  if (!isReadingStyleId(profile.interests || "")) {
+    for (const interest of (profile.interests || "").split(/[,，、;；]/)) {
+      const t = interest.trim();
+      if (t) terms.push(t);
+    }
   }
   // Evergreen fallbacks so search never comes back completely empty.
   terms.push(isZh ? "科学" : "Science");
@@ -109,8 +117,8 @@ function buildGroundedUser(
   const avoid = recentFacts.filter(Boolean).slice(0, 20);
   const profileLines = [
     focusDomain ? (isZh ? `今天的主题领域：${focusDomain}` : `Today's focus domain: ${focusDomain}`) : null,
-    profile.occupation ? `Occupation: ${profile.occupation}` : null,
-    profile.interests ? `Interests: ${profile.interests}` : null,
+    profile.occupation ? `Occupation: ${occupationForPrompt(profile.occupation)}` : null,
+    profile.interests ? `Interests: ${interestsForPrompt(profile.interests)}` : null,
   ].filter(Boolean);
 
   return [

@@ -1,3 +1,4 @@
+import { interestsForPrompt, occupationForPrompt } from "./onboarding";
 import type { DailyFact, Profile } from "./types";
 
 export interface WhyCarePrompt {
@@ -19,8 +20,8 @@ export function buildWhyCarePrompt(profile: Profile, fact: DailyFact): WhyCarePr
 
   const profileLines = [
     profile.name ? `Name: ${profile.name}` : null,
-    profile.occupation ? `Occupation: ${profile.occupation}` : null,
-    profile.interests ? `Interests: ${profile.interests}` : null,
+    profile.occupation ? `Occupation: ${occupationForPrompt(profile.occupation)}` : null,
+    profile.interests ? `Interests: ${interestsForPrompt(profile.interests)}` : null,
   ].filter(Boolean);
 
   const user = [

@@ -17,10 +17,10 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { systemLanguage, t } from "./src/i18n";
-import { fetchRemotePersona } from "./src/lib/personaService";
+import { fetchRemotePersona, savePersonaEverywhere } from "./src/lib/personaService";
 import { loadProfile, saveProfile } from "./src/lib/storage";
 import { supabase } from "./src/lib/supabase";
-import type { Profile } from "./src/lib/types";
+import type { AppLanguage, Profile } from "./src/lib/types";
 import { AuthScreen } from "./src/screens/AuthScreen";
 import { HistoryScreen } from "./src/screens/HistoryScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
@@ -113,7 +113,15 @@ export default function App() {
   const renderSettings = useCallback(
     () =>
       profile ? (
-        <SettingsScreen profile={profile} onEditProfile={() => setEditingProfile(true)} />
+        <SettingsScreen
+          profile={profile}
+          onEditProfile={() => setEditingProfile(true)}
+          onChangeLanguage={(lang: AppLanguage) => {
+            const updated: Profile = { ...profile, language: lang };
+            setProfile(updated);
+            void savePersonaEverywhere(updated);
+          }}
+        />
       ) : null,
     [profile],
   );

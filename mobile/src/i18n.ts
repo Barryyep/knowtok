@@ -31,34 +31,30 @@ export interface UIStrings {
   // Profile
   profileTitle: string;
   profileSubtitle: string;
-  nameLabel: string;
-  namePlaceholder: string;
-  occupationLabel: string;
-  occupationPlaceholder: string;
-  interestsLabel: string;
-  interestsPlaceholder: string;
   languageLabel: string;
   apiKeyLabel: string;
   save: string;
   startDaily: string;
-  needProfile: string;
-  // Onboarding — multi-step curiosity flow
+  // Onboarding — V3.2 quiz flow
   stepBack: string;
   continueLabel: string;
-  // Step 1 — 好奇心测定
-  curiosityTitle: string;
-  curiositySubtitle: string;
-  curiosityGateHint: string;
-  curiosityDomainsLead: string;
-  // Step 2 — 这是写给谁的信
-  aboutTitle: string;
-  aboutSubtitle: string;
-  aboutWhyLine: string;
-  // Step 3 — 收信偏好
-  prefsTitle: string;
-  prefsSubtitle: string;
-  ageRangeLabel: string;
-  startDispatches: string;
+  skipLabel: string;
+  nameTitle: string;
+  nameSubtitle: string;
+  cardRoundTitle: string;
+  ageTitle: string;
+  ageSubtitle: string;
+  revealSorting: string;
+  revealRadarTitle: string;
+  revealSpectrumLabel: string;
+  revealSurprise: string;
+  revealDepth: string;
+  revealRhythmLabel: string;
+  revealRhythmCracks: string;
+  revealRhythmNight: string;
+  revealRhythmDefault: string;
+  revealFootnote: string;
+  revealCta: string;
   // Today
   tabToday: string;
   tabHistory: string;
@@ -104,34 +100,30 @@ const en: UIStrings = {
   // Profile
   profileTitle: "Who is this for?",
   profileSubtitle: "Facts are picked and explained based on what you do and love.",
-  nameLabel: "Name (optional)",
-  namePlaceholder: "e.g. Barry",
-  occupationLabel: "What do you do?",
-  occupationPlaceholder: "e.g. backend engineer",
-  interestsLabel: "What are you into?",
-  interestsPlaceholder: "e.g. coffee, space, tennis",
   languageLabel: "Content language",
   apiKeyLabel: "goodvision API key",
   save: "Save",
   startDaily: "Start my daily facts",
-  needProfile: "Add your occupation or at least one interest.",
-  // Onboarding — multi-step curiosity flow
+  // Onboarding
   stepBack: "Back",
   continueLabel: "Continue",
-  // Step 1
-  curiosityTitle: "What makes you stop scrolling?",
-  curiositySubtitle: "Tap the ones you'd actually open.",
-  curiosityGateHint: "Pick sparks from at least 2 different areas.",
-  curiosityDomainsLead: "Your curiosity so far",
-  // Step 2
-  aboutTitle: "Who is this letter for?",
-  aboutSubtitle: "A little context sharpens how each fact is explained for you.",
-  aboutWhyLine: "Your work and hobbies are only used to write the “why it matters to you” line.",
-  // Step 3
-  prefsTitle: "Delivery preferences",
-  prefsSubtitle: "Last touches before your first dispatch arrives.",
-  ageRangeLabel: "Your age range (optional)",
-  startDispatches: "Start my dispatches",
+  skipLabel: "skip",
+  nameTitle: "What should we call you",
+  nameSubtitle: "anything works, or skip",
+  cardRoundTitle: "Which one would you open",
+  ageTitle: "Which stretch of life",
+  ageSubtitle: "optional",
+  revealSorting: "Sorting your answers",
+  revealRadarTitle: "What pulls you in",
+  revealSpectrumLabel: "Taste",
+  revealSurprise: "Surprise",
+  revealDepth: "Depth",
+  revealRhythmLabel: "Rhythm",
+  revealRhythmCracks: "One a day · in the cracks",
+  revealRhythmNight: "One a day · at night",
+  revealRhythmDefault: "One a day",
+  revealFootnote: "Not a verdict. It shifts with what you read.",
+  revealCta: "See today's",
   // Today
   tabToday: "Today",
   tabHistory: "History",
@@ -178,34 +170,30 @@ const zh: UIStrings = {
   // Profile
   profileTitle: "这是为谁定制的?",
   profileSubtitle: "根据你的职业和爱好,挑选并解读每天的发现。",
-  nameLabel: "名字(可选)",
-  namePlaceholder: "比如 Barry",
-  occupationLabel: "你是做什么的?",
-  occupationPlaceholder: "比如 后端工程师",
-  interestsLabel: "你的兴趣爱好?",
-  interestsPlaceholder: "比如 咖啡、航天、网球",
   languageLabel: "内容语言",
   apiKeyLabel: "goodvision API key",
   save: "保存",
   startDaily: "开始我的每日冷知识",
-  needProfile: "请至少填写职业或一个兴趣爱好。",
-  // Onboarding — 多步好奇心引导
+  // Onboarding
   stepBack: "返回",
   continueLabel: "继续",
-  // Step 1
-  curiosityTitle: "什么会让你停下来?",
-  curiositySubtitle: "点亮你会想点开的那些。",
-  curiosityGateHint: "至少点亮 2 个不同领域的信笺。",
-  curiosityDomainsLead: "你亮起的领域",
-  // Step 2
-  aboutTitle: "这是写给谁的信",
-  aboutSubtitle: "一点背景,能让每条解读更贴近你。",
-  aboutWhyLine: "职业和爱好只用来写「跟你有什么关系」那一句。",
-  // Step 3
-  prefsTitle: "收信偏好",
-  prefsSubtitle: "在第一封信笺寄出前,最后几笔。",
-  ageRangeLabel: "你的年龄段(可选)",
-  startDispatches: "开始收信",
+  skipLabel: "跳过",
+  nameTitle: "怎么称呼你",
+  nameSubtitle: "随便写,或者跳过",
+  cardRoundTitle: "哪条你会点开",
+  ageTitle: "你在哪个人生阶段",
+  ageSubtitle: "可跳过",
+  revealSorting: "在整理你的答案",
+  revealRadarTitle: "你的好奇雷达",
+  revealSpectrumLabel: "口味",
+  revealSurprise: "惊奇",
+  revealDepth: "深读",
+  revealRhythmLabel: "节奏",
+  revealRhythmCracks: "每天一条 · 缝隙时间",
+  revealRhythmNight: "每天一条 · 夜晚",
+  revealRhythmDefault: "每天一条",
+  revealFootnote: "这不是结论。你读什么,它就跟着变。",
+  revealCta: "看今天这条",
   // Today
   tabToday: "今日",
   tabHistory: "历史",
