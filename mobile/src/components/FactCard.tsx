@@ -69,9 +69,7 @@ export function FactCard({ fact, language, whyCarePending = false, compact = fal
         {isPaper ? (
           <Text style={styles.firstClass}>FIRST CLASS</Text>
         ) : (
-          <Text style={styles.topic}>
-            {fact.emoji} {fact.topic}
-          </Text>
+          <Text style={styles.topic}>{fact.topic}</Text>
         )}
       </View>
 

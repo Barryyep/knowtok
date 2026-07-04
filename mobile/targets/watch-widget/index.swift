@@ -81,18 +81,19 @@ struct ComplicationView: View {
       if let fact = entry.fact {
         switch family {
         case .accessoryInline:
-          Text("\(fact.emoji) \(fact.topic)")
+          Text(fact.topic)
         case .accessoryCircular:
           VStack(spacing: 0) {
-            Text(fact.emoji).font(.title3)
+            Text("K").font(.system(.title3, design: .serif)).fontWeight(.bold)
           }
         case .accessoryCorner:
-          Text(fact.emoji)
-            .font(.title3)
+          Text("K")
+            .font(.system(.title3, design: .serif))
+            .fontWeight(.bold)
             .widgetLabel(fact.topic)
         default: // accessoryRectangular
           VStack(alignment: .leading, spacing: 1) {
-            Text("№ \(dispatchNumber(fact.source?.factId ?? fact.source?.arxivId ?? fact.date)) · \(fact.emoji) \(fact.topic)")
+            Text("№ \(dispatchNumber(fact.source?.factId ?? fact.source?.arxivId ?? fact.date)) · \(fact.topic)")
               .font(.system(.caption, design: .monospaced))
               .widgetAccentable()
             Text(fact.fact)
@@ -101,7 +102,7 @@ struct ComplicationView: View {
           }
         }
       } else {
-        Text("💡")
+        Text("K").font(.system(.title3, design: .serif)).fontWeight(.bold)
       }
     }
     .containerBackground(for: .widget) { Color.black }

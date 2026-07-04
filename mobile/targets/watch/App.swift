@@ -98,7 +98,7 @@ struct ContentView: View {
               .fontWeight(.bold)
               .foregroundStyle(persimmon)
             Spacer()
-            Text("\(fact.emoji) \(fact.topic)")
+            Text(fact.topic)
               .font(.system(.caption2, design: .monospaced))
               .foregroundStyle(marigold)
           }
@@ -114,13 +114,8 @@ struct ContentView: View {
         .padding(10)
         .background(paper)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(alignment: .bottom) {
-          Rectangle().fill(paperEdge).frame(height: 4)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
       } else {
         VStack(spacing: 8) {
-          Text("💌").font(.largeTitle)
           Text("在 iPhone 上打开 KnowTok\n同步今日信笺")
             .font(.system(.footnote, design: .serif))
             .multilineTextAlignment(.center)
