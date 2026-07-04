@@ -1,7 +1,29 @@
 import { categoryEmoji, categoryLabel } from "./categories";
 import { hashStringToNumber } from "./jsonUtils";
 import { supabase } from "./supabase";
+import { domainById } from "./taxonomy";
 import type { AppLanguage, DailyFact, PaperRow } from "./types";
+
+/**
+ * Translate requested domain ids → the acceptable papers.human_category values.
+ * A domain maps to its legacy category labels (arXiv rows) UNION its own id
+ * (owid rows store the domain id in human_category — the agreed convention).
+ * Any token that is NOT a known domain id is passed through unchanged, so
+ * legacy callers that already hold literal human_category values still work.
+ */
+export function domainsToCategories(domains: string[]): string[] {
+  const out = new Set<string>();
+  for (const token of domains) {
+    const domain = domainById(token);
+    if (domain) {
+      out.add(domain.id);
+      for (const legacy of domain.legacyCategories) out.add(legacy);
+    } else {
+      out.add(token);
+    }
+  }
+  return Array.from(out);
+}
 
 /**
  * Widened row: `source` + `metadata` are selected so the citation label can
@@ -18,12 +40,14 @@ const PAPER_FIELDS =
 
 /**
  * Recent papers that have content in the user's language, optionally scoped
- * to the persona's human_category values. Small pool — the daily pick
- * rotates within it.
+ * to a set of curiosity DOMAINS. Each domain id is expanded to the
+ * human_category values it can match (legacy labels ∪ the domain id itself);
+ * legacy human_category values passed directly still work. Small pool — the
+ * daily pick rotates within it.
  */
 export async function fetchCandidatePapers(
   language: AppLanguage,
-  categories: string[] = [],
+  domains: string[] = [],
 ): Promise<CandidatePaper[]> {
   let query = supabase
     .from("papers")
@@ -33,6 +57,7 @@ export async function fetchCandidatePapers(
   if (language === "zh") {
     query = query.not("hook_summary_zh", "is", null);
   }
+  const categories = domainsToCategories(domains);
   if (categories.length > 0) {
     query = query.in("human_category", categories);
   }

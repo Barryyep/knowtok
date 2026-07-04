@@ -5,8 +5,17 @@ export interface Profile {
   name: string;
   /** Maps to user_personas.job_title. */
   occupation: string;
-  /** Comma-separated; maps to user_personas.interests[]. */
+  /** Comma-separated free text; maps to user_personas.interests[]. */
   interests: string;
+  /**
+   * The user's declared curiosity spot — domain ids from taxonomy.ts,
+   * selected via the onboarding curiosity deck. Maps to
+   * user_personas.curiosity_tags[]. Drives content routing directly;
+   * LLM classification is only the fallback when empty.
+   */
+  curiosityDomains: string[];
+  /** Maps to user_personas.age_range (optional, e.g. "25-34"). */
+  ageRange?: string;
   language: AppLanguage;
   /** Optional goodvision key override (else EXPO_PUBLIC_GOODVISION_API_KEY). */
   apiKey?: string;

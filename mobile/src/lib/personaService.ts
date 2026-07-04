@@ -13,7 +13,7 @@ export async function fetchRemotePersona(): Promise<Profile | null> {
   if (!uid) return null;
   const { data, error } = await supabase
     .from("user_personas")
-    .select("job_title, interests, language, manual_notes")
+    .select("job_title, interests, language, manual_notes, curiosity_tags, age_range")
     .eq("user_id", uid)
     .maybeSingle();
   if (error || !data) return null;
@@ -21,6 +21,8 @@ export async function fetchRemotePersona(): Promise<Profile | null> {
     name: "",
     occupation: data.job_title ?? "",
     interests: (data.interests ?? []).join(", "),
+    curiosityDomains: data.curiosity_tags ?? [],
+    ageRange: data.age_range ?? undefined,
     language: data.language === "en" ? "en" : "zh",
   };
 }
@@ -39,6 +41,8 @@ export async function saveRemotePersona(profile: Profile): Promise<void> {
     user_id: userId,
     job_title: profile.occupation || null,
     interests,
+    curiosity_tags: profile.curiosityDomains ?? [],
+    age_range: profile.ageRange ?? null,
     language: profile.language,
     profile_source: "manual",
   });

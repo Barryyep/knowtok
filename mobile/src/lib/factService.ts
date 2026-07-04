@@ -1,6 +1,7 @@
 import { ENV_API_KEY } from "./config";
 import { generateGeneralFact } from "./generalFactService";
 import { generateText } from "./goodvision";
+import { hashStringToNumber } from "./jsonUtils";
 import { fetchCandidatePapers, paperToFact, pickDailyPaper } from "./paperService";
 import { getPersonaTrack } from "./personaTrack";
 import { buildWhyCarePrompt, cleanWhyCare } from "./prompt";
@@ -11,6 +12,7 @@ import {
   updateStoredWhyCare,
 } from "./storage";
 import { supabase } from "./supabase";
+import { domainById } from "./taxonomy";
 import type { DailyFact, Profile } from "./types";
 
 /** Local (not UTC) calendar date, so the fact rolls over at the user's midnight. */
@@ -45,6 +47,14 @@ export async function getTodayFact(
   const userId = userData.user?.id ?? "anon";
 
   const history = await loadFactHistory();
+
+  // v2: declared curiosity domains drive a per-day rotation across the user's
+  // selected domains. Legacy users (no domains) fall back to LLM classification.
+  const selectedDomains = (profile.curiosityDomains ?? []).filter((id) => domainById(id));
+  if (selectedDomains.length > 0) {
+    return buildDomainRotatedFact(profile, today, userId, selectedDomains, history, cached, forceRefresh);
+  }
+
   const track = await getPersonaTrack(profile);
 
   // General track: personas that research can't serve get an LLM-tailored,
@@ -77,6 +87,54 @@ export async function getTodayFact(
 }
 
 /**
+ * Domain-rotation path (v2). Deterministically pick the day's domain from the
+ * user's selected curiosity domains; a paper-capable domain WITH papers uses
+ * the paper flow scoped to that domain, otherwise the general flow is seeded
+ * with the domain so the wiki grounding stays on-topic. "换一条" (forceRefresh)
+ * rotates to another domain when more than one is selected.
+ */
+async function buildDomainRotatedFact(
+  profile: Profile,
+  today: string,
+  userId: string,
+  selectedDomains: string[],
+  history: DailyFact[],
+  cached: DailyFact | null,
+  forceRefresh: boolean,
+): Promise<DailyFact> {
+  const excludeIds = history.map((f) => f.source.factId);
+  if (forceRefresh && cached) excludeIds.push(cached.source.factId);
+
+  // Stable domain for (user, date); on refresh advance so the topic changes.
+  const rotation = forceRefresh ? Math.max(1, excludeIds.length) : 0;
+  const dayIndex = (hashStringToNumber(`${userId}:${today}`) + rotation) % selectedDomains.length;
+  const domainId = selectedDomains[dayIndex];
+  const domain = domainById(domainId)!;
+  const focusDomain = domain[profile.language];
+
+  // Paper-capable domain with papers → paper flow scoped to that domain.
+  if (domain.sources.includes("papers")) {
+    const papers = await fetchCandidatePapers(profile.language, [domainId]);
+    if (papers.length > 0) {
+      const paper = pickDailyPaper(
+        papers,
+        userId,
+        today + (forceRefresh ? `:${excludeIds.length}` : "") + `:${domainId}`,
+        excludeIds,
+      );
+      if (paper) {
+        const fact = paperToFact(paper, profile.language, today);
+        await saveFact(fact);
+        return fact;
+      }
+    }
+  }
+
+  // Otherwise a general fact seeded with the day's domain.
+  return buildGeneralFact(profile, today, history, cached, forceRefresh, focusDomain);
+}
+
+/**
  * Generate + persist a general-track fact for today, avoiding recently shown
  * topics. Falls back to the cached fact if generation fails.
  */
@@ -86,6 +144,7 @@ async function buildGeneralFact(
   history: DailyFact[],
   cached: DailyFact | null,
   forceRefresh: boolean,
+  focusDomain?: string,
 ): Promise<DailyFact> {
   // Without a key, generateGeneralFact would throw deep inside generateText.
   // Keep the cached fact instead of surfacing that failure to the UI.
@@ -99,7 +158,7 @@ async function buildGeneralFact(
     recentFacts.unshift(cached.topic, cached.fact);
   }
   try {
-    const fact = await generateGeneralFact(profile, today, recentFacts);
+    const fact = await generateGeneralFact(profile, today, recentFacts, focusDomain);
     await saveFact(fact);
     return fact;
   } catch (err) {

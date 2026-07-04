@@ -42,6 +42,23 @@ export interface UIStrings {
   save: string;
   startDaily: string;
   needProfile: string;
+  // Onboarding — multi-step curiosity flow
+  stepBack: string;
+  continueLabel: string;
+  // Step 1 — 好奇心测定
+  curiosityTitle: string;
+  curiositySubtitle: string;
+  curiosityGateHint: string;
+  curiosityDomainsLead: string;
+  // Step 2 — 这是写给谁的信
+  aboutTitle: string;
+  aboutSubtitle: string;
+  aboutWhyLine: string;
+  // Step 3 — 收信偏好
+  prefsTitle: string;
+  prefsSubtitle: string;
+  ageRangeLabel: string;
+  startDispatches: string;
   // Today
   tabToday: string;
   tabHistory: string;
@@ -98,6 +115,23 @@ const en: UIStrings = {
   save: "Save",
   startDaily: "Start my daily facts",
   needProfile: "Add your occupation or at least one interest.",
+  // Onboarding — multi-step curiosity flow
+  stepBack: "Back",
+  continueLabel: "Continue",
+  // Step 1
+  curiosityTitle: "What makes you stop scrolling?",
+  curiositySubtitle: "Tap the ones you'd actually open.",
+  curiosityGateHint: "Pick sparks from at least 2 different areas.",
+  curiosityDomainsLead: "Your curiosity so far",
+  // Step 2
+  aboutTitle: "Who is this letter for?",
+  aboutSubtitle: "A little context sharpens how each fact is explained for you.",
+  aboutWhyLine: "Your work and hobbies are only used to write the “why it matters to you” line.",
+  // Step 3
+  prefsTitle: "Delivery preferences",
+  prefsSubtitle: "Last touches before your first dispatch arrives.",
+  ageRangeLabel: "Your age range (optional)",
+  startDispatches: "Start my dispatches",
   // Today
   tabToday: "Today",
   tabHistory: "History",
@@ -155,6 +189,23 @@ const zh: UIStrings = {
   save: "保存",
   startDaily: "开始我的每日冷知识",
   needProfile: "请至少填写职业或一个兴趣爱好。",
+  // Onboarding — 多步好奇心引导
+  stepBack: "返回",
+  continueLabel: "继续",
+  // Step 1
+  curiosityTitle: "什么会让你停下来?",
+  curiositySubtitle: "点亮你会想点开的那些。",
+  curiosityGateHint: "至少点亮 2 个不同领域的信笺。",
+  curiosityDomainsLead: "你亮起的领域",
+  // Step 2
+  aboutTitle: "这是写给谁的信",
+  aboutSubtitle: "一点背景,能让每条解读更贴近你。",
+  aboutWhyLine: "职业和爱好只用来写「跟你有什么关系」那一句。",
+  // Step 3
+  prefsTitle: "收信偏好",
+  prefsSubtitle: "在第一封信笺寄出前,最后几笔。",
+  ageRangeLabel: "你的年龄段(可选)",
+  startDispatches: "开始收信",
   // Today
   tabToday: "今日",
   tabHistory: "历史",

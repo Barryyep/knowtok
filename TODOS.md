@@ -18,6 +18,11 @@ WidgetKit timeline only re-reads App Group data; after midnight it shows yesterd
 **Priority:** P1
 EXPO_PUBLIC_GOODVISION_API_KEY ships in the JS bundle (extractable). Proxy whyCare/general-fact calls through a Next.js route authenticated by the Supabase JWT.
 
+
+### Implicit curiosity learning from daily choices (第二层问卷)
+**Priority:** P1
+Founder principle: "选择多了也就知道了" — every in-app choice is a questionnaire answer. Log to the existing user_events table: 换一条 (soft veto of the shown domain), share (strong positive), source-link tap (depth interest). Weekly rebalance of curiosityDomains weights from event history, so the persona is a living curve, not an onboarding snapshot. Depends on: curiosity onboarding + domain routing (in flight 2026-07-04).
+
 ## Web (Next.js feed)
 
 ### Fix feed API performance criticals

@@ -3,7 +3,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ENV_API_KEY } from "./config";
 import { generateText } from "./goodvision";
 import { extractJson } from "./jsonUtils";
-import type { FactKind, PersonaTrack, Profile } from "./types";
+import { domainsToCategories } from "./paperService";
+import { domainById } from "./taxonomy";
+import type { AppLanguage, FactKind, PersonaTrack, Profile } from "./types";
 
 const CACHE_PREFIX = "ohlo:personaTrack:v1:";
 
@@ -19,10 +21,15 @@ const VALID_CATEGORIES = [
 /**
  * Stable hash of the persona fields that decide the track. Language is
  * excluded on purpose — the track (paper vs general + categories) is the
- * same regardless of the UI language.
+ * same regardless of the UI language. curiosityDomains ARE included: they now
+ * drive routing directly, so a change to them must invalidate the cache.
  */
 export function personaHash(profile: Profile): string {
-  const basis = [profile.occupation, profile.interests]
+  const basis = [
+    profile.occupation,
+    profile.interests,
+    (profile.curiosityDomains ?? []).slice().sort().join(","),
+  ]
     .map((s) => (s ?? "").trim().toLowerCase())
     .join("|");
   let h = 0;
@@ -30,6 +37,43 @@ export function personaHash(profile: Profile): string {
     h = (h * 31 + basis.charCodeAt(i)) | 0;
   }
   return Math.abs(h).toString(36);
+}
+
+/** The user's selected domain ids that exist in the taxonomy. */
+function selectedDomainIds(profile: Profile): string[] {
+  return (profile.curiosityDomains ?? []).filter((id) => domainById(id));
+}
+
+/**
+ * Selected domains as {zh, en} labels — grounding seeds for the wiki/general
+ * track. Empty for legacy users with no declared curiosity domains.
+ */
+export function getWikiDomains(profile: Profile): Array<{ id: string; zh: string; en: string }> {
+  return selectedDomainIds(profile).map((id) => {
+    const d = domainById(id)!;
+    return { id: d.id, zh: d.zh, en: d.en };
+  });
+}
+
+/** Domain label in the user's language (grounding seed for generalFact). */
+export function domainLabelFor(domainId: string, language: AppLanguage): string | undefined {
+  const d = domainById(domainId);
+  return d ? d[language] : undefined;
+}
+
+/**
+ * Build the track directly from the taxonomy — no LLM — for a user who has
+ * declared curiosity domains. track='paper' if ANY selected domain can be
+ * served by papers; categories = the human_category values those paper-capable
+ * domains map to.
+ */
+function trackFromDomains(profile: Profile): PersonaTrack | null {
+  const selected = selectedDomainIds(profile);
+  if (selected.length === 0) return null;
+  const paperDomains = selected.filter((id) => domainById(id)!.sources.includes("papers"));
+  const track: FactKind = paperDomains.length > 0 ? "paper" : "general";
+  const categories = track === "paper" ? domainsToCategories(paperDomains) : [];
+  return { personaHash: personaHash(profile), track, categories };
 }
 
 function coerceTrack(value: unknown): FactKind | null {
@@ -119,6 +163,10 @@ async function classify(profile: Profile): Promise<PersonaTrack | null> {
  * personaHash so the classifier LLM runs at most once per distinct persona.
  */
 export async function getPersonaTrack(profile: Profile): Promise<PersonaTrack> {
+  // Declared curiosity domains drive routing directly — skip the LLM entirely.
+  const fromDomains = trackFromDomains(profile);
+  if (fromDomains) return fromDomains;
+
   const hash = personaHash(profile);
   const cacheKey = `${CACHE_PREFIX}${hash}`;
 

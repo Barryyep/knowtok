@@ -1,22 +1,26 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
 
 import { systemLanguage, t } from "../i18n";
 import { savePersonaEverywhere } from "../lib/personaService";
+import { SPARKS } from "../lib/taxonomy";
 import type { AppLanguage, Profile } from "../lib/types";
-import { colors, fonts, radius, spacing, uiFont } from "../theme";
+import { colors, spacing, uiFont } from "../theme";
+import { AboutStep } from "../components/onboarding/AboutStep";
+import { CuriosityStep } from "../components/onboarding/CuriosityStep";
+import { PreferencesStep } from "../components/onboarding/PreferencesStep";
+import { ProgressDots } from "../components/onboarding/ProgressDots";
 
 interface Props {
   initial: Profile | null;
@@ -27,201 +31,190 @@ interface Props {
   onCancel?: () => void;
 }
 
+const TOTAL_STEPS = 3;
+
+/** All SPARKS indices whose domain is already in the persona's curiosity set. */
+function initialSelection(domains: string[]): Set<number> {
+  const set = new Set<number>();
+  SPARKS.forEach((spark, i) => {
+    if (domains.includes(spark.domainId)) set.add(i);
+  });
+  return set;
+}
+
+/**
+ * The multi-step curiosity onboarding. Instead of collecting form fields, it
+ * captures the user's curiosity spot: which real hooks they'd actually open.
+ *
+ * Step 1 好奇心测定 (the core) → Step 2 这是写给谁的信 → Step 3 收信偏好.
+ * Editing from Settings pre-fills every step from the existing persona.
+ */
 export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props) {
   const [profile, setProfile] = useState<Profile>(
-    initial ?? { name: "", occupation: "", interests: "", language: systemLanguage() },
+    initial ?? {
+      name: "",
+      occupation: "",
+      interests: "",
+      curiosityDomains: [],
+      language: systemLanguage(),
+    },
   );
+  const [selected, setSelected] = useState<Set<number>>(() =>
+    initialSelection(initial?.curiosityDomains ?? []),
+  );
+  const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const insets = useSafeAreaInsets();
   const strings = t(profile.language);
-  const ui = (w?: "regular" | "medium" | "semibold" | "bold") => uiFont(profile.language, w);
 
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setProfile((p) => ({ ...p, [key]: value }));
 
-  const handleSave = async () => {
+  // Distinct domains lit by the current spark selection — the real signal.
+  const derivedDomains = useMemo(() => {
+    const seen: string[] = [];
+    for (const i of selected) {
+      const id = SPARKS[i]?.domainId;
+      if (id && !seen.includes(id)) seen.push(id);
+    }
+    return seen;
+  }, [selected]);
+
+  const toggleSpark = useCallback((index: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }, []);
+
+  // 落信 — replay the mail-arrival motion (translateY+opacity, 180ms) on each
+  // step transition so the flow keeps the dispatch vocabulary.
+  const anim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    anim.setValue(0);
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [anim, step]);
+
+  const motion = {
+    opacity: anim,
+    transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+  };
+
+  const goBack = () => {
+    if (step > 0) {
+      setError(null);
+      setStep((s) => s - 1);
+    } else {
+      onCancel?.();
+    }
+  };
+
+  const leaveCuriosity = () => {
+    setError(null);
+    setStep(1);
+  };
+
+  const leaveAbout = () => {
     if (!profile.occupation.trim() && !profile.interests.trim()) {
       setError(strings.needProfile);
       return;
     }
     setError(null);
-    setBusy(true);
-    await savePersonaEverywhere(profile);
-    setBusy(false);
-    onSaved(profile);
+    setStep(2);
   };
+
+  const finish = async () => {
+    setBusy(true);
+    const finalProfile: Profile = { ...profile, curiosityDomains: derivedDomains };
+    await savePersonaEverywhere(finalProfile);
+    setBusy(false);
+    onSaved(finalProfile);
+  };
+
+  const showBack = step > 0 || !!onCancel;
 
   return (
     <KeyboardAvoidingView
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {onCancel && (
-          <Pressable onPress={onCancel} hitSlop={12} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color={colors.marigold} />
-            <Text style={[styles.backText, { fontFamily: ui() }]}>
-              {profile.language === "zh" ? "返回" : "Back"}
-            </Text>
-          </Pressable>
-        )}
-        <Text style={styles.eyebrow}>OHLO · DAILY DISPATCH</Text>
-        <Text style={[styles.title, { fontFamily: ui("bold") }]}>{strings.profileTitle}</Text>
-        <Text style={[styles.subtitle, { fontFamily: ui() }]}>{strings.profileSubtitle}</Text>
-
-        <Field
-          label={strings.languageLabel}
-          language={profile.language}
-          input={
-            <View style={styles.langRow}>
-              {(["zh", "en"] as AppLanguage[]).map((lang) => (
-                <Pressable
-                  key={lang}
-                  onPress={() => set("language", lang)}
-                  style={[styles.langPill, profile.language === lang && styles.langPillActive]}
-                >
-                  <Text
-                    style={[
-                      styles.langPillText,
-                      profile.language === lang && styles.langPillTextActive,
-                    ]}
-                  >
-                    {lang === "zh" ? "中文" : "English"}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          }
-        />
-        <Field
-          label={strings.nameLabel}
-          language={profile.language}
-          input={
-            <TextInput
-              style={styles.input}
-              value={profile.name}
-              onChangeText={(v) => set("name", v)}
-              placeholder={strings.namePlaceholder}
-              placeholderTextColor={colors.inkMuted}
-            />
-          }
-        />
-        <Field
-          label={strings.occupationLabel}
-          language={profile.language}
-          input={
-            <TextInput
-              style={styles.input}
-              value={profile.occupation}
-              onChangeText={(v) => set("occupation", v)}
-              placeholder={strings.occupationPlaceholder}
-              placeholderTextColor={colors.inkMuted}
-            />
-          }
-        />
-        <Field
-          label={strings.interestsLabel}
-          language={profile.language}
-          input={
-            <TextInput
-              style={styles.input}
-              value={profile.interests}
-              onChangeText={(v) => set("interests", v)}
-              placeholder={strings.interestsPlaceholder}
-              placeholderTextColor={colors.inkMuted}
-            />
-          }
-        />
-
-        {error && <Text style={[styles.error, { fontFamily: ui() }]}>{error}</Text>}
-
-        <Pressable style={styles.saveButton} onPress={handleSave} disabled={busy}>
-          {busy ? (
-            <ActivityIndicator color={colors.paper0} />
-          ) : (
-            <Text style={[styles.saveButtonText, { fontFamily: ui("semibold") }]}>
-              {isFirstRun ? strings.startDaily : strings.save}
-            </Text>
+      <View style={[styles.chrome, { paddingTop: insets.top + spacing.sm }]}>
+        <View style={styles.chromeSide}>
+          {showBack && (
+            <Pressable onPress={goBack} hitSlop={12} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={22} color={colors.marigold} />
+              <Text style={[styles.backText, { fontFamily: uiFont(profile.language) }]}>
+                {strings.stepBack}
+              </Text>
+            </Pressable>
           )}
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
-}
+        </View>
+        <ProgressDots current={step} total={TOTAL_STEPS} />
+        <View style={styles.chromeSide} />
+      </View>
 
-function Field({
-  label,
-  input,
-  language,
-}: {
-  label: string;
-  input: React.ReactNode;
-  language: AppLanguage;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={[styles.label, { fontFamily: uiFont(language) }]}>{label}</Text>
-      {input}
-    </View>
+      <Animated.View style={[styles.stepArea, motion]}>
+        {step === 0 && (
+          <CuriosityStep
+            language={profile.language}
+            selected={selected}
+            onToggle={toggleSpark}
+            derivedDomains={derivedDomains}
+            onContinue={leaveCuriosity}
+            bottomInset={insets.bottom}
+          />
+        )}
+        {step === 1 && (
+          <AboutStep
+            language={profile.language}
+            name={profile.name}
+            occupation={profile.occupation}
+            interests={profile.interests}
+            onChangeName={(v) => set("name", v)}
+            onChangeOccupation={(v) => set("occupation", v)}
+            onChangeInterests={(v) => set("interests", v)}
+            error={error}
+            onContinue={leaveAbout}
+            bottomInset={insets.bottom}
+          />
+        )}
+        {step === 2 && (
+          <PreferencesStep
+            language={profile.language}
+            ageRange={profile.ageRange}
+            onChangeAgeRange={(v) => set("ageRange", v)}
+            onChangeLanguage={(v: AppLanguage) => set("language", v)}
+            busy={busy}
+            onFinish={() => void finish()}
+            bottomInset={insets.bottom}
+          />
+        )}
+      </Animated.View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ink900 },
-  scroll: { padding: spacing.lg, paddingTop: spacing.xl * 2 },
-  backButton: {
+  chrome: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    marginBottom: spacing.md,
-    marginLeft: -6,
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
+  // Equal-width sides keep the progress dots optically centered regardless of
+  // whether the back chevron is present.
+  chromeSide: { width: 64 },
+  backButton: { flexDirection: "row", alignItems: "center", marginLeft: -6 },
   backText: { color: colors.marigold, fontSize: 15 },
-  eyebrow: {
-    color: colors.marigold,
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    letterSpacing: 2,
-    marginBottom: spacing.sm,
-  },
-  title: { color: colors.inkText, fontSize: 28, fontWeight: "700" },
-  subtitle: {
-    color: colors.inkMuted,
-    fontSize: 15,
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
-    lineHeight: 22,
-  },
-  field: { marginBottom: spacing.md },
-  label: { color: colors.inkMuted, fontSize: 13, marginBottom: spacing.xs },
-  input: {
-    backgroundColor: colors.ink800,
-    borderColor: colors.inkLine,
-    borderWidth: 1,
-    borderRadius: 12,
-    color: colors.inkText,
-    fontSize: 16,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-  },
-  langRow: { flexDirection: "row", gap: spacing.sm },
-  langPill: {
-    borderColor: colors.inkLine,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-  },
-  langPillActive: { backgroundColor: colors.persimmon, borderColor: colors.persimmon },
-  langPillText: { color: colors.inkMuted, fontSize: 15 },
-  langPillTextActive: { color: colors.paper0, fontWeight: "600" },
-  error: { color: colors.persimmon, marginBottom: spacing.md },
-  saveButton: {
-    backgroundColor: colors.persimmon,
-    borderRadius: radius.pill,
-    paddingVertical: 15,
-    alignItems: "center",
-    marginTop: spacing.sm,
-  },
-  saveButtonText: { color: colors.paper0, fontSize: 16 },
+  stepArea: { flex: 1 },
 });

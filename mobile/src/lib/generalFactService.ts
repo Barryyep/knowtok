@@ -37,9 +37,10 @@ function buildSystem(isZh: boolean): string {
   ].join("\n");
 }
 
-function buildUser(profile: Profile, recentFacts: string[], isZh: boolean): string {
+function buildUser(profile: Profile, recentFacts: string[], isZh: boolean, focusDomain?: string): string {
   const avoid = recentFacts.filter(Boolean).slice(0, 20);
   const profileLines = [
+    focusDomain ? (isZh ? `今天的主题领域：${focusDomain}` : `Today's focus domain: ${focusDomain}`) : null,
     profile.occupation ? `Occupation: ${profile.occupation}` : null,
     profile.interests ? `Interests: ${profile.interests}` : null,
   ].filter(Boolean);
@@ -58,12 +59,15 @@ function buildUser(profile: Profile, recentFacts: string[], isZh: boolean): stri
 }
 
 /**
- * Persona-adjacent Wikipedia search terms, derived from the occupation and
- * interests. The first hit with a usable extract wins; a small persona-aware
- * fallback keeps the free tier from ever running dry.
+ * Persona-adjacent Wikipedia search terms. When a focusDomain (the day's
+ * rotated curiosity domain label) is given it LEADS, ahead of occupation and
+ * interests, so the grounding is on-domain. The first hit with a usable
+ * extract wins; a small evergreen fallback keeps the free tier from ever
+ * running dry.
  */
-function deriveSearchTerms(profile: Profile, isZh: boolean): string[] {
+function deriveSearchTerms(profile: Profile, isZh: boolean, focusDomain?: string): string[] {
   const terms: string[] = [];
+  if (focusDomain?.trim()) terms.push(focusDomain.trim());
   if (profile.occupation?.trim()) terms.push(profile.occupation.trim());
   for (const interest of (profile.interests || "").split(/[,，、;；]/)) {
     const t = interest.trim();
@@ -100,9 +104,11 @@ function buildGroundedUser(
   recentFacts: string[],
   grounding: WikiGrounding,
   isZh: boolean,
+  focusDomain?: string,
 ): string {
   const avoid = recentFacts.filter(Boolean).slice(0, 20);
   const profileLines = [
+    focusDomain ? (isZh ? `今天的主题领域：${focusDomain}` : `Today's focus domain: ${focusDomain}`) : null,
     profile.occupation ? `Occupation: ${profile.occupation}` : null,
     profile.interests ? `Interests: ${profile.interests}` : null,
   ].filter(Boolean);
@@ -138,6 +144,7 @@ export async function generateGeneralFact(
   profile: Profile,
   dateStr: string,
   recentFacts: string[] = [],
+  focusDomain?: string,
 ): Promise<DailyFact> {
   const isZh = profile.language === "zh";
   const lang: AppLanguage = isZh ? "zh" : "en";
@@ -145,15 +152,15 @@ export async function generateGeneralFact(
 
   let grounding: WikiGrounding | null = null;
   try {
-    grounding = await fetchWikiGrounding(deriveSearchTerms(profile, isZh), lang);
+    grounding = await fetchWikiGrounding(deriveSearchTerms(profile, isZh, focusDomain), lang);
   } catch (err) {
     console.warn("wikipedia grounding fetch failed:", err);
   }
 
   const system = grounding ? buildGroundedSystem(isZh) : buildSystem(isZh);
   const user = grounding
-    ? buildGroundedUser(profile, recentFacts, grounding, isZh)
-    : buildUser(profile, recentFacts, isZh);
+    ? buildGroundedUser(profile, recentFacts, grounding, isZh, focusDomain)
+    : buildUser(profile, recentFacts, isZh, focusDomain);
 
   const attempt = async (): Promise<GeneralFactJson | null> => {
     const raw = await generateText({
