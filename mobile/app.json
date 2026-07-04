@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "KnowTok Daily",
+    "slug": "knowtok-daily",
+    "version": "0.1.0",
+    "scheme": "knowtok",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.knowtok.daily",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.knowtok.daily"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.knowtok.daily",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F1A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "DailyFact",
+              "label": "KnowTok Daily",
+              "description": "每日一条为你定制的冷知识 / A daily fun fact tailored to you",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ],
+      "@bacons/apple-targets",
+      "expo-localization",
+      "expo-font"
+    ]
+  }
+}
