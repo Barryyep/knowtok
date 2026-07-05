@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.4.0.0 — 2026-07-05
+
+### Added
+- **Selection algorithm V1 — the want × need × have overlap.** Every fact in the pool now carries AI-scored relevance (who it's for, what it's useful as, how fresh) and quality components; the daily pick ranks candidates within your rotated domain by life-relevance × quality instead of choosing at random. 换一条 hands you the next-best, not a reroll. Design: docs/algorithm-v1.md.
+- **Wildcard day.** One hash-picked day each week serves the best fact from a domain you never selected — a single free shot outside your bubble; swapping returns straight to your own domains.
+- **Behavior signals.** Viewing, swapping, flipping to the why-you side, sharing, and opening sources are now recorded, laying the groundwork for the radar that retunes itself weekly to what you actually read.
+- **Watch refresh.** The watch app and all four complication families now speak the current dispatch language: muted №, the fact as hero, clean single-line source, both languages.
+
+### Changed
+- **ohlo.app is live.** Share-poster QR codes point at the real domain, and the site defaults to English (中文 is one toggle away and remembered).
+
+### Fixed
+- ISO week numbering no longer drifts by one in Friday-starting years (would have shifted 2027's wildcard days).
+
 ## v0.3.0.0 — 2026-07-05
 
 ### Added
