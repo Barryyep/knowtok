@@ -128,10 +128,8 @@ struct FactWidgetView: View {
     return isCJK ? "zh" : "en"
   }
 
-  private func teaserLine(_ fact: SharedFact) -> String {
-    effectiveLanguage(fact) == "zh"
-      ? "打开,看这条为什么与你有关"
-      : "Open to see why this one's for you"
+  private func ctaText(_ fact: SharedFact) -> String {
+    effectiveLanguage(fact) == "zh" ? "为什么与你有关" : "Why this is for you"
   }
 
   var body: some View {
@@ -190,26 +188,39 @@ struct FactWidgetView: View {
         .minimumScaleFactor(0.8)
         .layoutPriority(1)
       Spacer(minLength: 0)
-      // Bottom stamps: source + teaser stacked. Source truncates gracefully;
-      // on tight systemSmall, teaser wins (layoutPriority) over source.
-      VStack(alignment: .leading, spacing: 2) {
-        if let stamp = stampText(fact.source) {
-          Text(stamp)
-            .font(.system(.caption2, design: .monospaced))
-            .foregroundStyle(postmark)
-            .minimumScaleFactor(0.8)
+      // Bottom row: source stamp (left) + CTA pill (right) for medium;
+      // pill only for small — source stamp dropped to give pill room.
+      if big {
+        HStack(alignment: .center, spacing: 8) {
+          if let stamp = stampText(fact.source) {
+            Text(stamp)
+              .font(.system(.caption2, design: .monospaced))
+              .foregroundStyle(postmark)
+              .minimumScaleFactor(0.8)
+              .lineLimit(1)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .overlay(RoundedRectangle(cornerRadius: 4).stroke(postmark, lineWidth: 1.5))
+              .rotationEffect(.degrees(-1.2))
+              .layoutPriority(0)
+          }
+          Spacer(minLength: 0)
+          Text(ctaText(fact))
+            .font(.system(.caption2))
+            .foregroundStyle(persimmon)
             .lineLimit(1)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(postmark, lineWidth: 1.5))
-            .rotationEffect(.degrees(-1.2))
-            .layoutPriority(0)                             // yields to teaser when tight
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .overlay(Capsule().stroke(persimmon, lineWidth: 1.5))
         }
-        Text(teaserLine(fact))
+      } else {
+        Text(ctaText(fact))
           .font(.system(.caption2))
-          .foregroundStyle(paraSoft)
+          .foregroundStyle(persimmon)
           .lineLimit(1)
-          .layoutPriority(1)
+          .padding(.horizontal, 10)
+          .padding(.vertical, 4)
+          .overlay(Capsule().stroke(persimmon, lineWidth: 1.5))
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

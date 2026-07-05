@@ -52,7 +52,7 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // ── META_HOOK_PATTERN — mirrors src/lib/llm.ts ───────────────────────────────
 const META_HOOK_PATTERN =
-  /这个新?(方法|技术|模型|模拟器|系统|研究)|^一[种个][^，。]{0,10}(方法|技术|模型|系统|工具|拍卖|模拟器|算法)|该研究|这项(研究|技术)|真吓人|太(神奇|可怕|疯狂)了|惊呆|绝了|[!！]\s*$|this (new )?(method|model|approach|technique|study|simulator|system)|the (researchers|study|paper)|(terrifying|mind-blowing|amazing)[.!]?\s*$/i;
+  /这个新?(方法|技术|模型|模拟器|系统|研究)|^一[种个][^，。]{0,10}(方法|技术|模型|系统|工具|拍卖|模拟器|算法)|该研究|这项(研究|技术)|真吓人|太(神奇|可怕|疯狂)了|惊呆|绝了|[!！]\s*$|[—―–]|this (new )?(method|model|approach|technique|study|simulator|system)|the (researchers|study|paper)|(terrifying|mind-blowing|amazing)[.!]?\s*$/i;
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -162,13 +162,13 @@ async function generateApodInsight(entry: ApodEntry): Promise<ApodInsight> {
     "surprising VERIFIABLE FACT from the text and restate it entirely in your own words.",
     "",
     "Instructions:",
-    '1) "hook": ONE verifiable fact restated in your own words. Plain English, ≤120',
+    '1) "hook": ONE verifiable fact restated in your own words. Plain English, ≤100',
     "   characters. State the FACT ITSELF — a specific number, distance, age, mass,",
-    "   or comparison. No exclamation marks. No template openers (Did you know /",
-    "   Scientists found / New research). Deadpan. End with a period.",
-    '2) "hookZh": Same fact in Chinese, ≤50 characters. Numbers first where possible.',
-    "   No exclamation marks. Deadpan. End with a period (句号). No meta-description",
-    "   of the image or article (禁止描述图片或文章).",
+    "   or comparison. No exclamation marks. No em-dash or en-dash (— or –); use a comma instead.",
+    "   No template openers (Did you know / Scientists found / New research). Deadpan. End with a period.",
+    '2) "hookZh": Same fact in Chinese, ≤40 characters. Numbers first where possible.',
+    "   No exclamation marks. No dashes (——、—、―); use comma instead. Deadpan. End with a period (句号).",
+    "   No meta-description of the image or article (禁止描述图片或文章).",
     '3) "plainSummary": 2-3 sentence plain-English explanation for a 14-year-old.',
     '4) "plainSummaryZh": Same in Chinese, 2-3 sentences.',
     "",

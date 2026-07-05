@@ -7,21 +7,21 @@ import { colors } from "../theme";
 interface Props {
   fact: DailyFact | null;
   language: AppLanguage;
+  size?: "small" | "wide";
 }
 
 /**
  * Android home-screen widget. Rendered headlessly by
  * react-native-android-widget — only widget primitives allowed here.
  */
-export function FactWidget({ fact, language }: Props) {
+export function FactWidget({ fact, language, size = "wide" }: Props) {
   const empty = language === "zh" ? "打开 Ohlo 生成今日信笺" : "Open Ohlo for today's dispatch";
   const sourceLine = fact
     ? fact.source.arxivId
       ? `⌖ arXiv:${fact.source.arxivId} ✓`
       : `⌖ ${fact.source.label} ✓`
     : "";
-  const teaser =
-    language === "zh" ? "打开,看这条为什么与你有关" : "Open to see why this one's for you";
+  const ctaText = language === "zh" ? "为什么与你有关" : "Why this is for you";
 
   return (
     <FlexWidget
@@ -66,29 +66,86 @@ export function FactWidget({ fact, language }: Props) {
             <TextWidget
               key="fact"
               text={fact.fact}
-              maxLines={4}
+              maxLines={size === "small" ? 3 : 4}
               style={{ fontSize: 15, color: colors.paraInk, marginTop: 6 }}
             />,
-            // Bottom stamps: source truncates gracefully; teaser below it.
-            <FlexWidget
-              key="stamps"
-              style={{ width: "match_parent", flexDirection: "column" }}
-            >
-              {[
-                <TextWidget
-                  key="source"
-                  text={sourceLine}
-                  maxLines={1}
-                  style={{ fontSize: 10, color: colors.postmark }}
-                />,
-                <TextWidget
-                  key="teaser"
-                  text={teaser}
-                  maxLines={1}
-                  style={{ fontSize: 10, color: colors.paraSoft, marginTop: 2 }}
-                />,
-              ]}
-            </FlexWidget>,
+            // Bottom row: source stamp (left) + CTA pill (right) for wide;
+            // pill only for small — stamp dropped to give pill room.
+            size === "wide" ? (
+              <FlexWidget
+                key="bottom"
+                style={{
+                  width: "match_parent",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                {[
+                  <FlexWidget
+                    key="stamp-col"
+                    style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
+                  >
+                    {[
+                      <TextWidget
+                        key="source"
+                        text={sourceLine}
+                        maxLines={1}
+                        style={{ fontSize: 10, color: colors.postmark }}
+                      />,
+                    ]}
+                  </FlexWidget>,
+                  <FlexWidget
+                    key="cta"
+                    style={{
+                      backgroundColor: colors.persimmon,
+                      borderRadius: 999,
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {[
+                      <TextWidget
+                        key="cta-text"
+                        text={ctaText}
+                        maxLines={1}
+                        style={{ fontSize: 11, color: colors.paper0 }}
+                      />,
+                    ]}
+                  </FlexWidget>,
+                ]}
+              </FlexWidget>
+            ) : (
+              <FlexWidget
+                key="bottom"
+                style={{ width: "match_parent", flexDirection: "row", alignItems: "center" }}
+              >
+                {[
+                  <FlexWidget
+                    key="cta"
+                    style={{
+                      backgroundColor: colors.persimmon,
+                      borderRadius: 999,
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {[
+                      <TextWidget
+                        key="cta-text"
+                        text={ctaText}
+                        maxLines={1}
+                        style={{ fontSize: 11, color: colors.paper0 }}
+                      />,
+                    ]}
+                  </FlexWidget>,
+                ]}
+              </FlexWidget>
+            ),
           ]
         ) : (
           <TextWidget text={empty} style={{ fontSize: 14, color: colors.paraSoft }} />

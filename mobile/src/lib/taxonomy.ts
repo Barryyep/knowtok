@@ -99,12 +99,12 @@ export const SPARKS: Spark[] = [
   { domainId: "history", zh: "1560年的一次日全食记录,至今还在帮科学家校准太阳模型。", en: "A 1560 eclipse record still helps calibrate solar models today." },
   // nature
   { domainId: "nature", zh: "古埃及墓穴中发现的3000年前蜂蜜,至今仍可食用。", en: "Honey found in 3,000-year-old Egyptian tombs is still edible." },
-  { domainId: "nature", zh: "章鱼有三颗心脏,游泳时其中两颗会停跳。", en: "Octopuses have three hearts — two stop when they swim." },
+  { domainId: "nature", zh: "章鱼有三颗心脏,游泳时其中两颗会停跳。", en: "Octopuses have three hearts, two stop when they swim." },
   { domainId: "nature", zh: "全球超过三分之一的鱼类资源被过度捕捞,1970年代时仅为10%。", en: "More than a third of the world's fish stocks are now overfished, up from 10% in the 1970s." },
   { domainId: "nature", zh: "一棵成年橡树,一天能蒸腾掉约400升水。", en: "A mature oak transpires about 400 liters of water a day." },
   // society
   { domainId: "society", zh: "多个欧洲和东亚国家的死亡人数,已超过出生人数。", en: "In multiple countries across Europe and East Asia, deaths now outnumber births." },
-  { domainId: "society", zh: "日本约有700万套空置房屋,占全国住宅总量的14%。", en: "Japan has around 7 million abandoned homes — about 14% of its entire housing stock." },
+  { domainId: "society", zh: "日本约有700万套空置房屋,占全国住宅总量的14%。", en: "Japan has around 7 million abandoned homes, about 14% of its entire housing stock." },
   { domainId: "society", zh: "当后来的评审改了报告,最初分析师的功劳常常被完全抹掉。", en: "When later reviewers edit a report, the first analyst's credit often vanishes." },
   { domainId: "society", zh: "建筑工地上,木工电工泥水等十余个工种各自独立互不统属。", en: "A construction site runs on a dozen independent trades, none in charge of the rest." },
 ];

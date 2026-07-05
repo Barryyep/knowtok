@@ -99,7 +99,7 @@ export function categoryFromPrefix(primaryCategory: string): string {
  * the fact itself, never describe the paper/method.
  */
 const META_HOOK_PATTERN =
-  /这个新?(方法|技术|模型|模拟器|系统|研究)|^一[种个][^，。]{0,10}(方法|技术|模型|系统|工具|拍卖|模拟器|算法)|该研究|这项(研究|技术)|真吓人|太(神奇|可怕|疯狂)了|惊呆|绝了|[!！]\s*$|this (new )?(method|model|approach|technique|study|simulator|system)|the (researchers|study|paper)|(terrifying|mind-blowing|amazing)[.!]?\s*$/i;
+  /这个新?(方法|技术|模型|模拟器|系统|研究)|^一[种个][^，。]{0,10}(方法|技术|模型|系统|工具|拍卖|模拟器|算法)|该研究|这项(研究|技术)|真吓人|太(神奇|可怕|疯狂)了|惊呆|绝了|[!！]\s*$|[—―–]|this (new )?(method|model|approach|technique|study|simulator|system)|the (researchers|study|paper)|(terrifying|mind-blowing|amazing)[.!]?\s*$/i;
 
 export async function generatePaperMetadata(input: {
   title: string;
@@ -139,11 +139,11 @@ async function generatePaperMetadataOnce(input: {
         role: "user",
         content: [
           "Given this research paper, generate six things:",
-          '1) "hook": ONE surprise you could blurt out mid-conversation to make someone go "wait, really?". Plain spoken English, ≤120 characters. State the FACT ITSELF — what happens in the world — never describe the paper: any phrasing like "this method/model/simulator/approach/study/technique can..." is FORBIDDEN. Must contain at least one concrete detail (a number, a named thing, a sharp before/after). Talk like a person at a dinner table, but keep it deadpan: the surprise must come from the fact itself — NO emotional editorializing ("terrifying", "amazing", "mind-blowing") and NO exclamation marks; end with a period. NO jargon, NO hedging, NO template openers ("Did you know", "Imagine", "What if", "New research", "Scientists found").',
+          '1) "hook": ONE surprise you could blurt out mid-conversation to make someone go "wait, really?". Plain spoken English, ≤100 characters. State the FACT ITSELF — what happens in the world — never describe the paper: any phrasing like "this method/model/simulator/approach/study/technique can..." is FORBIDDEN. Must contain at least one concrete detail (a number, a named thing, a sharp before/after). Talk like a person at a dinner table, but keep it deadpan: the surprise must come from the fact itself — NO emotional editorializing ("terrifying", "amazing", "mind-blowing"), NO exclamation marks, and NO em-dash or en-dash (— or –); use commas instead. End with a period. NO jargon, NO hedging, NO template openers ("Did you know", "Imagine", "What if", "New research", "Scientists found").',
           '2) "tags": 3-5 short English tags (1-3 words each).',
           '3) "humanCategory": classify into exactly ONE of: "AI & Robots", "Your Health", "Your Money", "Your Food", "Climate". If none fit, default to "AI & Robots".',
           '4) "plainSummary": explain this paper so a curious 14-year-old could understand it. No jargon, use concrete examples. Max 3 sentences.',
-          '5) "hookZh": 用中文写一句能在聊天里直接讲出口、让人"啊？真的假的"的惊讶点。不超过50个汉字，口语通俗。必须说"世界上发生了什么"这个事实本身，严禁描述论文——凡是"这个方法/这项技术/一种新型XX方法/一个新系统/该研究 能……"式的句子一律不合格，也不要以"一种/一个"开头介绍任何方法或系统——直接从事实主体开头（比如"膝盖扫描现在只要原来1/12的时间"，而不是"一种新型MRI方法能将扫描时间缩短12倍"）。必须包含至少一个具体细节（数字、具体对象、鲜明的前后反差）。语气克制冷静：惊讶感必须来自事实本身，禁止情绪化词尾（真吓人/太神奇了/惊呆了/绝了），禁止感叹号，用句号收尾。禁用含糊词（可能/或许）和套路开头（你知道吗/想象/最新研究/科学家发现）。',
+          '5) "hookZh": 用中文写一句能在聊天里直接讲出口、让人"啊？真的假的"的惊讶点。不超过40个汉字，口语通俗。必须说"世界上发生了什么"这个事实本身，严禁描述论文——凡是"这个方法/这项技术/一种新型XX方法/一个新系统/该研究 能……"式的句子一律不合格，也不要以"一种/一个"开头介绍任何方法或系统——直接从事实主体开头（比如"膝盖扫描现在只要原来1/12的时间"，而不是"一种新型MRI方法能将扫描时间缩短12倍"）。必须包含至少一个具体细节（数字、具体对象、鲜明的前后反差）。语气克制冷静：惊讶感必须来自事实本身，禁止情绪化词尾（真吓人/太神奇了/惊呆了/绝了），禁止感叹号，用句号收尾。禁用含糊词（可能/或许）和套路开头（你知道吗/想象/最新研究/科学家发现）。禁用破折号（——、—、―），改用逗号或句号。',
           '6) "plainSummaryZh": 用中文向一个好奇的14岁少年解释这篇论文。不要用专业术语，用具体的例子。最多3句话。',
           "",
           "Examples of the hook style:",
@@ -245,8 +245,8 @@ export async function generateOwidInsight(input: {
           "Given this Our World in Data insight, generate five things:",
           `1) "domainId": classify the insight into EXACTLY ONE of these domain ids (pick the single best fit):`,
           domainMenu,
-          '2) "hook": ONE surprise you could blurt out mid-conversation to make someone go "wait, really?". Plain spoken English, ≤120 characters. State the FACT ITSELF — what is true in the world — never describe the dataset or article: any phrasing like "this data/chart/study shows..." is FORBIDDEN. Must contain at least one concrete detail (a number, a named place, a sharp before/after). Deadpan: the surprise comes from the fact itself — NO editorializing ("shocking", "amazing") and NO exclamation marks; end with a period. NO template openers ("Did you know", "Imagine", "What if", "New data", "Data shows").',
-          '3) "hookZh": 用中文写一句能在聊天里直接讲出口、让人"啊？真的假的"的惊讶点。不超过50个汉字，口语通俗。必须说事实本身，严禁描述数据集或文章（"这组数据/这张图表明……"一律不合格）。必须包含至少一个具体细节（数字、具体地点、鲜明的前后反差）。语气克制冷静，禁止情绪化词尾（太夸张了/惊呆了）和感叹号，用句号收尾。禁用套路开头（你知道吗/想象/最新数据/数据显示）。',
+          '2) "hook": ONE surprise you could blurt out mid-conversation to make someone go "wait, really?". Plain spoken English, ≤100 characters. State the FACT ITSELF — what is true in the world — never describe the dataset or article: any phrasing like "this data/chart/study shows..." is FORBIDDEN. Must contain at least one concrete detail (a number, a named place, a sharp before/after). Deadpan: the surprise comes from the fact itself — NO editorializing ("shocking", "amazing"), NO exclamation marks, and NO em-dash or en-dash (— or –); use commas instead. End with a period. NO template openers ("Did you know", "Imagine", "What if", "New data", "Data shows").',
+          '3) "hookZh": 用中文写一句能在聊天里直接讲出口、让人"啊？真的假的"的惊讶点。不超过40个汉字，口语通俗。必须说事实本身，严禁描述数据集或文章（"这组数据/这张图表明……"一律不合格）。必须包含至少一个具体细节（数字、具体地点、鲜明的前后反差）。语气克制冷静，禁止情绪化词尾（太夸张了/惊呆了）和感叹号，用句号收尾。禁用套路开头（你知道吗/想象/最新数据/数据显示）。禁用破折号（——、—、―），改用逗号或句号。',
           '4) "plainSummary": explain this insight so a curious 14-year-old could understand it. No jargon, concrete examples. Max 3 sentences.',
           '5) "plainSummaryZh": 用中文向一个好奇的14岁少年解释这条洞察。不要用专业术语，用具体的例子。最多3句话。',
           "",

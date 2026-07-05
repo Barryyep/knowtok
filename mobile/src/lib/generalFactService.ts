@@ -22,7 +22,7 @@ function buildSystem(isZh: boolean): string {
     return [
       "你为 Ohlo 生成一条真实、可核实的常识（不是学术论文），并根据读者的职业量身定制。",
       "只讲一条冷知识/常识，须来自读者职业相邻的领域，真实且经得起查证，不要编造。",
-      "fact 要求：中文，不超过50个汉字，直接抛出最令人意外的具体内容（数字、反差、利害关系）。",
+      "fact 要求：中文，不超过40个汉字，直接抛出最令人意外的具体内容（数字、反差、利害关系）。禁用破折号（——、—、―），改用逗号或句号。",
       "绝对不要用套路开头：不要以“你知道吗”“想象”“如果我告诉你”“最新研究”“科学家发现”之类开头。",
       "同时给出：topic（2-6个字的主题词）、emoji（一个贴切的表情）、whyCare（一句话25-50字，说明这条常识和读者的工作或生活的具体关联，接地气、不吹嘘、不编造）。",
       '只输出 JSON：{"fact":"...","topic":"...","emoji":"...","whyCare":"..."}',
@@ -31,7 +31,7 @@ function buildSystem(isZh: boolean): string {
   return [
     "You generate ONE true, verifiable piece of general knowledge (not an academic paper) tailored to the reader's occupation.",
     "It must come from a domain adjacent to their job, be factually accurate, and never fabricated.",
-    'The "fact": plain English, ≤120 characters, leading directly with the single most surprising concrete thing (a number, a sharp contrast, or what is at stake).',
+    'The "fact": plain English, ≤100 characters, leading directly with the single most surprising concrete thing (a number, a sharp contrast, or what is at stake). No em-dash or en-dash (— or –); use a comma instead.',
     'NEVER start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered".',
     'Also provide: "topic" (a 1-2 word label), "emoji" (one fitting emoji), and "whyCare" (one sentence, ≤160 chars, on how this concretely connects to the reader\'s work or life — conversational, specific, no hype, no fabrication).',
     'Output JSON only: {"fact":"...","topic":"...","emoji":"...","whyCare":"..."}',
@@ -91,7 +91,7 @@ function buildGroundedSystem(isZh: boolean): string {
     return [
       "你为 Ohlo 生成一条真实、可核实的常识，并根据读者的职业量身定制。",
       "下面会给你一段来自维基百科的资料。你写的 fact 必须完全基于这段资料、并能被它支持，绝对不能编造资料里没有的内容。",
-      "fact 要求：中文，不超过50个汉字，直接抛出资料里最令人意外的具体内容（数字、反差、利害关系）。",
+      "fact 要求：中文，不超过40个汉字，直接抛出资料里最令人意外的具体内容（数字、反差、利害关系）。禁用破折号（——、—、―），改用逗号或句号。",
       "绝对不要用套路开头：不要以“你知道吗”“想象”“如果我告诉你”“最新研究”“科学家发现”之类开头。",
       "同时给出：topic（2-6个字的主题词）、emoji（一个贴切的表情）、whyCare（一句话25-50字，说明这条常识和读者的工作或生活的具体关联，接地气、不吹嘘、不编造）。",
       '只输出 JSON：{"fact":"...","topic":"...","emoji":"...","whyCare":"..."}',
@@ -100,7 +100,7 @@ function buildGroundedSystem(isZh: boolean): string {
   return [
     "You generate ONE true, verifiable piece of general knowledge tailored to the reader's occupation.",
     "You will be given a Wikipedia extract. Your fact MUST be grounded in and supported by that extract — never state anything not present in it.",
-    'The "fact": plain English, ≤120 characters, leading directly with the single most surprising concrete thing from the extract (a number, a sharp contrast, or what is at stake).',
+    'The "fact": plain English, ≤100 characters, leading directly with the single most surprising concrete thing from the extract (a number, a sharp contrast, or what is at stake). No em-dash or en-dash (— or –); use a comma instead.',
     'NEVER start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered".',
     'Also provide: "topic" (a 1-2 word label), "emoji" (one fitting emoji), and "whyCare" (one sentence, ≤160 chars, on how this concretely connects to the reader\'s work or life — conversational, specific, no hype, no fabrication).',
     'Output JSON only: {"fact":"...","topic":"...","emoji":"...","whyCare":"..."}',

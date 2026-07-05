@@ -36,8 +36,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 
 const ZH_BANNED = ["你知道吗", "想象", "如果我告诉你", "最新研究", "科学家发现"];
 const EN_BANNED = ["did you know", "imagine", "what if", "new research", "scientists found", "scientists discovered"];
-const ZH_MAX = 50; // characters
-const EN_MAX = 120; // characters
+const ZH_MAX = 40; // characters
+const EN_MAX = 100; // characters
 
 /** Count characters (code points), so CJK counts as 1 each. */
 function charLen(s: string): number {
@@ -102,8 +102,8 @@ async function rewriteHooks(paper: PaperRow): Promise<{ hookEn: string; hookZh: 
           content: [
             "Rewrite this paper's hook in BOTH English and Chinese.",
             "",
-            'Rules for "hookEn": ONE punchy sentence in plain English, ≤120 characters, no jargon. Lead DIRECTLY with the single most surprising, concrete thing — a number, a sharp contrast, or what is at stake. NEVER start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered". Just state the striking fact itself.',
-            'Rules for "hookZh": 用中文写一句话，不超过50个汉字，通俗易懂、不用专业术语。直接抛出最令人意外的具体内容——数字、反差、或利害关系。绝对不要用套路开头：不要以"你知道吗""想象""如果我告诉你""最新研究""科学家发现"之类开头，直接说出惊人的事实本身。',
+            'Rules for "hookEn": ONE punchy sentence in plain English, ≤100 characters, no jargon. Lead DIRECTLY with the single most surprising, concrete thing — a number, a sharp contrast, or what is at stake. NEVER start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered". No em-dash or en-dash (— or –); use a comma instead. Just state the striking fact itself.',
+            'Rules for "hookZh": 用中文写一句话，不超过40个汉字，通俗易懂、不用专业术语。直接抛出最令人意外的具体内容——数字、反差、或利害关系。绝对不要用套路开头：不要以"你知道吗""想象""如果我告诉你""最新研究""科学家发现"之类开头，直接说出惊人的事实本身。禁用破折号（——、—、―），改用逗号或句号。',
             "",
             context,
             "",

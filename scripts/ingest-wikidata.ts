@@ -44,7 +44,7 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // ── META_HOOK_PATTERN — mirrors src/lib/llm.ts ───────────────────────────────
 const META_HOOK_PATTERN =
-  /这个新?(方法|技术|模型|模拟器|系统|研究)|^一[种个][^，。]{0,10}(方法|技术|模型|系统|工具|拍卖|模拟器|算法)|该研究|这项(研究|技术)|真吓人|太(神奇|可怕|疯狂)了|惊呆|绝了|[!！]\s*$|this (new )?(method|model|approach|technique|study|simulator|system)|the (researchers|study|paper)|(terrifying|mind-blowing|amazing)[.!]?\s*$/i;
+  /这个新?(方法|技术|模型|模拟器|系统|研究)|^一[种个][^，。]{0,10}(方法|技术|模型|系统|工具|拍卖|模拟器|算法)|该研究|这项(研究|技术)|真吓人|太(神奇|可怕|疯狂)了|惊呆|绝了|[!！]\s*$|[—―–]|this (new )?(method|model|approach|technique|study|simulator|system)|the (researchers|study|paper)|(terrifying|mind-blowing|amazing)[.!]?\s*$/i;
 
 // ── SPARQL query definitions ──────────────────────────────────────────────────
 
@@ -338,11 +338,11 @@ async function generateWikidataInsight(
     `Wikidata result: ${factStr}`,
     ``,
     `Instructions:`,
-    `1) "hook": ONE verifiable fact in plain English, ≤120 characters. State the FACT ITSELF`,
-    `   — a specific number, distance, age, or comparison. No exclamation marks. No template`,
-    `   openers (Did you know / Scientists found). Numbers first where striking. End with a period.`,
-    `2) "hookZh": Same fact in Chinese, ≤50 characters. Numbers first. No exclamation marks.`,
-    `   No meta-description (禁止描述数据来源). End with 句号.`,
+    `1) "hook": ONE verifiable fact in plain English, ≤100 characters. State the FACT ITSELF`,
+    `   — a specific number, distance, age, or comparison. No exclamation marks. No em-dash or en-dash (— or –); use a comma instead.`,
+    `   No template openers (Did you know / Scientists found). Numbers first where striking. End with a period.`,
+    `2) "hookZh": Same fact in Chinese, ≤40 characters. Numbers first. No exclamation marks.`,
+    `   No dashes (——、—、―; use comma instead). No meta-description (禁止描述数据来源). End with 句号.`,
     `3) "plainSummary": 2-3 sentence plain-English explanation for a curious 14-year-old.`,
     `4) "plainSummaryZh": Same in Chinese, 2-3 sentences.`,
     ``,
