@@ -71,6 +71,8 @@ export interface UIStrings {
   firstClassExplainer: string;
   errorTitle: string;
   retry: string;
+  // Share poster
+  shareScanPrompt: string;
   // History
   historyEmpty: string;
   // Settings
@@ -141,6 +143,8 @@ const en: UIStrings = {
     "First Class = knowledge from a real paper published today; standard slips come from the general library. The № is this slip's collector's number.",
   errorTitle: "Couldn't load today's fact",
   retry: "Retry",
+  // Share poster
+  shareScanPrompt: "Scan to keep this one",
   // History
   historyEmpty: "Your past daily facts will appear here.",
   // Settings
@@ -211,6 +215,8 @@ const zh: UIStrings = {
     "头等件 = 来自当日真实论文的知识,普通件来自通识库。编号是这张信笺的收藏号。",
   errorTitle: "获取今日冷知识失败",
   retry: "重试",
+  // Share poster
+  shareScanPrompt: "扫码收下这条",
   // History
   historyEmpty: "你看过的每日冷知识会出现在这里。",
   // Settings

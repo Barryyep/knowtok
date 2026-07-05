@@ -25,6 +25,7 @@ import { FactCard } from "../components/FactCard";
 import { DateEyebrow } from "../components/DateEyebrow";
 import { streakCount } from "../components/slipUtils";
 import { firstClassHintSeen, markFirstClassHintSeen } from "../components/firstClassHint";
+import { SharePoster, POSTER_W, POSTER_H } from "../components/SharePoster";
 
 interface Props {
   profile: Profile;
@@ -48,7 +49,8 @@ export function TodayScreen({ profile }: Props) {
   const [streak, setStreak] = useState(0);
   const [showFirstClassHint, setShowFirstClassHint] = useState(false);
 
-  const shotRef = useRef<ViewShotRef>(null);
+  const posterRef = useRef<ViewShotRef>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const refreshStreak = useCallback(() => {
     void loadFactHistory().then((h) => setStreak(streakCount(h)));
@@ -100,26 +102,45 @@ export function TodayScreen({ profile }: Props) {
     void markFirstClassHintSeen();
   }, []);
 
-  // Capture the slip (wordmark + source stamp already baked in) and hand it to
-  // the system share sheet. Cancel/failure is silent per DESIGN.md.
-  const onShare = useCallback(async () => {
-    try {
-      const uri = await shotRef.current?.capture?.();
-      if (!uri) return;
-      if (!(await Sharing.isAvailableAsync())) return;
-      await Sharing.shareAsync(uri, {
-        mimeType: "image/png",
-        dialogTitle: strings.share,
-        UTI: "public.png",
-      });
-    } catch {
-      // Swallow: user cancelled or the capture failed — nothing to surface.
-    }
-  }, [strings.share]);
+  // Mount the generated share poster off-screen and capture it once laid out.
+  // Cancel/failure is silent per DESIGN.md.
+  useEffect(() => {
+    if (!isSharing) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const uri = await posterRef.current?.capture?.();
+          if (!active) return;
+          setIsSharing(false);
+          if (!uri) return;
+          if (!(await Sharing.isAvailableAsync())) return;
+          await Sharing.shareAsync(uri, {
+            mimeType: "image/png",
+            dialogTitle: strings.share,
+            UTI: "public.png",
+          });
+        } catch {
+          // Swallow: user cancelled or the capture failed — nothing to surface.
+          if (active) setIsSharing(false);
+        }
+      })();
+    }, 80); // allow React to commit and lay out the poster before capturing
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [isSharing, strings.share]);
+
+  const onShare = useCallback(() => {
+    if (!fact || fact.whyCare === "") return;
+    setIsSharing(true);
+  }, [fact]);
 
   const insets = useSafeAreaInsets();
 
   return (
+    <View style={styles.rootWrapper}>
     <ScrollView
       style={styles.root}
       contentContainerStyle={[
@@ -159,13 +180,11 @@ export function TodayScreen({ profile }: Props) {
           {/* Centered hero region: eyebrow directly above the slip. */}
           <View style={styles.hero}>
             <DateEyebrow date={fact.date} streak={streak} />
-            <ViewShot ref={shotRef} options={{ format: "png", result: "tmpfile" }}>
-              <FactCard
-                fact={fact}
-                language={profile.language}
-                whyCarePending={fact.whyCare === ""}
-              />
-            </ViewShot>
+            <FactCard
+              fact={fact}
+              language={profile.language}
+              whyCarePending={fact.whyCare === ""}
+            />
 
             {showFirstClassHint && (
               <Pressable style={styles.hintRow} onPress={dismissFirstClassHint}>
@@ -189,11 +208,11 @@ export function TodayScreen({ profile }: Props) {
             {/* Disabled while the whyCare line is still pending, so the share
                 image can't capture the placeholder text. */}
             <Pressable
-              style={[styles.shareButton, fact.whyCare === "" && styles.shareButtonDisabled]}
-              onPress={() => void onShare()}
-              disabled={fact.whyCare === ""}
+              style={[styles.shareButton, (fact.whyCare === "" || isSharing) && styles.shareButtonDisabled]}
+              onPress={onShare}
+              disabled={fact.whyCare === "" || isSharing}
               accessibilityLabel={strings.share}
-              accessibilityState={{ disabled: fact.whyCare === "" }}
+              accessibilityState={{ disabled: fact.whyCare === "" || isSharing }}
               hitSlop={8}
             >
               <Ionicons name="share-outline" color={colors.marigold} size={20} />
@@ -202,13 +221,33 @@ export function TodayScreen({ profile }: Props) {
         </>
       )}
     </ScrollView>
+
+    {/* Off-screen share poster — rendered only during capture, then unmounted. */}
+    {isSharing && fact && (
+      <ViewShot
+        ref={posterRef}
+        options={{
+          format: "png",
+          result: "tmpfile",
+          quality: 1,
+          width: POSTER_W * 3,
+          height: POSTER_H * 3,
+        }}
+        style={styles.offScreen}
+      >
+        <SharePoster fact={fact} language={profile.language} />
+      </ViewShot>
+    )}
+    </View>
   );
 }
 
 const SHARE_SIZE = 44;
 
 const styles = StyleSheet.create({
+  rootWrapper: { flex: 1 },
   root: { flex: 1, backgroundColor: colors.ink900 },
+  offScreen: { position: "absolute", left: -9999, top: 0 },
   // flexGrow lets the content fill the viewport (so the hero can center and the
   // action row sits at the bottom), yet scroll once a tall whyCare overflows.
   scroll: { flexGrow: 1, padding: spacing.lg },
