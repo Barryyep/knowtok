@@ -26,11 +26,14 @@ loadDotenv({ path: ".env.local", override: true, quiet: true });
 loadDotenv({ path: ".env", override: false, quiet: true });
 
 import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
 import { generatePaperMetadata } from "../src/lib/llm";
+import { generateRelevance, scoreStructure } from "../src/lib/relevance";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL_STR = process.env.OPENAI_MODEL_LOW_COST ?? "gpt-4o-mini";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
   console.error("Missing env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY");
@@ -38,6 +41,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const openaiClient = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // Polite-pool contact (OpenAlex asks for a mailto so they can reach you).
 const MAILTO = "hello@ohlo.app";
@@ -232,6 +236,21 @@ async function main() {
         categories: [CLIMATE_LABEL, work.primary_topic?.display_name || ""].filter(Boolean),
       });
 
+      // Score relevance (single-row batch — fine at ingest time per spec)
+      const relevanceMap = await generateRelevance(
+        [{ id: sid, title, hook_summary_en: meta.hook, hook_summary_zh: meta.hookZh }],
+        openaiClient,
+        OPENAI_MODEL_STR,
+      );
+      const rel = relevanceMap.get(sid);
+      const relevanceRecord = rel
+        ? {
+            ...rel,
+            structure: scoreStructure(meta.hook, meta.hookZh),
+            scored_at: new Date().toISOString(),
+          }
+        : undefined;
+
       const payload = {
         source: "openalex",
         source_id: sid,
@@ -264,6 +283,7 @@ async function main() {
           primary_topic: work.primary_topic?.display_name || null,
           primary_topic_score: work.primary_topic?.score ?? null,
           llm_human_category: meta.humanCategory,
+          ...(relevanceRecord ? { relevance: relevanceRecord } : {}),
         },
       };
 

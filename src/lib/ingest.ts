@@ -1,6 +1,9 @@
+import OpenAI from "openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchArxivPapers, type ArxivPaper } from "@/lib/arxiv";
 import { generatePaperMetadata, buildFallbackMetadata } from "@/lib/llm";
+import { getOpenAIEnv } from "@/lib/env";
+import { generateRelevance, scoreStructure } from "@/lib/relevance";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import type { DomainKey, IngestRunResult } from "@/types/domain";
 
@@ -172,6 +175,9 @@ export async function runIngestPipeline(options: {
   verbose?: boolean;
 }): Promise<IngestRunResult> {
   const serviceClient = createServiceRoleClient();
+  // OpenAI client for relevance scoring (algorithm-v1 A1)
+  const { apiKey: oaiKey, model: oaiModel } = getOpenAIEnv();
+  const openaiForRelevance = new OpenAI({ apiKey: oaiKey });
   const days = options.mode === "backfill" ? Math.max(options.days ?? 14, 1) : 1;
   logInfo(options.verbose, `run started mode=${options.mode} days=${days} triggeredBy=${options.triggeredBy}`);
 
@@ -314,8 +320,32 @@ export async function runIngestPipeline(options: {
             humanCategory = fallback.humanCategory;
           }
 
+          // Score relevance (single-row batch — fine at ingest per spec A1)
+          let paperMetadata = { ...paper.metadata };
+          try {
+            const relMap = await generateRelevance(
+              [{ id: paper.arxivIdBase, title: paper.title, hook_summary_en: hookSummaryEn, hook_summary_zh: hookSummaryZh }],
+              openaiForRelevance,
+              oaiModel,
+            );
+            const rel = relMap.get(paper.arxivIdBase);
+            if (rel) {
+              paperMetadata = {
+                ...paperMetadata,
+                relevance: {
+                  ...rel,
+                  structure: scoreStructure(hookSummaryEn, hookSummaryZh),
+                  scored_at: new Date().toISOString(),
+                },
+              };
+            }
+          } catch {
+            // Non-fatal: relevance scoring failure should not block ingestion
+          }
+
           const didUpsert = await upsertPaperByVersion(serviceClient, {
             ...paper,
+            metadata: paperMetadata,
             hookSummaryEn,
             hookSummaryZh,
             tags,

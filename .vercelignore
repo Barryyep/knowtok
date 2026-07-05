@@ -1,0 +1,11 @@
+# Web deploys only need the Next.js app at the repo root.
+# Patterns are root-anchored — a bare name would also match nested dirs
+# (a bare "supabase" once excluded src/lib/supabase and broke the build).
+/mobile
+/docs
+/scripts
+/supabase
+/.agents
+/.claude
+/.github
+/tests

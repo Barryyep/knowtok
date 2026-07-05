@@ -23,6 +23,7 @@ loadDotenv({ path: ".env", override: false, quiet: true });
 
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import { generateRelevance, scoreStructure } from "../src/lib/relevance";
 
 // ── env ──────────────────────────────────────────────────────────────────────
 
@@ -492,11 +493,28 @@ async function main() {
 
       const absUrl = `https://www.wikidata.org/wiki/${qid}`;
       const label = binding["itemLabel"]?.value ?? query.description;
+      const wikidataId = `wikidata-${sourceId}`;
+
+      // Score relevance — Wikidata source defaults to "evergreen" timeliness
+      const relevanceMap = await generateRelevance(
+        [{ id: wikidataId, title: label, hook_summary_en: insight.hook, hook_summary_zh: insight.hookZh }],
+        openai,
+        OPENAI_MODEL,
+        { timelinessHint: "evergreen" },
+      );
+      const rel = relevanceMap.get(wikidataId);
+      const relevanceRecord = rel
+        ? {
+            ...rel,
+            structure: scoreStructure(insight.hook, insight.hookZh),
+            scored_at: new Date().toISOString(),
+          }
+        : undefined;
 
       const payload = {
         source: "wikidata",
         source_id: sourceId,
-        arxiv_id_base: `wikidata-${sourceId}`,
+        arxiv_id_base: wikidataId,
         arxiv_id_version: 1,
         title: label,
         abstract: `${query.description}. QID: ${qid}. Raw result: ${JSON.stringify(binding).slice(0, 500)}`,
@@ -519,6 +537,7 @@ async function main() {
           qid,
           queryKey: query.key,
           domain: query.domain,
+          ...(relevanceRecord ? { relevance: relevanceRecord } : {}),
         },
       };
 

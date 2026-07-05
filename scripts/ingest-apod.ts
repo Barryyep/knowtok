@@ -30,6 +30,7 @@ loadDotenv({ path: ".env", override: false, quiet: true });
 
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import { generateRelevance, scoreStructure } from "../src/lib/relevance";
 
 // ── env ──────────────────────────────────────────────────────────────────────
 
@@ -307,11 +308,28 @@ async function main() {
       }
 
       const absUrl = apodAbsUrl(entry.date);
+      const apodId = `apod-${entry.date}`;
+
+      // Score relevance — APOD source defaults to "recent" timeliness
+      const relevanceMap = await generateRelevance(
+        [{ id: apodId, title: entry.title, hook_summary_en: insight.hook, hook_summary_zh: insight.hookZh }],
+        openai,
+        OPENAI_MODEL,
+        { timelinessHint: "recent" },
+      );
+      const rel = relevanceMap.get(apodId);
+      const relevanceRecord = rel
+        ? {
+            ...rel,
+            structure: scoreStructure(insight.hook, insight.hookZh),
+            scored_at: new Date().toISOString(),
+          }
+        : undefined;
 
       const payload = {
         source: "apod",
         source_id: entry.date,
-        arxiv_id_base: `apod-${entry.date}`,
+        arxiv_id_base: apodId,
         arxiv_id_version: 1,
         title: entry.title,
         // We store the raw explanation only so it can inform future reprocessing.
@@ -337,6 +355,7 @@ async function main() {
           // Copyright notice stored for front-end attribution when present.
           ...(entry.copyright ? { copyrightNotice: entry.copyright.trim() } : {}),
           media_type: entry.media_type,
+          ...(relevanceRecord ? { relevance: relevanceRecord } : {}),
         },
       };
 

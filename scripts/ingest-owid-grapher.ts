@@ -46,13 +46,16 @@ loadDotenv({ path: ".env.local", override: true, quiet: true });
 loadDotenv({ path: ".env", override: false, quiet: true });
 
 import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
 import { generateOwidInsight } from "../src/lib/llm";
 import { DOMAINS } from "../mobile/src/lib/taxonomy";
+import { generateRelevance, scoreStructure } from "../src/lib/relevance";
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL_LOW_COST ?? "gpt-4o-mini";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
   console.error(
@@ -62,6 +65,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // The OWID-capable domains — same set as ingest-owid.ts, single source of truth.
 const OWID_DOMAINS = DOMAINS.filter((d) => d.sources.includes("owid")).map(
@@ -647,6 +651,21 @@ async function main(): Promise<void> {
           domains: OWID_DOMAINS,
         });
 
+        // Score relevance (single-row batch — fine at ingest time per spec)
+        const relevanceMap = await generateRelevance(
+          [{ id: arxivIdBase, title: fact.title, hook_summary_en: insight.hook, hook_summary_zh: insight.hookZh }],
+          openai,
+          OPENAI_MODEL,
+        );
+        const rel = relevanceMap.get(arxivIdBase);
+        const relevanceRecord = rel
+          ? {
+              ...rel,
+              structure: scoreStructure(insight.hook, insight.hookZh),
+              scored_at: new Date().toISOString(),
+            }
+          : undefined;
+
         const payload = {
           source: "owid",
           source_id: `grapher:${slug}:${fact.factKey}`,
@@ -683,6 +702,7 @@ async function main(): Promise<void> {
             owid_slug: slug,
             fact_key: fact.factKey,
             domain_id: insight.domainId,
+            ...(relevanceRecord ? { relevance: relevanceRecord } : {}),
           },
         };
 

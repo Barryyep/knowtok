@@ -25,12 +25,15 @@ loadDotenv({ path: ".env", override: false, quiet: true });
 
 import { XMLParser } from "fast-xml-parser";
 import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
 import { generateOwidInsight } from "../src/lib/llm";
 import { DOMAINS } from "../mobile/src/lib/taxonomy";
+import { generateRelevance, scoreStructure } from "../src/lib/relevance";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL_LOW_COST ?? "gpt-4o-mini";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
   console.error("Missing env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY");
@@ -38,6 +41,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const OWID_FEED = "https://ourworldindata.org/atom-data-insights.xml";
 
@@ -171,6 +175,21 @@ async function main() {
     try {
       const insight = await generateOwidInsight({ title, body, domains: OWID_DOMAINS });
 
+      // Score relevance (single-row batch — fine at ingest time per spec)
+      const relevanceMap = await generateRelevance(
+        [{ id: slug, title, hook_summary_en: insight.hook, hook_summary_zh: insight.hookZh }],
+        openai,
+        OPENAI_MODEL,
+      );
+      const rel = relevanceMap.get(slug);
+      const relevanceRecord = rel
+        ? {
+            ...rel,
+            structure: scoreStructure(insight.hook, insight.hookZh),
+            scored_at: new Date().toISOString(),
+          }
+        : undefined;
+
       const payload = {
         source: "owid",
         source_id: slug,
@@ -200,6 +219,7 @@ async function main() {
           venue: "Our World in Data",
           owid_slug: slug,
           domain_id: insight.domainId,
+          ...(relevanceRecord ? { relevance: relevanceRecord } : {}),
         },
       };
 
