@@ -13,6 +13,7 @@ const OWNER_KEY = "ohlo:cacheOwner:v1";
 // Prefix used by personaTrack.ts — mirrored here so clearLocalData can sweep
 // all entries without importing from that module (avoids a circular dep).
 const PERSONA_TRACK_PREFIX = "ohlo:personaTrack:v1:";
+const SWAP_COUNT_KEY = "ohlo:swapCount:v1";
 // UI-state key owned by components/firstClassHint.ts — included in per-user
 // wipe so a new account sees the hint fresh. Canonical definition: lib/config.ts.
 
@@ -176,4 +177,69 @@ export async function updateStoredWhyCare(fact: DailyFact): Promise<void> {
     f.source.factId === fact.source.factId ? fact : f,
   );
   await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
+}
+
+// ── Swap-count helpers ───────────────────────────────────────────────────────
+
+/** Maximum 换一条 button presses allowed per calendar day. */
+export const MAX_DAILY_SWAPS = 3;
+
+export interface SwapState {
+  /** Local calendar date in "YYYY-MM-DD" format. */
+  date: string;
+  /** Number of successful swaps on that date. */
+  count: number;
+}
+
+/**
+ * Pure function: given the previously persisted state and today's date string,
+ * return the new state after one successful swap.
+ *
+ * - If prev is null or prev.date differs from today (day rolled over), the
+ *   counter resets: returns { date: today, count: 1 }.
+ * - Otherwise the count increments by one.
+ *
+ * This does NOT enforce the MAX_DAILY_SWAPS cap — the cap is enforced at the
+ * call site (UI gate). The function is kept pure so it can be unit-tested
+ * without AsyncStorage.
+ */
+export function nextSwapState(prev: SwapState | null, today: string): SwapState {
+  if (!prev || prev.date !== today) {
+    return { date: today, count: 1 };
+  }
+  return { date: today, count: prev.count + 1 };
+}
+
+/** Load the persisted swap state for the current device. Returns null if none. */
+export async function loadSwapState(): Promise<SwapState | null> {
+  const raw = await AsyncStorage.getItem(SWAP_COUNT_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as SwapState;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Record a successful swap for the given calendar date.
+ * Loads the current state, applies nextSwapState, persists, and returns
+ * the new state.
+ */
+export async function recordSwap(today: string): Promise<SwapState> {
+  const prev = await loadSwapState();
+  const next = nextSwapState(prev, today);
+  await AsyncStorage.setItem(SWAP_COUNT_KEY, JSON.stringify(next));
+  return next;
+}
+
+/**
+ * How many swaps remain for today.
+ * Returns MAX_DAILY_SWAPS when there is no stored state or the date has
+ * rolled over. Clamps to 0 (never negative).
+ */
+export async function swapsRemaining(today: string): Promise<number> {
+  const state = await loadSwapState();
+  if (!state || state.date !== today) return MAX_DAILY_SWAPS;
+  return Math.max(0, MAX_DAILY_SWAPS - state.count);
 }

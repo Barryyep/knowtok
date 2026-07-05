@@ -84,6 +84,8 @@ export interface UIStrings {
   radarGuardHint: string;
   // Streak label — contains {n} placeholder replaced at runtime
   streakLabel: string;
+  // Swap gate — shown after MAX_DAILY_SWAPS exhausted
+  swapExhausted: string;
 }
 
 const en: UIStrings = {
@@ -160,6 +162,8 @@ const en: UIStrings = {
   radarScreenTitle: "My curiosity radar",
   radarGuardHint: "Keep at least 2 domains active",
   streakLabel: "DAY {n}",
+  // Swap gate
+  swapExhausted: "One a day. The next lands tomorrow.",
 };
 
 const zh: UIStrings = {
@@ -234,6 +238,8 @@ const zh: UIStrings = {
   radarScreenTitle: "我的好奇雷达",
   radarGuardHint: "至少保留 2 个领域",
   streakLabel: "连续 {n} 天",
+  // Swap gate
+  swapExhausted: "明天再来一封 · 好东西值得等",
 };
 
 const UI_TEXT: Record<AppLanguage, UIStrings> = { en, zh };

@@ -18,15 +18,21 @@ import { t } from "../i18n";
 import { ANDROID_WIDGET_NAME } from "../lib/config";
 import { generateWhyCare, getTodayFact } from "../lib/factService";
 import { logEvent } from "../lib/events";
-import { loadFactHistory } from "../lib/storage";
+import { loadFactHistory, loadSwapState, recordSwap, MAX_DAILY_SWAPS } from "../lib/storage";
 import type { DailyFact, Profile } from "../lib/types";
 import { FactWidget } from "../widgets/FactWidget";
-import { colors, radius, spacing, uiFont } from "../theme";
+import { colors, fonts, radius, spacing, uiFont } from "../theme";
 import { FactCard } from "../components/FactCard";
 import { DateEyebrow } from "../components/DateEyebrow";
 import { streakCount } from "../components/slipUtils";
 import { firstClassHintSeen, markFirstClassHintSeen } from "../components/firstClassHint";
 import { SharePoster, POSTER_W, POSTER_H } from "../components/SharePoster";
+
+/** Local calendar date as "YYYY-MM-DD" (device timezone). */
+function todayDateString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 interface Props {
   profile: Profile;
@@ -49,12 +55,25 @@ export function TodayScreen({ profile }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
   const [showFirstClassHint, setShowFirstClassHint] = useState(false);
+  const [swapsLeft, setSwapsLeft] = useState(MAX_DAILY_SWAPS);
 
   const posterRef = useRef<ViewShotRef>(null);
   const [isSharing, setIsSharing] = useState(false);
 
   const refreshStreak = useCallback(() => {
     void loadFactHistory().then((h) => setStreak(streakCount(h)));
+  }, []);
+
+  // Hydrate swap counter from storage on mount so the gate reflects any swaps
+  // the user already made today (e.g. after a hot-reload or app reopen).
+  useEffect(() => {
+    const today = todayDateString();
+    void loadSwapState().then((state) => {
+      if (state && state.date === today) {
+        setSwapsLeft(Math.max(0, MAX_DAILY_SWAPS - state.count));
+      }
+      // Otherwise: different date or no entry — default MAX_DAILY_SWAPS is correct.
+    });
   }, []);
 
   const load = useCallback(
@@ -81,6 +100,37 @@ export function TodayScreen({ profile }: Props) {
     },
     [profile, refreshStreak],
   );
+
+  /**
+   * 换一条 handler — only runs a swap when swaps remain.
+   * Counter increments ONLY after a new fact is successfully shown, never on
+   * tapping when already exhausted (the exhausted UI state prevents that anyway).
+   */
+  const handleSwap = useCallback(async () => {
+    if (swapsLeft <= 0 || !fact) return;
+    const today = todayDateString();
+    logEvent("swap", { factId: fact.source.factId, domain: fact.topic, date: fact.date });
+    setLoading(true);
+    setError(null);
+    try {
+      const next = await getTodayFact(profile, { forceRefresh: true });
+      setFact(next);
+      setLoading(false);
+      refreshStreak();
+      // Increment the daily counter only on success.
+      const newState = await recordSwap(today);
+      setSwapsLeft(Math.max(0, MAX_DAILY_SWAPS - newState.count));
+      await syncAndroidWidget(next, profile);
+      const withWhy = await generateWhyCare(profile, next);
+      setFact((current) =>
+        current?.source.factId === withWhy.source.factId ? withWhy : current,
+      );
+      await syncAndroidWidget(withWhy, profile);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setLoading(false);
+    }
+  }, [fact, profile, refreshStreak, swapsLeft]);
 
   useEffect(() => {
     void load(false);
@@ -216,16 +266,20 @@ export function TodayScreen({ profile }: Props) {
           {/* Bottom action row: 换一条 pill centered, share to its right. */}
           <View style={styles.actionRow}>
             <View style={styles.actionSpacer} />
-            <Pressable style={styles.pill} onPress={() => {
-              // §3 — swap event before triggering the load.
-              logEvent("swap", { factId: fact.source.factId, domain: fact.topic, date: fact.date });
-              void load(true);
-            }}>
-              <Ionicons name="swap-horizontal" color={colors.paper0} size={16} />
-              <Text style={[styles.pillText, { fontFamily: uiFont(profile.language, "semibold") }]}>
-                {strings.refresh}
-              </Text>
-            </Pressable>
+            {swapsLeft > 0 ? (
+              <Pressable style={styles.pill} onPress={() => { void handleSwap(); }}>
+                <Ionicons name="swap-horizontal" color={colors.paper0} size={16} />
+                <Text style={[styles.pillText, { fontFamily: uiFont(profile.language, "semibold") }]}>
+                  {strings.refresh}
+                </Text>
+              </Pressable>
+            ) : (
+              <View style={styles.swapGate}>
+                <Text style={[styles.swapGateText, { fontFamily: profile.language === "zh" ? undefined : fonts.mono }]}>
+                  {strings.swapExhausted}
+                </Text>
+              </View>
+            )}
             {/* Disabled while the whyCare line is still pending, so the share
                 image can't capture the placeholder text. */}
             <Pressable
@@ -325,4 +379,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   shareButtonDisabled: { opacity: 0.35 },
+  // Swap-exhausted gate — intentional scarcity, not an error.
+  swapGate: {
+    paddingVertical: 12,
+    paddingHorizontal: spacing.xl,
+  },
+  swapGateText: {
+    color: colors.inkMuted,
+    fontSize: 12,
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
 });

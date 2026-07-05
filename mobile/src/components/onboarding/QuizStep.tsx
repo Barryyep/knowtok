@@ -195,6 +195,7 @@ export function QuizStep({
                 value={otherText}
                 onChangeText={setOtherText}
                 autoFocus
+                maxLength={120}
                 placeholder={strings.otherPlaceholder}
                 placeholderTextColor={colors.paraSoft}
                 returnKeyType="done"

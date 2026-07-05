@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/http";
 import { getAuthedClient } from "@/lib/supabase/server";
+import { getApiKey, getApiKeyEnvName, getProvider } from "@/lib/llm-providers";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const GOODVISION_URL = "https://api.goodvision.tech/v1/messages";
 const ALLOWED_MODELS = new Set(["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"]);
 const MAX_TOKENS_LIMIT = 4096;
 const TIMEOUT_MS = 25_000;
@@ -50,9 +50,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const apiKey = process.env.GOODVISION_API_KEY;
+    // Provider is selected by the LLM_PROVIDER env var (defaults to goodvision,
+    // which is a byte-identical passthrough of today's behavior).
+    const provider = getProvider();
+    const apiKey = getApiKey();
     if (!apiKey) {
-      console.error("[llm] GOODVISION_API_KEY is not set");
+      console.error(`[llm] ${getApiKeyEnvName()} is not set (provider: ${provider.name})`);
       return NextResponse.json({ error: "LLM service not configured" }, { status: 503 });
     }
 
@@ -61,18 +64,16 @@ export async function POST(request: Request) {
 
     let upstream: Response;
     try {
-      upstream = await fetch(GOODVISION_URL, {
+      upstream = await fetch(provider.endpoint, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: resolvedModel,
-          max_tokens: resolvedMaxTokens,
-          ...rest,
-        }),
+        headers: provider.buildHeaders(apiKey),
+        body: JSON.stringify(
+          provider.buildBody({
+            model: resolvedModel,
+            max_tokens: resolvedMaxTokens,
+            ...rest,
+          }),
+        ),
         signal: controller.signal,
       });
     } catch (err) {
@@ -96,7 +97,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(parsed, { status: upstream.status });
+    // Translate the upstream response back into the canonical Anthropic
+    // Messages shape the mobile client expects (verbatim for goodvision/anthropic).
+    const { status, body: responseBody } = provider.parseResponse(upstream.status, parsed);
+    return NextResponse.json(responseBody, { status });
   } catch (error) {
     return jsonError(error, "LLM proxy error");
   }
