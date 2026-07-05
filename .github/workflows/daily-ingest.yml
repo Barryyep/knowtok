@@ -24,6 +24,8 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       # Optional — falls back to gpt-4o-mini inside the scripts if unset.
       OPENAI_MODEL_LOW_COST: ${{ secrets.OPENAI_MODEL_LOW_COST }}
+      # Optional — falls back to DEMO_KEY if unset (rate-limited to ~30 req/hr).
+      NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,3 +45,32 @@ jobs:
 
       - name: Ingest OpenAlex works (Climate-only)
         run: npx tsx scripts/ingest-openalex.ts
+
+      - name: Ingest NASA APOD (daily, space domain)
+        run: npx tsx scripts/ingest-apod.ts
+
+  # Wikidata evergreen backfill — one-shot, run manually via workflow_dispatch.
+  # Not included in the daily chain (CC0 facts don't change daily).
+  ingest-wikidata:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL_LOW_COST: ${{ secrets.OPENAI_MODEL_LOW_COST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ingest Wikidata SPARQL facts (evergreen backfill)
+        run: npx tsx scripts/ingest-wikidata.ts
