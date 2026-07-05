@@ -102,7 +102,8 @@ function weightedDomainPick(
   domains: string[],
   weights: Record<string, number> | undefined,
 ): number {
-  if (!weights || domains.length === 0) return hash % domains.length;
+  if (domains.length === 0) return 0;
+  if (!weights) return hash % domains.length;
   const ws = domains.map((id) => Math.max(weights[id] ?? 0, 0));
   const total = ws.reduce((a, b) => a + b, 0);
   if (total <= 0) return hash % domains.length;
@@ -142,8 +143,8 @@ async function buildDomainRotatedFact(
   const domain = domainById(domainId)!;
   const focusDomain = domain[profile.language];
 
-  // Paper-capable domain with papers → paper flow scoped to that domain.
-  if (domain.sources.includes("papers")) {
+  // Paper-capable domain (papers or owid backed) with rows → paper flow scoped to that domain.
+  if (domain.sources.includes("papers") || domain.sources.includes("owid")) {
     const papers = await fetchCandidatePapers(profile.language, [domainId]);
     if (papers.length > 0) {
       const paper = pickDailyPaper(

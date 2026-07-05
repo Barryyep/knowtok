@@ -8,6 +8,8 @@
  * (mobile/src/lib/taxonomy.ts) + the pure hash (jsonUtils.ts) and runs the
  * IDENTICAL deterministic algorithm those helpers use, so the resolved
  * track/domain/categories match what the app would compute.
+ * Domain weights are honored via the same cumulative-bucket weighted pick used
+ * in production (factService.weightedDomainPick).
  *
  * Usage: npx tsx scripts/smoke-routing.ts
  */
@@ -16,7 +18,7 @@ import { DOMAINS, domainById } from "../mobile/src/lib/taxonomy";
 import { hashStringToNumber } from "../mobile/src/lib/jsonUtils";
 
 type Lang = "zh" | "en";
-type Profile = { occupation: string; curiosityDomains: string[]; language: Lang };
+type Profile = { occupation: string; curiosityDomains: string[]; language: Lang; domainWeights?: Record<string, number> };
 
 // Mirrors paperService.domainsToCategories.
 function domainsToCategories(domains: string[]): string[] {
@@ -33,12 +35,37 @@ function domainsToCategories(domains: string[]): string[] {
   return Array.from(out);
 }
 
+/**
+ * Mirrors factService.weightedDomainPick — cumulative-bucket weighted pick.
+ * hash → [0, 1) via (hash % 100_000) / 100_000, then scaled into [0, total).
+ * Falls back to uniform modulo when weights are missing or sum to zero.
+ */
+function weightedDomainPick(
+  hash: number,
+  domains: string[],
+  weights: Record<string, number> | undefined,
+): number {
+  if (domains.length === 0) return 0;
+  if (!weights) return hash % domains.length;
+  const ws = domains.map((id) => Math.max(weights[id] ?? 0, 0));
+  const total = ws.reduce((a, b) => a + b, 0);
+  if (total <= 0) return hash % domains.length;
+  const target = ((hash % 100_000) / 100_000) * total;
+  let cumulative = 0;
+  for (let i = 0; i < ws.length; i++) {
+    cumulative += ws[i]!;
+    if (target < cumulative) return i;
+  }
+  return ws.length - 1;
+}
+
 // Mirrors factService.buildDomainRotatedFact's day-domain selection.
 function resolveForDate(profile: Profile, userId: string, date: string, forceRefresh = false) {
   const selected = profile.curiosityDomains.filter((id) => domainById(id));
   const excludeCount = 0; // fresh day, no history
   const rotation = forceRefresh ? Math.max(1, excludeCount) : 0;
-  const dayIndex = (hashStringToNumber(`${userId}:${date}`) + rotation) % selected.length;
+  const hash = hashStringToNumber(`${userId}:${date}`) + rotation;
+  const dayIndex = weightedDomainPick(hash, selected, profile.domainWeights);
   const domainId = selected[dayIndex];
   const domain = domainById(domainId)!;
   const paperCapable = domain.sources.includes("papers");

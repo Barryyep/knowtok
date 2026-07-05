@@ -59,7 +59,7 @@ export async function classifyOtherAnswers(
     const out: Record<string, number> = {};
     for (const [id, w] of Object.entries(parsed.votes as Record<string, unknown>)) {
       if (DOMAIN_IDS.includes(id) && typeof w === "number" && w > 0) {
-        out[id] = (out[id] ?? 0) + w;
+        out[id] = (out[id] ?? 0) + Math.min(w, 0.5);
       }
     }
     return out;

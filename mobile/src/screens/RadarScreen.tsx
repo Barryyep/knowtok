@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import {
   PanResponder,
   Pressable,
@@ -53,7 +53,7 @@ interface SliderProps {
   language: AppLanguage;
 }
 
-function DomainSlider({ domainId, weight, onChangeWeight, language }: SliderProps) {
+const DomainSlider = memo(function DomainSlider({ domainId, weight, onChangeWeight, language }: SliderProps) {
   const trackWidth = useRef(0);
   const startX = useRef(0);
   // Use a ref so PanResponder's closure (created once) always sees the latest callback.
@@ -112,7 +112,7 @@ function DomainSlider({ domainId, weight, onChangeWeight, language }: SliderProp
       </View>
     </View>
   );
-}
+});
 
 const sliderStyles = StyleSheet.create({
   row: {

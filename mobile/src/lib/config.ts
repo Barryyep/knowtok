@@ -34,3 +34,6 @@ export const ANDROID_WIDGET_NAME = "DailyFact";
  * dedup correctness beats the negligible storage cost.
  */
 export const FACT_HISTORY_SIZE = 500;
+
+/** AsyncStorage key for the one-time 头等件 / FIRST CLASS explainer flag. */
+export const FIRST_CLASS_HINT_KEY = "ohlo:firstClassHintSeen:v1";

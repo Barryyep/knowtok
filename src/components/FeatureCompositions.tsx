@@ -129,7 +129,7 @@ function InlineWidget({ locale }: { locale: Locale }) {
             position: "absolute",
             inset: -16,
             background:
-              "linear-gradient(135deg, #2c4a6d 0%, #5a3285 42%, #1a5848 100%)",
+              "linear-gradient(135deg, #3a2e1a 0%, #24201a 60%, #1a1712 100%)",
             filter: "blur(12px)",
           }}
         />

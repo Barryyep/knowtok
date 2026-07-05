@@ -26,7 +26,8 @@ export const DOMAINS: Domain[] = [
   { id: "money", zh: "财富与经济", en: "Money & Economics", sources: ["owid", "wiki", "papers"], legacyCategories: ["Your Money"] },
   { id: "food", zh: "食物与营养", en: "Food & Nutrition", sources: ["owid", "wiki", "papers"], legacyCategories: ["Your Food"] },
   { id: "climate", zh: "气候与地球", en: "Climate & Earth", sources: ["owid", "papers", "wiki"], legacyCategories: ["Climate"] },
-  { id: "history", zh: "历史与文明", en: "History & Civilization", sources: ["wiki"], legacyCategories: [] },
+  // Wikidata evergreen rows (historical events) live in the papers table under human_category "history".
+  { id: "history", zh: "历史与文明", en: "History & Civilization", sources: ["papers", "wiki"], legacyCategories: [] },
   { id: "nature", zh: "自然与生物", en: "Nature & Life", sources: ["wiki", "owid"], legacyCategories: [] },
   { id: "society", zh: "社会与人性", en: "Society & People", sources: ["wiki", "owid"], legacyCategories: [] },
 ];

@@ -211,7 +211,7 @@ type OwidInsight = {
  * categories), this assigns ONE taxonomy DOMAIN id from the OWID-capable set
  * passed in, and writes bilingual hooks/summaries under the SAME hook style
  * rules as the paper generator (fact-first, deadpan, no banned openers,
- * zh ≤50 chars). The domain list is passed in so taxonomy.ts stays the single
+ * zh ≤40 chars). The domain list is passed in so taxonomy.ts stays the single
  * source of truth.
  */
 export async function generateOwidInsight(input: {

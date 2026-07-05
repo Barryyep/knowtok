@@ -70,12 +70,8 @@ export function RevealStep({
     const classifyWork = async (): Promise<QuizState> => {
       if (quizState.otherAnswers.length === 0) return quizState;
       try {
-        const votes = await Promise.race<Record<string, number>>([
-          classifyOtherAnswers(quizState.otherAnswers, language),
-          new Promise<Record<string, number>>((resolve) =>
-            setTimeout(() => resolve({}), 6_000),
-          ),
-        ]);
+        // classifyOtherAnswers already guarantees resolution (internal timeout + catch).
+        const votes = await classifyOtherAnswers(quizState.otherAnswers, language);
         return applyClassifiedVotes(quizState, votes);
       } catch {
         return quizState;

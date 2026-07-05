@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { Fraunces, Space_Mono } from "next/font/google";
 import { createClient } from "@supabase/supabase-js";
 
@@ -37,7 +38,7 @@ interface PaperRow {
   metadata: Record<string, unknown> | null;
 }
 
-async function fetchPaper(id: string): Promise<PaperRow | null> {
+const fetchPaper = cache(async (id: string): Promise<PaperRow | null> => {
   try {
     const url =
       process.env.NEXT_PUBLIC_SUPABASE_URL ??
@@ -69,7 +70,7 @@ async function fetchPaper(id: string): Promise<PaperRow | null> {
   } catch {
     return null;
   }
-}
+});
 
 function sourceLabel(
   absUrl: string | null,
@@ -386,9 +387,9 @@ function PaperContent({ paper }: { paper: PaperRow }) {
         />
 
         {/* Source stamp — tilted -1.2deg (hand-stamped feel) */}
-        {paper.abs_url ? (
+        {/^https?:\/\//i.test(paper.abs_url ?? "") ? (
           <a
-            href={paper.abs_url}
+            href={paper.abs_url!}
             target="_blank"
             rel="noreferrer"
             style={{
@@ -449,24 +450,22 @@ function PaperContent({ paper }: { paper: PaperRow }) {
 function CtaButton() {
   return (
     <div style={{ textAlign: "center" }}>
-      <a
-        href="#"
+      <span
         data-todo="appstore-link"
         style={{
           display: "inline-block",
           background: C.persimmon,
-          color: "#FFFFFF",
+          color: C.paper0,
           fontFamily: "system-ui, -apple-system, sans-serif",
           fontSize: 15,
           fontWeight: 600,
           letterSpacing: "0.02em",
           padding: "12px 32px",
           borderRadius: 9999,
-          textDecoration: "none",
         }}
       >
         获取 Ohlo · Get Ohlo
-      </a>
+      </span>
     </div>
   );
 }

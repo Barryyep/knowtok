@@ -82,9 +82,8 @@ function sleep(ms: number) {
 
 function normalizeHook(text: string): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
-  const words = trimmed.split(" ").filter(Boolean);
-  if (words.length <= 28) return trimmed;
-  return `${words.slice(0, 28).join(" ").replace(/[,.!?;:]+$/, "")}.`;
+  if (trimmed.length <= 100) return trimmed;
+  return `${trimmed.slice(0, 97).trimEnd().replace(/[,.!?;:]+$/, "")}.`;
 }
 
 /**

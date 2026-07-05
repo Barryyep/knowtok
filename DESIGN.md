@@ -31,7 +31,7 @@
 - **Base unit:** 4px. Scale: xs4 sm8 md16 lg24 xl32 2xl48.
 - **Layout:** the slip is the single hero; №/date/source are stamp-sized marginalia around it. One sentence = the screen.
 - **Radius:** slip 18 · widget 22 · buttons pill(999) · stamps 4.
-- **Signature details:** source stamp always tilted -1.2° (hand-stamped feel); slip bottom fold edge always present; date eyebrow + 7 streak dots (filled marigold = done) live ABOVE the card, ~24px tall.
+- **Signature details:** source stamp always tilted -1.2° (hand-stamped feel); slip bottom fold edge always present; date eyebrow + 「连续 N 天」 mono label (marigold, shown only when streak ≥ 2) live ABOVE the card, ~24px tall.
 
 ## Motion
 - **Approach:** intentional, transform/opacity only (RN Animated / SwiftUI safe).

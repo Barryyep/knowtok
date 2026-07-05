@@ -65,6 +65,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
     interests: "",
     curiosityDomains: [],
     language: initial?.language ?? systemLanguage(),
+    apiKey: initial?.apiKey,
   });
   const [cardTrio, setCardTrio] = useState<Spark[] | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);

@@ -73,11 +73,15 @@ export default function App() {
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (!next) {
-        // Sign-out: wipe all per-user local state so the device is clean for
-        // the next account. ensureCacheOwner on the next sign-in will also
-        // detect a stale owner, but clearing eagerly here avoids a window
-        // where old data is readable before the next user loads.
-        void clearLocalData();
+        // Defer setSession(null) until the wipe completes — this guarantees
+        // the login screen (and any subsequent sign-in) cannot appear until
+        // clearLocalData has finished, so a new user's stamped owner key can
+        // never be deleted by an in-flight wipe from the previous sign-out.
+        void (async () => {
+          await clearLocalData();
+          setSession(null);
+        })();
+        return;
       }
       setSession(next);
     });

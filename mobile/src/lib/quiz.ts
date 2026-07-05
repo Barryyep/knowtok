@@ -401,6 +401,9 @@ function clusterOf(d: string): string[] {
 
 function nextCard(state: QuizState, d: string): Spark {
   const cards = SPARKS.filter((s) => s.domainId === d);
+  if (cards.length === 0) {
+    throw new Error(`Domain "${d}" has no SPARKS — content contract violated.`);
+  }
   return cards[(state.used[d] ?? 0) % cards.length];
 }
 

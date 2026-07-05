@@ -336,7 +336,7 @@ async function regeneratePass(flagged: PaperRow[]): Promise<{
     async (paper, idx) => {
       const label = `[${idx + 1}/${flagged.length}]`;
 
-      // Resumability: re-check live; another pass may have already fixed this row
+      // Resumability: re-check the in-memory snapshot; another pass may have already fixed this row
       if (!rowViolates(paper.hook_summary_zh, paper.hook_summary_en)) {
         console.log(`  [SKIP] ${label} ${paper.id} — already clean`);
         return;

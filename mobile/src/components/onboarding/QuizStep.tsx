@@ -14,7 +14,7 @@ import { CARD_PROMPTS } from "../../lib/quiz";
 import type { QuizItem, QuizOption } from "../../lib/quiz";
 import type { Spark } from "../../lib/taxonomy";
 import type { AppLanguage } from "../../lib/types";
-import { colors, fonts, heroFont, radius, spacing } from "../../theme";
+import { colors, fonts, heroFont, radius, spacing, uiFont } from "../../theme";
 import { PrimaryPill } from "./PrimaryPill";
 
 interface QuizStepProps {
@@ -209,7 +209,7 @@ export function QuizStep({
 
         {item.skippable && (
           <Pressable onPress={onSkip} style={styles.skipWrap}>
-            <Text style={styles.skipText}>{strings.skipLabel}</Text>
+            <Text style={[styles.skipText, { fontFamily: uiFont(language) }]}>{strings.skipLabel}</Text>
           </Pressable>
         )}
       </ScrollView>

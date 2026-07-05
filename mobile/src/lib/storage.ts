@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { ExtensionStorage } from "@bacons/apple-targets";
 
-import { APP_GROUP, FACT_HISTORY_SIZE, WIDGET_FACT_KEY } from "./config";
+import { APP_GROUP, FACT_HISTORY_SIZE, FIRST_CLASS_HINT_KEY, WIDGET_FACT_KEY } from "./config";
 import { sendFactToWatch } from "./watchSync";
 import type { DailyFact, FactKind, FactSource, Profile } from "./types";
 
@@ -14,15 +14,21 @@ const OWNER_KEY = "ohlo:cacheOwner:v1";
 // all entries without importing from that module (avoids a circular dep).
 const PERSONA_TRACK_PREFIX = "ohlo:personaTrack:v1:";
 // UI-state key owned by components/firstClassHint.ts — included in per-user
-// wipe so a new account sees the hint fresh.
-const FIRST_CLASS_HINT_KEY = "ohlo:firstClassHintSeen:v1";
+// wipe so a new account sees the hint fresh. Canonical definition: lib/config.ts.
 
 // No-ops safely on Android (the native module is iOS-only).
 const iosSharedStorage = new ExtensionStorage(APP_GROUP);
 
 export async function loadProfile(): Promise<Profile | null> {
   const raw = await AsyncStorage.getItem(PROFILE_KEY);
-  return raw ? (JSON.parse(raw) as Profile) : null;
+  if (!raw) return null;
+  const parsed = JSON.parse(raw) as Profile;
+  // Normalize legacy profiles that predate curiosityDomains — fill the required
+  // field so callers never encounter undefined where string[] is expected.
+  if (!parsed.curiosityDomains) {
+    parsed.curiosityDomains = [];
+  }
+  return parsed;
 }
 
 export async function saveProfile(profile: Profile): Promise<void> {

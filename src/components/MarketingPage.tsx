@@ -175,7 +175,7 @@ export function MarketingPage({ locale }: { locale: Locale }) {
             style={{
               display: "inline-block",
               background: C.persimmon,
-              color: "#FFFFFF",
+              color: "#F3E9D6",
               fontFamily: "system-ui, -apple-system, sans-serif",
               fontSize: 15,
               fontWeight: 600,
