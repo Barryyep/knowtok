@@ -28,5 +28,9 @@ export const WIDGET_FACT_KEY = "todayFact";
 /** Android widget name — must match app.json plugin config. */
 export const ANDROID_WIDGET_NAME = "DailyFact";
 
-/** How many past facts we remember to avoid repeating topics. */
-export const FACT_HISTORY_SIZE = 14;
+/**
+ * How many past facts we remember to avoid ever repeating one. A year of
+ * dailies plus generous 换一条 usage is still only ~100KB of AsyncStorage;
+ * dedup correctness beats the negligible storage cost.
+ */
+export const FACT_HISTORY_SIZE = 500;
