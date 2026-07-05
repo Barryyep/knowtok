@@ -8,7 +8,7 @@ import { create as qrCodeCreate } from "qrcode/lib/core/qrcode";
 import { t } from "../i18n";
 import { buildShareUrl } from "../lib/shareUrl";
 import type { AppLanguage, DailyFact } from "../lib/types";
-import { colors, fonts, heroFont, radius, spacing, uiFont } from "../theme";
+import { colors, fonts, heroFont, radius, spacing } from "../theme";
 import { DatePostmark } from "./DatePostmark";
 import { formatDispatch } from "./slipUtils";
 
@@ -139,12 +139,7 @@ export function SharePoster({ fact, language }: Props) {
           <View style={styles.bottomRow}>
             <QRGrid url={shareUrl} />
             <View style={styles.bottomTextStack}>
-              <Text
-                style={[
-                  styles.scanPrompt,
-                  { fontFamily: uiFont(language) },
-                ]}
-              >
+              <Text style={styles.scanPrompt}>
                 {strings.shareScanPrompt}
               </Text>
               <Text style={styles.wordmark}>OHLO · DAILY DISPATCH</Text>
@@ -222,7 +217,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderStyle: "dashed",
     borderTopColor: colors.paperEdge,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   stampRow: {
     flexDirection: "row",
@@ -253,9 +248,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scanPrompt: {
-    fontSize: 12,
-    color: colors.paraInk,
-    lineHeight: 18,
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: colors.paraSoft,
+    lineHeight: 17,
   },
   wordmark: {
     fontFamily: fonts.mono,

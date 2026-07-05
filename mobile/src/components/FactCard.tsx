@@ -63,13 +63,17 @@ export function FactCard({ fact, language, compact = false }: Props) {
   const [flipped, setFlipped] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
 
-  // Reset to front face whenever a new fact arrives.
-  const [backHeight, setBackHeight] = useState(0);
+  // Front face is in normal flow and defines the canonical card height.
+  // We measure it once, then lock BOTH faces to that height so there is
+  // never a visible height jump when flipping back→front or front→back.
+  const [frontHeight, setFrontHeight] = useState(0);
+
+  // Reset both flip state and the measured height whenever the fact changes.
   useEffect(() => {
     if (!compact) {
       flipAnim.setValue(0);
       setFlipped(false);
-      setBackHeight(0);
+      setFrontHeight(0);
     }
   }, [fact.source.factId, compact, flipAnim]);
 
@@ -94,12 +98,13 @@ export function FactCard({ fact, language, compact = false }: Props) {
     });
   }, [flipped, flipAnim]);
 
-  // Measure back face height so the container is tall enough when back is shown.
-  // Front face is in normal flow (sets the base container height).
-  // Back face is position: absolute — its measured height is stored as minHeight.
-  const onBackLayout = useCallback(
+  // Capture the front face's natural height once on first layout.
+  // We store the largest value seen so the card never shrinks during
+  // a refresh animation that briefly shows a taller layout.
+  const onFrontLayout = useCallback(
     (e: LayoutChangeEvent) => {
-      setBackHeight((h) => Math.max(h, e.nativeEvent.layout.height));
+      const h = e.nativeEvent.layout.height;
+      if (h > 0) setFrontHeight((prev) => Math.max(prev, h));
     },
     [],
   );
@@ -161,16 +166,18 @@ export function FactCard({ fact, language, compact = false }: Props) {
     <Animated.View style={[styles.flipOuter, arrivalMotion]}>
       {/*
        * flipContainer: relative-positioned container.
-       * Front face is in normal flow → sets the container's natural height.
-       * Back face is position: absolute, top/left/right 0 → overlays front.
-       * minHeight: backHeight ensures the container is tall enough when the
-       * back face (measured via onBackLayout) is taller than the front.
+       * Front face is in normal flow → onFrontLayout captures its height.
+       * Once measured, BOTH faces are locked to that exact height so there is
+       * never a visible size jump between front and back.
+       * Back face is position: absolute (top/left/right/bottom 0) → overlays
+       * the front face perfectly; its Pressable fills the face via flex: 1.
        */}
       <View
-        style={[styles.flipContainer, backHeight > 0 ? { minHeight: backHeight } : undefined]}
+        style={[styles.flipContainer, frontHeight > 0 ? { height: frontHeight } : undefined]}
       >
-        {/* ── FRONT FACE (normal flow) ─────────────────────────────────── */}
+        {/* ── FRONT FACE (normal flow, measures the canonical height) ─────── */}
         <Animated.View
+          onLayout={onFrontLayout}
           style={[
             styles.flipSlip,
             isPaper && styles.slipPaper,
@@ -233,24 +240,29 @@ export function FactCard({ fact, language, compact = false }: Props) {
           </Pressable>
         </Animated.View>
 
-        {/* ── BACK FACE (absolute, overlays front) ─────────────────────── */}
+        {/* ── BACK FACE (absolute, fills the front-height container) ──────── */}
         <Animated.View
           style={[
             styles.flipSlip,
             isPaper && styles.slipPaper,
             styles.flipFaceBack,
+            frontHeight > 0 ? { height: frontHeight } : undefined,
             {
               transform: [{ perspective: 1000 }, { rotateY: backRotateY }],
               backfaceVisibility: "hidden",
             },
           ]}
-          onLayout={onBackLayout}
         >
-          <Pressable onPress={handleFlip} style={styles.flipSlipContent}>
-            {/* Eyebrow title */}
+          {/*
+           * flex: 1 fills the absolute-positioned parent.
+           * The three groups (header / body / footer) are distributed via
+           * space-between so the body text is the visual hero of this face.
+           */}
+          <Pressable onPress={handleFlip} style={[styles.flipSlipContent, styles.flipBackContent]}>
+            {/* Eyebrow — small postmark-style label */}
             <Text style={styles.backTitle}>{strings.flipBackTitle}</Text>
 
-            {/* Why Care body — the whole face breathes */}
+            {/* Why Care body — the hero of this face, large and breathing */}
             {!whyCarePending ? (
               <Text style={[styles.backWhyText, { fontFamily: paperBodyFont(language) }]}>
                 {fact.whyCare}
@@ -260,6 +272,9 @@ export function FactCard({ fact, language, compact = false }: Props) {
                 {strings.flipBackPending}
               </Text>
             )}
+
+            {/* Spacer — pushes footer to bottom of the fixed-height face */}
+            <View style={styles.backSpacer} />
 
             {/* Flip-back affordance */}
             <View style={styles.flipHintRow}>
@@ -298,13 +313,11 @@ const styles = StyleSheet.create({
   flipOuter: {
     marginBottom: spacing.md,
   },
-  // Relative container for both faces.
-  // Front face (normal flow) sets natural height; minHeight added inline when
-  // the back face is taller.
+  // Relative container: height locked to the measured front-face height
+  // via inline style so both faces always occupy the exact same space.
   flipContainer: {},
   // Frame for each face: background + borders, NO padding.
-  // Padding lives on the inner flipSlipContent Pressable so the whole
-  // card surface is tappable (including the padding zone).
+  // Padding lives on the inner Pressable so the whole surface is tappable.
   flipSlip: {
     backgroundColor: colors.paper0,
     borderRadius: radius.slip,
@@ -315,12 +328,19 @@ const styles = StyleSheet.create({
   flipSlipContent: {
     padding: spacing.lg,
   },
-  // Back face sits absolutely on top of the front face.
+  // Back face: absolute overlay, locked to the front-face height via inline style.
+  // bottom: 0 ensures it truly fills the container from edge to edge.
   flipFaceBack: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
+  },
+  // Back face Pressable fills the absolute parent (flex: 1).
+  // Inherits padding from flipSlipContent; flex: 1 is the only addition.
+  flipBackContent: {
+    flex: 1,
   },
 
   // ── Shared layout pieces ──────────────────────────────────────────────
@@ -426,22 +446,34 @@ const styles = StyleSheet.create({
   },
 
   // ── Back face content ─────────────────────────────────────────────────
+  // Eyebrow label — small postmark-style annotation at the top of the face.
   backTitle: {
     fontFamily: fonts.mono,
     fontSize: 11,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     color: colors.paraSoft,
-    marginBottom: spacing.md,
+    textTransform: "uppercase",
+    marginBottom: spacing.sm,
   },
+  // Hero body text for the back face — this face belongs to whyCare.
+  // Scale: 19/30 (≈ 1.58 line height) for zh serif; generous for readability.
   backWhyText: {
     color: colors.paraInk,
-    fontSize: 15,
-    lineHeight: 25,
+    fontSize: 19,
+    lineHeight: 30,
+    marginTop: spacing.xs,
   },
   backWhyPending: {
     color: colors.paraSoft,
-    fontSize: 15,
-    lineHeight: 25,
+    fontSize: 17,
+    lineHeight: 27,
     fontStyle: "italic",
+    marginTop: spacing.xs,
+  },
+  // Flex spacer between body and footer — pushes the flip hint + wordmark
+  // to the bottom of the fixed-height face.
+  backSpacer: {
+    flex: 1,
+    minHeight: spacing.md,
   },
 });
