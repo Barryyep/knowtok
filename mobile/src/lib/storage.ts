@@ -148,6 +148,16 @@ function syncNativeSurfaces(fact: DailyFact): void {
 }
 
 /**
+ * Re-push the currently stored fact to the widget + watch. Call on app
+ * foreground: a watch (or widget) added AFTER the fact was last saved never
+ * received that push, so it shows a stale value until this catches it up.
+ */
+export async function resyncNativeSurfaces(): Promise<void> {
+  const fact = await loadStoredFact();
+  if (fact) syncNativeSurfaces(fact);
+}
+
+/**
  * Persist a new daily fact: app cache + history ring + iOS widget +
  * watch. Android widgets re-read AsyncStorage in their task handler,
  * so requestWidgetUpdate is triggered by the caller instead.

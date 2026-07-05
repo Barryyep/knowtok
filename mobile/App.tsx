@@ -13,12 +13,18 @@ import { SpaceMono_400Regular, SpaceMono_700Bold } from "@expo-google-fonts/spac
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, AppState, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { systemLanguage, t } from "./src/i18n";
 import { fetchRemotePersona, savePersonaEverywhere } from "./src/lib/personaService";
-import { clearLocalData, ensureCacheOwner, loadProfile, saveProfile } from "./src/lib/storage";
+import {
+  clearLocalData,
+  ensureCacheOwner,
+  loadProfile,
+  resyncNativeSurfaces,
+  saveProfile,
+} from "./src/lib/storage";
 import { supabase } from "./src/lib/supabase";
 import type { AppLanguage, Profile } from "./src/lib/types";
 import { AuthScreen } from "./src/screens/AuthScreen";
@@ -90,6 +96,17 @@ export default function App() {
       setSession(next);
     });
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Re-push the stored fact to the widget + watch on every foreground. A watch
+  // or widget added after the last save missed that push and shows a stale
+  // value; this catches it up the next time the app opens.
+  useEffect(() => {
+    void resyncNativeSurfaces();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") void resyncNativeSurfaces();
+    });
+    return () => sub.remove();
   }, []);
 
   // Once signed in, load the persona: local first, then the shared
