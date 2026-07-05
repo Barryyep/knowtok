@@ -74,6 +74,47 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.ohlo.daily.widget",
+                  "targetName": "OhloWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.ohlo.daily"
+                    ]
+                  }
+                },
+                {
+                  "bundleIdentifier": "com.ohlo.daily.watchkitapp.widget",
+                  "targetName": "OhloWatchWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.ohlo.daily"
+                    ]
+                  }
+                },
+                {
+                  "bundleIdentifier": "com.ohlo.daily.watchkitapp",
+                  "targetName": "OhloWatch",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.ohlo.daily"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "2c40f220-d36c-49f7-8c2f-8bf347e66e99"
+      }
+    },
+    "owner": "barryyep-0820"
   }
 }
