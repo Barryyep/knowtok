@@ -1,9 +1,31 @@
 # Changelog
 
-## Unreleased
+## v0.3.0.0 — 2026-07-05
+
+### Added
+- **Curiosity quiz onboarding.** Setup is now a disguised questionnaire: pick your language, answer everyday-trivia questions (every one accepts a free-text "other", classified by AI), open the cards that pull you in across six adaptive multi-select rounds, and finish with your name — optional and last. It ends with a personal curiosity radar instead of a form.
+- **Adjustable curiosity radar.** Settings now shows all ten knowledge domains as draggable bars; your weights directly drive which domain each day's dispatch comes from (weighted rotation).
+- **Flippable dispatch card.** The daily card flips over to 「寄给你的理由」— a full-face, personally written explanation of why this fact found you.
+- **Share poster with QR code.** Sharing generates a designed dispatch poster; scanning its QR opens a web page showing that exact fact with a link to get Ohlo.
+- **Three new content sources.** NASA APOD (daily astronomy), Wikidata evergreen superlatives (history/nature/space), and OWID Grapher trend facts (120 across six domains) join arXiv and OWID Insights — the content pool grew from 251 to ~400 cited facts, all wired into the daily ingest pipeline.
+- **Dated postmark.** Each card carries a circular OHLO cancellation mark with the day's date; research facts always show their publish date on the source stamp.
+- **Bilingual marketing site.** The web home is now a product introduction with a hover-scattering deck of real dispatches, app showcase compositions, and separate /zh and /en pages with automatic language routing.
 
 ### Changed
-- **Renamed product from KnowTok to Ohlo.** Same product; new name, no other functional changes. Updates app display name, bundle id (`com.knowtok.daily` → `com.ohlo.daily`), App Group, URL scheme, widget/watch target identifiers, storage key prefixes, and all user-facing copy across web + mobile. Historical entries below still refer to the product by its former name.
+- **Renamed product from KnowTok to Ohlo.** Same product; new name. Updates app display name, bundle id (`com.knowtok.daily` → `com.ohlo.daily`), App Group, URL scheme, widget/watch target identifiers, storage key prefixes, and all user-facing copy across web + mobile. Historical entries below refer to the product by its former name.
+- **Web repositioned as marketing site.** The feed, saved, profile, and web onboarding product surfaces now redirect home; the app is the product.
+- **Widgets restructured.** Fact on top; below, the source stamp sits beside a 「寄给你的理由」 pill (small widgets keep just the pill). Dispatch № recedes, the stray fold-edge bar is gone, and nothing clips.
+- **Shorter, cleaner facts.** Every fact is now at most 40 Chinese characters (100 English), with dashes banned pipeline-wide; all ~400 existing facts were rewritten to comply and 46 legacy hooks regenerated to the current voice.
+- **Streak made legible.** The seven mystery dots became a plain 「连续 N 天」 label, shown only from day two.
+
+### Fixed
+- **Switching accounts no longer leaks the previous user's data** — profile, history, cards, and widget contents are wiped when a different account signs in, so new users correctly start at onboarding.
+- **Switching language now regenerates the day's card** in the new language instead of keeping the old one.
+- **A fact seen once never repeats** — repeat-avoidance memory grew from 14 to 500 facts.
+- **Ingested history/nature/society facts are now actually served** — a routing guard previously skipped the content database for these domains entirely.
+- **Radar sliders no longer waste hundreds of renders per second while dragging**, and re-running the quiz no longer drops a stored custom API key.
+- **arXiv category corruption repaired deterministically** after an over-eager cleanup pass; category writes are now report-only outside the canonical mapping.
+- Share-page links validate their protocol, AI-classified quiz weights are capped, and the sign-out wipe can no longer race a fast re-login.
 
 ## v0.2.0.0 — 2026-07-04
 

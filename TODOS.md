@@ -25,14 +25,6 @@ Founder principle: "选择多了也就知道了" — every in-app choice is a qu
 
 ## Web (repositioned 2026-07-04: marketing/intro site only, no product features)
 
-### Reposition web as the Ohlo marketing site
-**Priority:** P1
-Founder decision 2026-07-04: web is NOT a functional feed app anymore — it is the app's introduction page + QR share landing (/s/[id], built). Replace the feed homepage with a Daily Dispatch-styled product intro; retire/hide feed, saved, profile, onboarding routes. Feed API perf criticals are OBSOLETE (route retirement supersedes them).
-
-### arXiv hook regeneration backfill (quality debt)
-**Priority:** P1
-DB sampling 2026-07-04: many of the 206 arXiv rows still carry pre-v5 hooks — exclamation marks, emotional tails (惊艳/改变体验), and at least one miscategorized row (audiobook paper under Your Food). OWID/OpenAlex rows are clean. Run scripts/backfill-paper-metadata.ts with hook rules v5 + META_HOOK_PATTERN guard over all arxiv rows; spot-check categories while at it.
-
 ### Root-side coverage gaps
 **Priority:** P3
 feed-mix encode/decodeCursor, resume-parse heuristics, http.jsonError branches, generatePersonalizedHook retry path. Flagged by testing specialist.
@@ -50,7 +42,27 @@ If the GitHub Actions runner is SIGKILLed (60min timeout), ingest_runs stays sta
 **Priority:** P4
 TS uses charCodeAt (UTF-16), Swift uses UTF-8 bytes — identical for current ASCII factIds only. Add an ASCII assertion or switch TS to TextEncoder bytes.
 
+## Cross-platform / Shared code
+
+### Shared dispatchNumber utility for web + mobile
+**Priority:** P3
+The djb2 hash in `src/app/s/[id]/page.tsx` and `mobile/src/components/slipUtils.ts` is copy-duplicated — drift risk if either side diverges. Extract to a shared package or a canonical source (mobile) with a symlink/workspace reference.
+
+### Share-landing hex tokens duplicated from DESIGN.md
+**Priority:** P3
+`src/app/s/[id]/page.tsx` and `src/components/MarketingPage.tsx` each define their own inline `C = {...}` token objects that duplicate DESIGN.md values. Extract a shared token source (`src/lib/tokens.ts`) so palette changes in DESIGN.md have a single code-side update point.
+
+### Shared PaperRow type for web /s page + mobile paperService
+**Priority:** P3
+`PaperRow` is independently defined in `src/app/s/[id]/page.tsx` and in `mobile/src/lib/paperService.ts`. A drift in column selection (e.g. adding `metadata`) requires two edits. Extract to a shared type module.
+
 ## Completed
+
+### Reposition web as the Ohlo marketing site (+ /s QR landing, /zh /en split)
+**Completed:** v0.3.0.0 (2026-07-05)
+
+### arXiv hook regeneration backfill + 40-char/no-dash sweep across all 396 rows
+**Completed:** v0.3.0.0 (2026-07-05)
 
 ### Dual-track data source, Daily Dispatch design system, mobile app, watch, widgets, daily ingest workflow
 **Completed:** v0.2.0.0 (2026-07-04)
