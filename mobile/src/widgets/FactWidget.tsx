@@ -152,8 +152,7 @@ export function FactWidget({ fact, language, size = "wide" }: Props) {
           <TextWidget text={empty} style={{ fontSize: 14, color: colors.paraSoft }} />
         )}
       </FlexWidget>
-      {/* fold edge */}
-      <FlexWidget style={{ height: 4, width: "match_parent", backgroundColor: colors.paperEdge }} />
+      {/* No fold edge at widget scale — it reads as a stray gray bar. */}
     </FlexWidget>
   );
 }

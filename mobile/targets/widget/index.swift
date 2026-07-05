@@ -224,11 +224,10 @@ struct FactWidgetView: View {
           .fixedSize(horizontal: false, vertical: true)
       }
     }
-    .padding(.bottom, 10)
+    // No fold edge here: at widget scale the paper-fold strip reads as a
+    // stray gray bar, not a fold (founder feedback). The app card keeps it.
+    .padding(.bottom, 6)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .overlay(alignment: .bottom) {
-      Rectangle().fill(paperEdge).frame(height: 4)
-    }
   }
 }
 
