@@ -18,7 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { systemLanguage, t } from "./src/i18n";
 import { fetchRemotePersona, savePersonaEverywhere } from "./src/lib/personaService";
-import { loadProfile, saveProfile } from "./src/lib/storage";
+import { clearLocalData, ensureCacheOwner, loadProfile, saveProfile } from "./src/lib/storage";
 import { supabase } from "./src/lib/supabase";
 import type { AppLanguage, Profile } from "./src/lib/types";
 import { AuthScreen } from "./src/screens/AuthScreen";
@@ -72,6 +72,13 @@ export default function App() {
       setBooting(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (!next) {
+        // Sign-out: wipe all per-user local state so the device is clean for
+        // the next account. ensureCacheOwner on the next sign-in will also
+        // detect a stale owner, but clearing eagerly here avoids a window
+        // where old data is readable before the next user loads.
+        void clearLocalData();
+      }
       setSession(next);
     });
     return () => sub.subscription.unsubscribe();
@@ -79,12 +86,15 @@ export default function App() {
 
   // Once signed in, load the persona: local first, then the shared
   // user_personas row (so web-app profiles carry over).
+  // ensureCacheOwner runs first to guarantee any local data belongs to the
+  // current user before we trust the "local first" fast path.
   useEffect(() => {
     if (!session) {
       setProfile(null);
       return;
     }
     void (async () => {
+      await ensureCacheOwner(session.user.id);
       const local = await loadProfile();
       if (local) {
         setProfile(local);

@@ -9,6 +9,13 @@ import type { DailyFact, FactKind, FactSource, Profile } from "./types";
 const PROFILE_KEY = "ohlo:profile:v2";
 const FACT_KEY = "ohlo:todayFact:v2";
 const HISTORY_KEY = "ohlo:factHistory:v2";
+const OWNER_KEY = "ohlo:cacheOwner:v1";
+// Prefix used by personaTrack.ts — mirrored here so clearLocalData can sweep
+// all entries without importing from that module (avoids a circular dep).
+const PERSONA_TRACK_PREFIX = "ohlo:personaTrack:v1:";
+// UI-state key owned by components/firstClassHint.ts — included in per-user
+// wipe so a new account sees the hint fresh.
+const FIRST_CLASS_HINT_KEY = "ohlo:firstClassHintSeen:v1";
 
 // No-ops safely on Android (the native module is iOS-only).
 const iosSharedStorage = new ExtensionStorage(APP_GROUP);
@@ -23,7 +30,50 @@ export async function saveProfile(profile: Profile): Promise<void> {
 }
 
 export async function clearLocalData(): Promise<void> {
-  await AsyncStorage.multiRemove([PROFILE_KEY, FACT_KEY, HISTORY_KEY]);
+  const allKeys = await AsyncStorage.getAllKeys();
+  const personaTrackKeys = allKeys.filter((k) => k.startsWith(PERSONA_TRACK_PREFIX));
+  await AsyncStorage.multiRemove([
+    PROFILE_KEY,
+    FACT_KEY,
+    HISTORY_KEY,
+    OWNER_KEY,
+    FIRST_CLASS_HINT_KEY,
+    ...personaTrackKeys,
+  ]);
+  // Clear widget and watch surfaces on iOS so the previous user's fact does
+  // not linger after sign-out or account switch.
+  if (Platform.OS === "ios") {
+    iosSharedStorage.remove(WIDGET_FACT_KEY);
+    ExtensionStorage.reloadWidget();
+    // Overwrite the watch applicationContext with an empty payload so the
+    // watch shows its placeholder instead of the previous user's fact.
+    sendFactToWatch("");
+  }
+}
+
+/**
+ * Bind the local cache to a specific auth user. Idempotent and cheap when
+ * the owner already matches (single AsyncStorage read). When the stored owner
+ * differs — a different account signed in on the same device — ALL per-user
+ * local state is wiped before the new owner is recorded, preventing a
+ * data-leak where a new user sees the previous user's persona or fact.
+ *
+ * Call this BEFORE loadProfile() in the session effect so the fast "local
+ * first" path is guaranteed to read the correct user's data.
+ *
+ * Race-safety: concurrent calls with the same userId both fast-path on the
+ * read. If two calls race with different userIds (extreme edge case), the
+ * double-wipe is idempotent and the last write wins — correct behaviour.
+ */
+export async function ensureCacheOwner(userId: string): Promise<void> {
+  const owner = await AsyncStorage.getItem(OWNER_KEY);
+  if (owner === userId) return; // fast path — already this user, nothing to do
+  if (owner !== null) {
+    // A different user's data is in the cache — wipe before loading anything.
+    await clearLocalData();
+  }
+  // First install (owner === null) or post-wipe: stamp the new owner.
+  await AsyncStorage.setItem(OWNER_KEY, userId);
 }
 
 /**
