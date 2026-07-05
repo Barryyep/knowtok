@@ -4,6 +4,7 @@ import { Animated, Linking, Pressable, StyleSheet, Text, View } from "react-nati
 import { t } from "../i18n";
 import type { AppLanguage, DailyFact } from "../lib/types";
 import { colors, fonts, heroFont, paperBodyFont, radius, spacing } from "../theme";
+import { DatePostmark } from "./DatePostmark";
 import { formatDispatch } from "./slipUtils";
 
 interface Props {
@@ -45,7 +46,10 @@ export function FactCard({ fact, language, whyCarePending = false, compact = fal
     ],
   };
 
-  const stampText = isPaper && fact.source.arxivId ? `arXiv:${fact.source.arxivId}` : fact.source.label;
+  // source.label already carries the publish date for paper-track facts
+  // (e.g. "arXiv:2507.01234 · 2026-07-01" or "Nature · 2026-07-01").
+  // General/evergreen facts have no publish date — their label carries no date.
+  const stampText = fact.source.label;
 
   const Stamp = (
     <View style={[styles.stamp, compact && styles.stampCompact]}>
@@ -62,7 +66,15 @@ export function FactCard({ fact, language, whyCarePending = false, compact = fal
     <Animated.View
       style={[styles.slip, isPaper && styles.slipPaper, compact && styles.slipCompact, motion]}
     >
-      <View style={styles.topRow}>
+      {/*
+       * topRow:
+       *   compact  — [dispatch + seal] · · · [topic]  (existing layout)
+       *   full     — [dispatch + seal] · · · [DatePostmark]
+       *              [topic] on its own line below
+       * The postmark occupies the right side as a flex child so the hero fact
+       * starts cleanly below it — no overlap.
+       */}
+      <View style={[styles.topRow, !compact && styles.topRowFull]}>
         <View style={styles.topLeft}>
           <Text style={[styles.dispatch, compact && styles.dispatchCompact]}>
             {formatDispatch(fact.source.factId)}
@@ -73,10 +85,19 @@ export function FactCard({ fact, language, whyCarePending = false, compact = fal
             </View>
           )}
         </View>
+        {compact ? (
+          <Text style={styles.topic} numberOfLines={1}>
+            {fact.topic}
+          </Text>
+        ) : (
+          <DatePostmark date={fact.date} size={64} />
+        )}
+      </View>
+      {!compact && (
         <Text style={styles.topic} numberOfLines={1}>
           {fact.topic}
         </Text>
-      </View>
+      )}
 
       <Text
         style={[
@@ -145,6 +166,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     gap: spacing.sm,
+  },
+  // Non-compact: postmark replaces topic in the row — top-align so the
+  // dispatch № sits at the top of the taller postmark circle.
+  topRowFull: {
+    alignItems: "flex-start",
   },
   topLeft: {
     flexDirection: "row",

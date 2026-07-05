@@ -9,7 +9,8 @@ import { t } from "../i18n";
 import { buildShareUrl } from "../lib/shareUrl";
 import type { AppLanguage, DailyFact } from "../lib/types";
 import { colors, fonts, heroFont, radius, spacing, uiFont } from "../theme";
-import { formatDispatch, formatEyebrow } from "./slipUtils";
+import { DatePostmark } from "./DatePostmark";
+import { formatDispatch } from "./slipUtils";
 
 interface Props {
   fact: DailyFact;
@@ -82,22 +83,21 @@ export function SharePoster({ fact, language }: Props) {
   const strings = t(language);
   const isPaper = fact.source.kind === "paper";
   const shareUrl = useMemo(() => buildShareUrl(fact), [fact]);
-  const stampText =
-    isPaper && fact.source.arxivId
-      ? `arXiv:${fact.source.arxivId}`
-      : fact.source.label;
+  // source.label carries the publish date for paper-track facts
+  // (e.g. "arXiv:2507.01234 · 2026-07-01"); general facts carry no date.
+  const stampText = fact.source.label;
 
   return (
     <View style={styles.backdrop}>
       <View style={[styles.slip, isPaper && styles.slipPaper]}>
         {/* ── Top group: header · seal/topic · hero fact ── */}
         <View>
-          {/* Header row: dispatch № left, postmark date right */}
+          {/* Header row: dispatch № left, dated cancellation mark right */}
           <View style={styles.headerRow}>
             <Text style={styles.dispatch}>
               {formatDispatch(fact.source.factId)}
             </Text>
-            <Text style={styles.dateText}>{formatEyebrow(fact.date)}</Text>
+            <DatePostmark date={fact.date} size={78} />
           </View>
 
           {/* Seal row: FIRST CLASS seal (paper) or topic label (general) */}
@@ -180,19 +180,14 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    // top-align so dispatch № sits at the top of the taller postmark circle
+    alignItems: "flex-start",
   },
   dispatch: {
     fontFamily: fonts.monoBold,
     fontSize: 13,
     color: colors.persimmon,
     letterSpacing: 1,
-  },
-  dateText: {
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    color: colors.marigold,
-    letterSpacing: 0.5,
   },
   sealRow: {
     flexDirection: "row",
