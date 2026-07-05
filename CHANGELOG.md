@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.1.0 — 2026-07-05
+
+### Changed
+- **The gateway key left the app.** LLM calls now route through ohlo.app/api/llm authenticated by your Supabase session; the key lives only on the server, behind a model allowlist and a token cap. Local dev keeps the direct path. Removes an extractable credential ahead of any public release.
+
+### Added
+- **Mobile test framework.** 137 vitest tests now guard the algorithm core — quiz decision tree, need × have ranking, ISO week keying, storage normalization, taxonomy invariants, and the dispatch number (pinned so the web copy can't drift). CI runs them on every push.
+
 ## v0.4.0.0 — 2026-07-05
 
 ### Added
