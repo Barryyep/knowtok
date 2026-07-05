@@ -38,6 +38,7 @@ const ZH_BANNED = ["你知道吗", "想象", "如果我告诉你", "最新研究
 const EN_BANNED = ["did you know", "imagine", "what if", "new research", "scientists found", "scientists discovered"];
 const ZH_MAX = 40; // characters
 const EN_MAX = 100; // characters
+const CONCURRENCY = 4;
 
 /** Count characters (code points), so CJK counts as 1 each. */
 function charLen(s: string): number {
@@ -102,8 +103,8 @@ async function rewriteHooks(paper: PaperRow): Promise<{ hookEn: string; hookZh: 
           content: [
             "Rewrite this paper's hook in BOTH English and Chinese.",
             "",
-            'Rules for "hookEn": ONE punchy sentence in plain English, ≤100 characters, no jargon. Lead DIRECTLY with the single most surprising, concrete thing — a number, a sharp contrast, or what is at stake. NEVER start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered". No em-dash or en-dash (— or –); use a comma instead. Just state the striking fact itself.',
-            'Rules for "hookZh": 用中文写一句话，不超过40个汉字，通俗易懂、不用专业术语。直接抛出最令人意外的具体内容——数字、反差、或利害关系。绝对不要用套路开头：不要以"你知道吗""想象""如果我告诉你""最新研究""科学家发现"之类开头，直接说出惊人的事实本身。禁用破折号（——、—、―），改用逗号或句号。',
+            'Rules for "hookEn": ONE punchy sentence in plain English, ≤100 characters, no jargon. Lead DIRECTLY with the single most surprising, concrete thing — a number, a sharp contrast, or what is at stake. NEVER start with "Did you know", "Imagine", "What if", "New research", "Scientists found/discovered". No em-dash or en-dash (— or –); use a comma instead. No exclamation marks. End with a period. Just state the striking fact itself.',
+            'Rules for "hookZh": 用中文写一句话，不超过40个汉字，通俗易懂、不用专业术语。直接抛出最令人意外的具体内容——数字、反差、或利害关系。绝对不要用套路开头：不要以"你知道吗""想象""如果我告诉你""最新研究""科学家发现"之类开头，直接说出惊人的事实本身。禁用感叹号。禁用破折号（——、—、―），改用逗号或句号。用句号收尾。',
             "",
             context,
             "",
@@ -144,8 +145,25 @@ async function fetchAllPapers(): Promise<PaperRow[]> {
   return all;
 }
 
+async function pMap<T, R>(
+  items: T[],
+  fn: (item: T, index: number) => Promise<R>,
+  concurrency: number,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let idx = 0;
+  async function worker() {
+    while (idx < items.length) {
+      const i = idx++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+  return results;
+}
+
 async function main() {
-  console.log(`[rewrite-hooks] model=${MODEL}`);
+  console.log(`[rewrite-hooks] model=${MODEL} concurrency=${CONCURRENCY}`);
   const papers = await fetchAllPapers();
   console.log(`Fetched ${papers.length} papers.`);
 
@@ -156,14 +174,15 @@ async function main() {
 
   let updated = 0;
   let failed = 0;
+  const beforeAfter: Array<{ id: string; beforeZh: string; afterZh: string; beforeEn: string; afterEn: string }> = [];
 
-  for (const paper of offending) {
+  await pMap(offending, async (paper, idx) => {
+    const label = `[${idx + 1}/${offending.length}]`;
     try {
       let { hookEn, hookZh } = await rewriteHooks(paper);
 
-      // One retry if the rewrite still opens with a banned phrase.
+      // One retry if the rewrite still opens with a banned phrase or is over limit.
       if (zhOffends(hookZh) || enOffends(hookEn)) {
-        await new Promise((r) => setTimeout(r, 200));
         const retry = await rewriteHooks(paper);
         if (!zhOffends(retry.hookZh) && retry.hookZh) hookZh = retry.hookZh;
         if (!enOffends(retry.hookEn) && retry.hookEn) hookEn = retry.hookEn;
@@ -175,28 +194,46 @@ async function main() {
       if (hookZh && !zhOffends(hookZh)) update.hook_summary_zh = hookZh;
 
       if (Object.keys(update).length === 0) {
-        console.error(`  [SKIP] ${paper.id}: rewrite still offended, left unchanged`);
+        console.error(`  [SKIP] ${label} ${paper.id}: rewrite still offended, left unchanged`);
         failed++;
-        continue;
+        return;
       }
 
       const { error } = await supabase.from("papers").update(update).eq("id", paper.id);
       if (error) {
-        console.error(`  [FAIL] ${paper.id}: ${error.message}`);
+        console.error(`  [FAIL] ${label} ${paper.id}: ${error.message}`);
         failed++;
       } else {
-        console.log(`  [OK] ${paper.id}\n        zh: ${update.hook_summary_zh ?? "(kept)"}\n        en: ${update.hook_summary_en ?? "(kept)"}`);
+        console.log(`  [OK] ${label} ${paper.id}\n        zh: ${update.hook_summary_zh ?? "(kept)"}\n        en: ${update.hook_summary_en ?? "(kept)"}`);
+        if (beforeAfter.length < 10) {
+          beforeAfter.push({
+            id: paper.id,
+            beforeZh: paper.hook_summary_zh ?? "(none)",
+            afterZh: update.hook_summary_zh ?? "(kept)",
+            beforeEn: paper.hook_summary_en ?? "(none)",
+            afterEn: update.hook_summary_en ?? "(kept)",
+          });
+        }
         updated++;
       }
-
-      await new Promise((r) => setTimeout(r, 200));
     } catch (err) {
-      console.error(`  [FAIL] ${paper.id}: ${(err as Error).message}`);
+      console.error(`  [FAIL] ${label} ${paper.id}: ${(err as Error).message}`);
       failed++;
     }
-  }
+  }, CONCURRENCY);
 
   console.log(`\nRewrite complete: ${updated} updated, ${failed} failed out of ${offending.length} offending.`);
+
+  if (beforeAfter.length > 0) {
+    console.log("\n=== BEFORE / AFTER EXAMPLES ===");
+    for (const ex of beforeAfter) {
+      console.log(`\n  [${ex.id}]`);
+      console.log(`  BEFORE zh: ${ex.beforeZh}`);
+      console.log(`  AFTER  zh: ${ex.afterZh}`);
+      console.log(`  BEFORE en: ${ex.beforeEn}`);
+      console.log(`  AFTER  en: ${ex.afterEn}`);
+    }
+  }
 
   // ---- Verify -------------------------------------------------------------
   const after = await fetchAllPapers();
