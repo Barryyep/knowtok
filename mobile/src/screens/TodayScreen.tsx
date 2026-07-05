@@ -183,7 +183,6 @@ export function TodayScreen({ profile }: Props) {
             <FactCard
               fact={fact}
               language={profile.language}
-              whyCarePending={fact.whyCare === ""}
             />
 
             {showFirstClassHint && (

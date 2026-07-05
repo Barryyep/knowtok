@@ -59,8 +59,10 @@ export interface UIStrings {
   tabToday: string;
   tabHistory: string;
   tabSettings: string;
-  whyCareLabel: string;
-  whyCarePending: string;
+  flipFrontHint: string;
+  flipBackTitle: string;
+  flipBackPending: string;
+  flipBackHint: string;
   refresh: string;
   share: string;
   loading: string;
@@ -132,8 +134,10 @@ const en: UIStrings = {
   tabToday: "Today",
   tabHistory: "History",
   tabSettings: "Settings",
-  whyCareLabel: "Why you'd care",
-  whyCarePending: "Writing your personal take…",
+  flipFrontHint: "Why it found you",
+  flipBackTitle: "Why it found you",
+  flipBackPending: "Writing this one for you…",
+  flipBackHint: "Flip back",
   refresh: "Another one",
   share: "Share",
   loading: "Picking today's paper…",
@@ -205,8 +209,10 @@ const zh: UIStrings = {
   tabToday: "今日",
   tabHistory: "历史",
   tabSettings: "设置",
-  whyCareLabel: "跟你有什么关系",
-  whyCarePending: "正在为你写个性化解读…",
+  flipFrontHint: "寄给你的理由",
+  flipBackTitle: "寄给你的理由",
+  flipBackPending: "正在为你写这一段…",
+  flipBackHint: "翻回正面",
   refresh: "换一条",
   share: "分享",
   loading: "正在为你挑选今天的论文…",
