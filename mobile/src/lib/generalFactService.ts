@@ -212,6 +212,7 @@ export async function generateGeneralFact(
 
   return {
     date: dateStr,
+    language: lang,
     emoji,
     topic,
     fact,

@@ -102,6 +102,7 @@ export function paperToFact(paper: CandidatePaper, language: AppLanguage, dateSt
   const isArxiv = paper.source == null || paper.source.toLowerCase() === "arxiv";
   return {
     date: dateStr,
+    language,
     emoji: categoryEmoji(paper.human_category),
     topic: categoryLabel(paper.human_category, language),
     fact: hook?.trim() || summary?.trim() || paper.title,

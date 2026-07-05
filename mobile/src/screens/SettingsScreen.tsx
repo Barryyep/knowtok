@@ -10,10 +10,11 @@ import { colors, fonts, radius, spacing, uiFont } from "../theme";
 interface Props {
   profile: Profile;
   onEditProfile: () => void;
+  onEditRadar: () => void;
   onChangeLanguage: (lang: AppLanguage) => void;
 }
 
-export function SettingsScreen({ profile, onEditProfile, onChangeLanguage }: Props) {
+export function SettingsScreen({ profile, onEditProfile, onEditRadar, onChangeLanguage }: Props) {
   const strings = t(profile.language);
   const insets = useSafeAreaInsets();
   const ui = (w?: "regular" | "medium" | "semibold" | "bold") => uiFont(profile.language, w);
@@ -28,6 +29,17 @@ export function SettingsScreen({ profile, onEditProfile, onChangeLanguage }: Pro
 
       {/* Profile group */}
       <View style={styles.group}>
+        <Pressable style={styles.row} onPress={onEditRadar}>
+          <View style={styles.rowTextWrap}>
+            <Text style={[styles.rowTitle, { fontFamily: ui("semibold") }]}>
+              {strings.radarScreenTitle}
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+
+        <View style={styles.divider} />
+
         <Pressable style={styles.row} onPress={onEditProfile}>
           <View style={styles.rowTextWrap}>
             <Text style={[styles.rowTitle, { fontFamily: ui("semibold") }]}>

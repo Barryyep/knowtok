@@ -24,6 +24,7 @@ import type { AppLanguage, Profile } from "./src/lib/types";
 import { AuthScreen } from "./src/screens/AuthScreen";
 import { HistoryScreen } from "./src/screens/HistoryScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
+import { RadarScreen } from "./src/screens/RadarScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { TodayScreen } from "./src/screens/TodayScreen";
 import { colors } from "./src/theme";
@@ -63,6 +64,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [editingRadar, setEditingRadar] = useState(false);
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
@@ -116,6 +118,7 @@ export default function App() {
         <SettingsScreen
           profile={profile}
           onEditProfile={() => setEditingProfile(true)}
+          onEditRadar={() => setEditingRadar(true)}
           onChangeLanguage={(lang: AppLanguage) => {
             const updated: Profile = { ...profile, language: lang };
             setProfile(updated);
@@ -156,6 +159,17 @@ export default function App() {
           setEditingProfile(false);
         }}
         onCancel={profile ? () => setEditingProfile(false) : undefined}
+      />
+    );
+  } else if (editingRadar) {
+    content = (
+      <RadarScreen
+        profile={profile}
+        onSaved={(saved) => {
+          setProfile(saved);
+          setEditingRadar(false);
+        }}
+        onCancel={() => setEditingRadar(false)}
       />
     );
   } else {

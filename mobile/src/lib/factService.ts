@@ -39,7 +39,10 @@ export async function getTodayFact(
 ): Promise<DailyFact> {
   const today = localDateString();
   const cached = await loadStoredFact();
-  if (cached && cached.date === today && !forceRefresh) {
+  // A cached fact is only fresh when it matches today's date AND language.
+  // A legacy fact without a language field (undefined) won't match, triggering
+  // one regeneration — acceptable and correct per spec.
+  if (cached && cached.date === today && !forceRefresh && cached.language === profile.language) {
     return cached;
   }
 
@@ -87,6 +90,32 @@ export async function getTodayFact(
 }
 
 /**
+ * Weighted domain pick — maps hash into cumulative-weight buckets so domains
+ * with higher weight are selected proportionally more often. Falls back to
+ * uniform modulo when weights are missing or sum to zero.
+ *
+ * hash → [0, 1) via (hash % 100_000) / 100_000, then scaled into [0, total).
+ * Walking the cumulative-weight list gives a deterministic domain index.
+ */
+function weightedDomainPick(
+  hash: number,
+  domains: string[],
+  weights: Record<string, number> | undefined,
+): number {
+  if (!weights || domains.length === 0) return hash % domains.length;
+  const ws = domains.map((id) => Math.max(weights[id] ?? 0, 0));
+  const total = ws.reduce((a, b) => a + b, 0);
+  if (total <= 0) return hash % domains.length;
+  const target = ((hash % 100_000) / 100_000) * total;
+  let cumulative = 0;
+  for (let i = 0; i < ws.length; i++) {
+    cumulative += ws[i];
+    if (target < cumulative) return i;
+  }
+  return ws.length - 1;
+}
+
+/**
  * Domain-rotation path (v2). Deterministically pick the day's domain from the
  * user's selected curiosity domains; a paper-capable domain WITH papers uses
  * the paper flow scoped to that domain, otherwise the general flow is seeded
@@ -107,7 +136,8 @@ async function buildDomainRotatedFact(
 
   // Stable domain for (user, date); on refresh advance so the topic changes.
   const rotation = forceRefresh ? Math.max(1, excludeIds.length) : 0;
-  const dayIndex = (hashStringToNumber(`${userId}:${today}`) + rotation) % selectedDomains.length;
+  const hash = hashStringToNumber(`${userId}:${today}`) + rotation;
+  const dayIndex = weightedDomainPick(hash, selectedDomains, profile.domainWeights);
   const domainId = selectedDomains[dayIndex];
   const domain = domainById(domainId)!;
   const focusDomain = domain[profile.language];

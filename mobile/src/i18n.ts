@@ -80,6 +80,11 @@ export interface UIStrings {
   settingsWidgetTitle: string;
   settingsWidgetHint: string;
   settingsAbout: string;
+  // Radar editor
+  radarScreenTitle: string;
+  radarGuardHint: string;
+  // Streak label — contains {n} placeholder replaced at runtime
+  streakLabel: string;
 }
 
 const en: UIStrings = {
@@ -153,6 +158,10 @@ const en: UIStrings = {
   settingsWidgetHint:
     "Add the Ohlo widget to your home or lock screen — and your watch face.",
   settingsAbout: "Ohlo · facts from arXiv papers, personalized for you",
+  // Radar editor
+  radarScreenTitle: "My curiosity radar",
+  radarGuardHint: "Keep at least 2 domains active",
+  streakLabel: "DAY {n}",
 };
 
 const zh: UIStrings = {
@@ -224,6 +233,10 @@ const zh: UIStrings = {
   settingsWidgetTitle: "组件与手表",
   settingsWidgetHint: "把 Ohlo 组件添加到主屏幕、锁屏和手表表盘。",
   settingsAbout: "Ohlo · 冷知识来自 arXiv 论文,为你个性化解读",
+  // Radar editor
+  radarScreenTitle: "我的好奇雷达",
+  radarGuardHint: "至少保留 2 个领域",
+  streakLabel: "连续 {n} 天",
 };
 
 const UI_TEXT: Record<AppLanguage, UIStrings> = { en, zh };

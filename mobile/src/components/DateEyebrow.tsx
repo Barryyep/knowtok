@@ -1,28 +1,34 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { t } from "../i18n";
+import type { AppLanguage } from "../lib/types";
 import { colors, fonts, spacing } from "../theme";
 import { formatEyebrow } from "./slipUtils";
 
 interface Props {
   /** Fact date, YYYY-MM-DD. */
   date: string;
-  /** Filled dots: distinct fact-days in the last 7 days. */
+  /** Distinct fact-days in the last 7 days. */
   streak: number;
+  language: AppLanguage;
 }
 
 /**
- * The ritual line that lives ABOVE the slip (~24px tall): a marigold
- * postmark date + 7 streak dots (filled marigold = a fact arrived that day).
+ * The ritual line that lives ABOVE the slip (~24px tall): a marigold postmark
+ * date on the left; when streak >= 2, a small mono streak counter on the right.
  */
-export function DateEyebrow({ date, streak }: Props) {
+export function DateEyebrow({ date, streak, language }: Props) {
+  const streakText =
+    streak >= 2
+      ? t(language).streakLabel.replace("{n}", String(streak))
+      : null;
+
   return (
     <View style={styles.row}>
       <Text style={styles.eyebrow}>{formatEyebrow(date)}</Text>
-      <View style={styles.dots}>
-        {Array.from({ length: 7 }).map((_, i) => (
-          <View key={i} style={[styles.dot, i < streak && styles.dotFilled]} />
-        ))}
-      </View>
+      {streakText !== null && (
+        <Text style={styles.streakText}>{streakText}</Text>
+      )}
     </View>
   );
 }
@@ -41,17 +47,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2,
   },
-  dots: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: colors.marigold,
-    opacity: 0.55,
-  },
-  dotFilled: {
-    backgroundColor: colors.marigold,
-    opacity: 1,
+  streakText: {
+    color: colors.marigold,
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 1,
   },
 });
