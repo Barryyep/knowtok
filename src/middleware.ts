@@ -3,7 +3,8 @@
  *
  * Priority:
  *   1. `lang` cookie (set by LangToggle on explicit user choice)
- *   2. Accept-Language header (zh* → /zh, anything else → /en)
+ *   2. English. The site defaults to /en for everyone (founder call,
+ *      2026-07-05); 中文 is one toggle away and the cookie remembers it.
  *
  * Only runs on the root path. All other routes pass through.
  */
@@ -18,22 +19,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 1. Honour explicit cookie preference
+  // Honour explicit cookie preference; otherwise default to English.
   const langCookie = request.cookies.get("lang")?.value;
-  if (langCookie === "zh" || langCookie === "en") {
-    return NextResponse.redirect(new URL(`/${langCookie}`, request.url), 307);
-  }
-
-  // 2. Detect from Accept-Language header
-  const acceptLang = request.headers.get("accept-language") ?? "";
-  // Take the first language tag and check if it starts with zh
-  const primary = acceptLang.split(",")[0]?.trim() ?? "";
-  const isZh = /^zh/i.test(primary);
-
-  return NextResponse.redirect(
-    new URL(isZh ? "/zh" : "/en", request.url),
-    307
-  );
+  const locale = langCookie === "zh" ? "zh" : "en";
+  return NextResponse.redirect(new URL(`/${locale}`, request.url), 307);
 }
 
 export const config = {
