@@ -17,7 +17,9 @@
           "group.com.ohlo.daily"
         ]
       },
-      "buildNumber": "1"
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.ohlo.daily",
