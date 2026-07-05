@@ -14,7 +14,6 @@ export function systemLanguage(): AppLanguage {
  */
 export interface UIStrings {
   appName: string;
-  tagline: string;
   // Auth
   welcomeTitle: string;
   welcomeSubtitle: string;
@@ -29,13 +28,14 @@ export interface UIStrings {
   checkEmail: string;
   signOut: string;
   // Profile
-  profileTitle: string;
-  profileSubtitle: string;
   languageLabel: string;
   apiKeyLabel: string;
   save: string;
-  startDaily: string;
   // Onboarding — V3.2 quiz flow
+  languageScreenTitle: string;
+  otherLabel: string;
+  otherPlaceholder: string;
+  otherConfirm: string;
   stepBack: string;
   continueLabel: string;
   skipLabel: string;
@@ -59,13 +59,10 @@ export interface UIStrings {
   tabToday: string;
   tabHistory: string;
   tabSettings: string;
-  todayLabel: string;
   whyCareLabel: string;
   whyCarePending: string;
   refresh: string;
   share: string;
-  sourceLabel: string;
-  readPaper: string;
   loading: string;
   firstClassSeal: string;
   firstClassExplainer: string;
@@ -89,7 +86,6 @@ export interface UIStrings {
 
 const en: UIStrings = {
   appName: "Ohlo",
-  tagline: "One research fact a day, made for you",
   // Auth
   welcomeTitle: "Research,\nmade personal.",
   welcomeSubtitle:
@@ -105,13 +101,14 @@ const en: UIStrings = {
   checkEmail: "Check your inbox to confirm your email, then sign in.",
   signOut: "Sign out",
   // Profile
-  profileTitle: "Who is this for?",
-  profileSubtitle: "Facts are picked and explained based on what you do and love.",
   languageLabel: "Content language",
   apiKeyLabel: "goodvision API key",
   save: "Save",
-  startDaily: "Start my daily facts",
   // Onboarding
+  languageScreenTitle: "Choose your language",
+  otherLabel: "Something else…",
+  otherPlaceholder: "Type here",
+  otherConfirm: "Done",
   stepBack: "Back",
   continueLabel: "Continue",
   skipLabel: "skip",
@@ -135,13 +132,10 @@ const en: UIStrings = {
   tabToday: "Today",
   tabHistory: "History",
   tabSettings: "Settings",
-  todayLabel: "TODAY",
   whyCareLabel: "Why you'd care",
   whyCarePending: "Writing your personal take…",
   refresh: "Another one",
   share: "Share",
-  sourceLabel: "SOURCE",
-  readPaper: "Read on arXiv",
   loading: "Picking today's paper…",
   firstClassSeal: "FIRST CLASS",
   firstClassExplainer:
@@ -166,7 +160,6 @@ const en: UIStrings = {
 
 const zh: UIStrings = {
   appName: "Ohlo",
-  tagline: "每天一条,来自真实论文的冷知识",
   // Auth
   welcomeTitle: "科研发现,\n为你而来。",
   welcomeSubtitle: "每天从真实论文里为你挑一条发现,讲得通俗易懂,并附上出处。",
@@ -181,13 +174,14 @@ const zh: UIStrings = {
   checkEmail: "请查收邮箱完成验证,然后回来登录。",
   signOut: "退出登录",
   // Profile
-  profileTitle: "这是为谁定制的?",
-  profileSubtitle: "根据你的职业和爱好,挑选并解读每天的发现。",
   languageLabel: "内容语言",
   apiKeyLabel: "goodvision API key",
   save: "保存",
-  startDaily: "开始我的每日冷知识",
   // Onboarding
+  languageScreenTitle: "选择语言",
+  otherLabel: "其他…",
+  otherPlaceholder: "写在这里",
+  otherConfirm: "好",
   stepBack: "返回",
   continueLabel: "继续",
   skipLabel: "跳过",
@@ -211,13 +205,10 @@ const zh: UIStrings = {
   tabToday: "今日",
   tabHistory: "历史",
   tabSettings: "设置",
-  todayLabel: "今日",
   whyCareLabel: "跟你有什么关系",
   whyCarePending: "正在为你写个性化解读…",
   refresh: "换一条",
   share: "分享",
-  sourceLabel: "出处",
-  readPaper: "在 arXiv 阅读原文",
   loading: "正在为你挑选今天的论文…",
   firstClassSeal: "FIRST CLASS · 头等件",
   firstClassExplainer:

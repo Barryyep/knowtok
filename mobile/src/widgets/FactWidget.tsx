@@ -20,6 +20,8 @@ export function FactWidget({ fact, language }: Props) {
       ? `⌖ arXiv:${fact.source.arxivId} ✓`
       : `⌖ ${fact.source.label} ✓`
     : "";
+  const teaser =
+    language === "zh" ? "打开,看这条为什么与你有关" : "Open to see why this one's for you";
 
   return (
     <FlexWidget
@@ -54,9 +56,10 @@ export function FactWidget({ fact, language }: Props) {
                 justifyContent: "space-between",
               }}
             >
+              {/* № de-emphasized: smaller, muted — date carries presence via marigold */}
               <TextWidget
                 text={`№ ${dispatchNumber(fact.source.factId)}`}
-                style={{ fontSize: 13, color: colors.persimmon, fontWeight: "bold" }}
+                style={{ fontSize: 10, color: colors.paraSoft }}
               />
               <TextWidget text={fact.date} style={{ fontSize: 11, color: colors.marigold }} />
             </FlexWidget>,
@@ -66,12 +69,26 @@ export function FactWidget({ fact, language }: Props) {
               maxLines={4}
               style={{ fontSize: 15, color: colors.paraInk, marginTop: 6 }}
             />,
-            <TextWidget
-              key="source"
-              text={sourceLine}
-              maxLines={1}
-              style={{ fontSize: 11, color: colors.postmark, marginTop: 6 }}
-            />,
+            // Bottom stamps: source truncates gracefully; teaser below it.
+            <FlexWidget
+              key="stamps"
+              style={{ width: "match_parent", flexDirection: "column" }}
+            >
+              {[
+                <TextWidget
+                  key="source"
+                  text={sourceLine}
+                  maxLines={1}
+                  style={{ fontSize: 10, color: colors.postmark }}
+                />,
+                <TextWidget
+                  key="teaser"
+                  text={teaser}
+                  maxLines={1}
+                  style={{ fontSize: 10, color: colors.paraSoft, marginTop: 2 }}
+                />,
+              ]}
+            </FlexWidget>,
           ]
         ) : (
           <TextWidget text={empty} style={{ fontSize: 14, color: colors.paraSoft }} />

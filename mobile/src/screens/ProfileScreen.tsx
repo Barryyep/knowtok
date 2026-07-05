@@ -17,8 +17,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { systemLanguage, t } from "../i18n";
 import {
   QUIZ_SEQUENCE,
-  applyCardPick,
+  applyCardPicks,
   applyChoice,
+  applyOther,
   dealRound,
   initialQuizState,
   quizResult,
@@ -33,8 +34,8 @@ import { QuizStep } from "../components/onboarding/QuizStep";
 import { RevealStep } from "../components/onboarding/RevealStep";
 
 // ─── Flow constants ───────────────────────────────────────────────────────────
-const REVEAL_STAGE = QUIZ_SEQUENCE.length; // 16
-const TOTAL_STAGES = QUIZ_SEQUENCE.length + 1; // 17
+const REVEAL_STAGE = QUIZ_SEQUENCE.length; // 19
+const TOTAL_STAGES = QUIZ_SEQUENCE.length + 1; // 20
 
 // ─── History entry (for back navigation) ─────────────────────────────────────
 interface HistoryEntry {
@@ -163,9 +164,9 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
     }, newProgress);
   };
 
-  const handleFinish = async () => {
+  const handleFinish = async (classifiedState: QuizState) => {
     setBusy(true);
-    const result = quizResult(quizState);
+    const result = quizResult(classifiedState);
     const finalProfile: Profile = {
       ...profileDraft,
       curiosityDomains: result.domains.map((d) => d.id),
@@ -204,10 +205,17 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
     advanceToStage(stageIndex + 1, quizState, newProfile);
   };
 
+  // ─── Other-answer callback ────────────────────────────────────────────────
+  const handleOtherSubmit = (text: string) => {
+    if (currentItem?.kind !== "choice") return;
+    const newState = applyOther(quizState, currentItem.id, text);
+    advanceToStage(stageIndex + 1, newState, profileDraft);
+  };
+
   // ─── Card callback ───────────────────────────────────────────────────────
-  const handleCardPick = (domainId: string) => {
+  const handleCardPicks = (domainIds: string[]) => {
     if (currentItem?.kind !== "cards") return;
-    const newState = applyCardPick(quizState, domainId, currentItem.round);
+    const newState = applyCardPicks(quizState, domainIds, currentItem.round);
     advanceToStage(stageIndex + 1, newState, profileDraft);
   };
 
@@ -251,9 +259,20 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
             key="reveal"
             language={profileDraft.language}
             profile={profileDraft}
-            result={quizResult(quizState)}
+            quizState={quizState}
             busy={busy}
-            onFinish={() => void handleFinish()}
+            onFinish={(classifiedState) => void handleFinish(classifiedState)}
+            bottomInset={insets.bottom}
+          />
+        )}
+
+        {/* ── Language ─────────────────────────────────────────────────── */}
+        {currentItem?.kind === "language" && (
+          <LanguageStep
+            key={stageIndex}
+            onPick={(lang) =>
+              advanceToStage(stageIndex + 1, quizState, { ...profileDraft, language: lang })
+            }
             bottomInset={insets.bottom}
           />
         )}
@@ -290,6 +309,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
             item={currentItem}
             language={profileDraft.language}
             onChoicePick={handleChoicePick}
+            onOtherSubmit={handleOtherSubmit}
             onSkip={currentItem.skippable ? handleChoiceSkip : undefined}
             bottomInset={insets.bottom}
           />
@@ -302,7 +322,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
             item={currentItem}
             language={profileDraft.language}
             cardTrio={cardTrio}
-            onCardPick={handleCardPick}
+            onCardPicks={handleCardPicks}
             bottomInset={insets.bottom}
           />
         )}
@@ -324,6 +344,67 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
     </KeyboardAvoidingView>
   );
 }
+
+// ─── LanguageStep ─────────────────────────────────────────────────────────────
+function LanguageStep({
+  onPick,
+  bottomInset,
+}: {
+  onPick: (lang: AppLanguage) => void;
+  bottomInset: number;
+}) {
+  return (
+    <View style={langStyles.root}>
+      <View style={langStyles.body}>
+        <Pressable
+          style={langStyles.slip}
+          onPress={() => onPick("zh")}
+          accessibilityRole="button"
+          accessibilityLabel="中文"
+        >
+          <Text style={[langStyles.slipText, { fontFamily: fonts.heroZh }]}>中文</Text>
+        </Pressable>
+        <Pressable
+          style={langStyles.slip}
+          onPress={() => onPick("en")}
+          accessibilityRole="button"
+          accessibilityLabel="English"
+        >
+          <Text style={[langStyles.slipText, { fontFamily: fonts.heroEn }]}>English</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const langStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  body: {
+    width: "100%",
+    gap: spacing.md,
+  },
+  slip: {
+    backgroundColor: colors.paper0,
+    borderRadius: radius.slip,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.paperEdge,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 100,
+  },
+  slipText: {
+    color: colors.paraInk,
+    fontSize: 28,
+    lineHeight: 36,
+  },
+});
 
 // ─── NameStep ─────────────────────────────────────────────────────────────────
 function NameStep({
@@ -348,7 +429,6 @@ function NameStep({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={nameStyles.eyebrow}>OHLO · DAILY DISPATCH</Text>
         <Text style={[nameStyles.title, { fontFamily: heroFont(language) }]}>
           {strings.nameTitle}
         </Text>
@@ -383,16 +463,11 @@ const nameStyles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
   scrollBody: {
+    flexGrow: 1,
+    justifyContent: "center",
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
-  },
-  eyebrow: {
-    color: colors.marigold,
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    letterSpacing: 2,
-    marginBottom: spacing.sm,
   },
   title: {
     color: colors.inkText,
@@ -529,7 +604,6 @@ function AgeStep({
         contentContainerStyle={ageStyles.scrollBody}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={ageStyles.eyebrow}>OHLO · DAILY DISPATCH</Text>
         <Text style={[ageStyles.title, { fontFamily: heroFont(language) }]}>
           {strings.ageTitle}
         </Text>
@@ -594,16 +668,11 @@ const ageStyles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
   scrollBody: {
+    flexGrow: 1,
+    justifyContent: "center",
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
-  },
-  eyebrow: {
-    color: colors.marigold,
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    letterSpacing: 2,
-    marginBottom: spacing.sm,
   },
   title: {
     color: colors.inkText,

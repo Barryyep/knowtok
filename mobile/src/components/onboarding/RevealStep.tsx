@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { t } from "../../i18n";
-import type { QuizResult } from "../../lib/quiz";
+import { applyClassifiedVotes, quizResult } from "../../lib/quiz";
+import type { QuizState } from "../../lib/quiz";
+import { classifyOtherAnswers } from "../../lib/quizClassify";
 import { domainLabel } from "../../lib/taxonomy";
 import type { AppLanguage, Profile } from "../../lib/types";
 import {
@@ -18,20 +20,24 @@ import { PrimaryPill } from "./PrimaryPill";
 interface Props {
   language: AppLanguage;
   profile: Profile;
-  result: QuizResult;
+  /** Pre-classification quiz state; classification runs during the loading phase. */
+  quizState: QuizState;
   busy: boolean;
-  onFinish: () => void;
+  /** Called with the post-classification state so ProfileScreen can compute the final profile. */
+  onFinish: (classifiedState: QuizState) => void;
   bottomInset: number;
 }
 
 /**
- * Quiz reveal — Phase 1: sorting animation (~1200ms).
- * Phase 2: 落信 card with curiosity radar, taste spectrum, rhythm line.
+ * Quiz reveal — Phase 1: sorting animation (~1.2s) + real LLM classification
+ * of 「其他」 answers. Phase 2: 落信 card with curiosity radar, taste spectrum,
+ * rhythm line. Classification races a 6s timeout; any failure → proceeds on
+ * deterministic votes alone. Minimum phase-1 display = 1.2s (no flash).
  */
 export function RevealStep({
   language,
   profile,
-  result,
+  quizState,
   busy,
   onFinish,
   bottomInset,
@@ -39,28 +45,54 @@ export function RevealStep({
   const strings = t(language);
   const [phase, setPhase] = useState<"loading" | "reveal">("loading");
 
+  // Classified state — starts as the unclassified state, updated after classification.
+  const [classifiedState, setClassifiedState] = useState<QuizState>(quizState);
+
   // Loading phase — local progress bar.
   const loadingAnim = useRef(new Animated.Value(0)).current;
 
-  // Reveal phase — slip entrance + bar animations.
+  // Reveal phase — slip entrance + bar animations (4 slots for max radar domains).
   const cardAnim = useRef(new Animated.Value(0)).current;
   const barAnims = useRef<Animated.Value[]>(
-    result.domains.map(() => new Animated.Value(0)),
+    Array.from({ length: 4 }, () => new Animated.Value(0)),
   ).current;
 
+  // Run classification in parallel with the minimum 1.2s loading display.
   useEffect(() => {
     Animated.timing(loadingAnim, {
       toValue: 1,
       duration: 1200,
       useNativeDriver: false,
     }).start();
-    const timer = setTimeout(() => setPhase("reveal"), 1200);
-    return () => clearTimeout(timer);
+
+    const minDelay = new Promise<void>((resolve) => setTimeout(resolve, 1200));
+
+    const classifyWork = async (): Promise<QuizState> => {
+      if (quizState.otherAnswers.length === 0) return quizState;
+      try {
+        const votes = await Promise.race<Record<string, number>>([
+          classifyOtherAnswers(quizState.otherAnswers, language),
+          new Promise<Record<string, number>>((resolve) =>
+            setTimeout(() => resolve({}), 6_000),
+          ),
+        ]);
+        return applyClassifiedVotes(quizState, votes);
+      } catch {
+        return quizState;
+      }
+    };
+
+    void Promise.all([minDelay, classifyWork()]).then(([, classified]) => {
+      setClassifiedState(classified);
+      setPhase("reveal");
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Animate the reveal card once classification is done.
   useEffect(() => {
     if (phase !== "reveal") return;
+    const result = quizResult(classifiedState);
     cardAnim.setValue(0);
     Animated.timing(cardAnim, {
       toValue: 1,
@@ -69,7 +101,7 @@ export function RevealStep({
     }).start(() => {
       Animated.stagger(
         80,
-        barAnims.map((anim) =>
+        barAnims.slice(0, result.domains.length).map((anim) =>
           Animated.timing(anim, {
             toValue: 1,
             duration: 300,
@@ -81,21 +113,7 @@ export function RevealStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  const radarTitle = profile.name
-    ? language === "zh"
-      ? `${profile.name} 的好奇雷达`
-      : `${profile.name} — what pulls you in`
-    : strings.revealRadarTitle;
-
-  let rhythmText: string;
-  if (profile.readingMoment === "cracks") {
-    rhythmText = strings.revealRhythmCracks;
-  } else if (profile.readingMoment === "night") {
-    rhythmText = strings.revealRhythmNight;
-  } else {
-    rhythmText = strings.revealRhythmDefault;
-  }
-
+  // ── Loading phase ─────────────────────────────────────────────────────────
   if (phase === "loading") {
     return (
       <View style={styles.loadingRoot}>
@@ -115,6 +133,24 @@ export function RevealStep({
         </View>
       </View>
     );
+  }
+
+  // ── Reveal phase ──────────────────────────────────────────────────────────
+  const result = quizResult(classifiedState);
+
+  const radarTitle = profile.name
+    ? language === "zh"
+      ? `${profile.name} 的好奇雷达`
+      : `${profile.name} — what pulls you in`
+    : strings.revealRadarTitle;
+
+  let rhythmText: string;
+  if (profile.readingMoment === "cracks") {
+    rhythmText = strings.revealRhythmCracks;
+  } else if (profile.readingMoment === "night") {
+    rhythmText = strings.revealRhythmNight;
+  } else {
+    rhythmText = strings.revealRhythmDefault;
   }
 
   const cardMotion = {
@@ -220,7 +256,7 @@ export function RevealStep({
         <PrimaryPill
           label={strings.revealCta}
           language={language}
-          onPress={onFinish}
+          onPress={() => onFinish(classifiedState)}
           busy={busy}
         />
       </View>

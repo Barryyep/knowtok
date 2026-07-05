@@ -53,6 +53,7 @@ struct SharedFact: Codable {
   var fact: String
   var whyCare: String
   var source: FactSource?
+  var language: String?  // "zh" | "en"; optional — older payloads omit this field
 }
 
 struct FactEntry: TimelineEntry {
@@ -115,6 +116,24 @@ struct FactWidgetView: View {
     return nil
   }
 
+  // Language detection: use explicit payload field when present; fall back to
+  // a CJK-character heuristic on the fact text (no CJK → "en").
+  private func effectiveLanguage(_ fact: SharedFact) -> String {
+    if let lang = fact.language, !lang.isEmpty { return lang }
+    let isCJK = fact.fact.unicodeScalars.contains { s in
+      (0x4E00...0x9FFF ~= s.value) ||  // CJK Unified Ideographs
+      (0x3040...0x30FF ~= s.value) ||  // Hiragana / Katakana
+      (0xAC00...0xD7AF ~= s.value)     // Hangul
+    }
+    return isCJK ? "zh" : "en"
+  }
+
+  private func teaserLine(_ fact: SharedFact) -> String {
+    effectiveLanguage(fact) == "zh"
+      ? "打开,看这条为什么与你有关"
+      : "Open to see why this one's for you"
+  }
+
   var body: some View {
     Group {
       if let fact = entry.fact {
@@ -150,12 +169,12 @@ struct FactWidgetView: View {
   // 4px fold edge along the bottom.
   @ViewBuilder
   private func slip(_ fact: SharedFact, big: Bool) -> some View {
-    VStack(alignment: .leading, spacing: 6) {
+    VStack(alignment: .leading, spacing: big ? 6 : 4) {
+      // Header row — № de-emphasized (caption, muted); date carries color weight.
       HStack {
         Text(dispatchLabel(fact))
-          .font(.system(big ? .subheadline : .caption, design: .monospaced))
-          .fontWeight(.bold)
-          .foregroundStyle(persimmon)
+          .font(.system(big ? .caption : .caption2, design: .monospaced))
+          .foregroundStyle(paraSoft)                        // muted, not persimmon
         Spacer()
         // Stale signal: a fact from a prior day shows its date in muted gray
         // instead of marigold — a subtle cue the app hasn't refreshed today.
@@ -163,21 +182,34 @@ struct FactWidgetView: View {
           .font(.system(.caption2, design: .monospaced))
           .foregroundStyle(fact.date == todayLocalDateString() ? marigold : paraSoft)
       }
+      // Fact body — highest layout priority so stamps yield space first.
       Text(fact.fact)
         .font(.system(big ? .subheadline : .footnote, design: .serif))
         .foregroundStyle(paraInk)
-        .lineLimit(big ? 4 : 6)
+        .lineLimit(big ? 4 : 5)
         .minimumScaleFactor(0.8)
+        .layoutPriority(1)
       Spacer(minLength: 0)
-      if let stamp = stampText(fact.source) {
-        Text(stamp)
-          .font(.system(.caption2, design: .monospaced))
-          .foregroundStyle(postmark)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2)
-          .overlay(RoundedRectangle(cornerRadius: 4).stroke(postmark, lineWidth: 1.5))
-          .rotationEffect(.degrees(-1.2))
+      // Bottom stamps: source + teaser stacked. Source truncates gracefully;
+      // on tight systemSmall, teaser wins (layoutPriority) over source.
+      VStack(alignment: .leading, spacing: 2) {
+        if let stamp = stampText(fact.source) {
+          Text(stamp)
+            .font(.system(.caption2, design: .monospaced))
+            .foregroundStyle(postmark)
+            .minimumScaleFactor(0.8)
+            .lineLimit(1)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(postmark, lineWidth: 1.5))
+            .rotationEffect(.degrees(-1.2))
+            .layoutPriority(0)                             // yields to teaser when tight
+        }
+        Text(teaserLine(fact))
+          .font(.system(.caption2))
+          .foregroundStyle(paraSoft)
           .lineLimit(1)
+          .layoutPriority(1)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

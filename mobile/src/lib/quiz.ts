@@ -27,6 +27,8 @@ export interface QuizOption {
 
 export type QuizItem =
   | { kind: "name" }
+  /** Big 中文/English pick — the very first screen. */
+  | { kind: "language" }
   /** One-line interstitial; fades in and auto-advances. */
   | { kind: "note"; zh: string; en: string }
   | {
@@ -36,8 +38,16 @@ export type QuizItem =
       en: string;
       options: QuizOption[];
       skippable?: boolean;
+      /**
+       * Renders an extra 「其他…」 option that expands into a one-line free
+       * text input. The text carries no immediate votes — it's collected in
+       * QuizState.otherAnswers and LLM-classified during the sorting phase
+       * (see quizClassify.ts), then merged into the domain scores.
+       */
+      allowOther?: boolean;
     }
-  | { kind: "cards"; round: number }
+  /** Card round: multi = pick any number then continue; finals are single. */
+  | { kind: "cards"; round: number; multi: boolean }
   | { kind: "age" };
 
 export const CARD_ROUNDS = 6;
@@ -48,15 +58,16 @@ export const CARD_ROUNDS = 6;
  * their mechanics: 4 is the wildcard round, 5 the finals.
  */
 export const CARD_PROMPTS: { zh: string; en: string }[] = [
-  { zh: "哪一条,你想刨根问底", en: "Which one would you want to get to the bottom of" },
-  { zh: "哪条会让你多看一眼", en: "Which one would earn a second look" },
-  { zh: "哪个你会讲给别人听", en: "Which one would you retell" },
-  { zh: "哪条让你有点意外", en: "Which one surprises you a little" },
-  { zh: "都不太熟?挑一个最想弄懂的", en: "Unfamiliar ground. Pick the one you'd want explained" },
+  { zh: "哪几条,你想刨根问底", en: "Which of these would you want to get to the bottom of" },
+  { zh: "哪些会让你多看一眼", en: "Which would earn a second look" },
+  { zh: "哪些你会讲给别人听", en: "Which would you retell" },
+  { zh: "哪些让你有点意外", en: "Which surprise you a little" },
+  { zh: "都不太熟?挑几个最想弄懂的", en: "Unfamiliar ground. Pick what you'd want explained" },
   { zh: "只留一条,留哪条", en: "Keep only one. Which" },
 ];
 
 export const QUIZ_SEQUENCE: QuizItem[] = [
+  { kind: "language" },
   {
     kind: "note",
     zh: "几个小问题,随便答,没有对错。",
@@ -65,6 +76,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "album",
+    allowOther: true,
     zh: "翻你的相册,除了人,更多的是",
     en: "In your camera roll, besides people, there's mostly",
     options: [
@@ -81,6 +93,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "checkup",
+    allowOther: true,
     zh: "体检报告出来,你通常",
     en: "When a health checkup report comes back, you usually",
     options: [
@@ -101,6 +114,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "awake",
+    allowOther: true,
     zh: "睡不着的时候,脑子里更常转的是",
     en: "Lying awake at night, your head is usually on",
     options: [
@@ -127,6 +141,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "spare",
+    allowOther: true,
     zh: "难得空出来的半天,你更可能",
     en: "Half a day frees up. You'd probably",
     options: [
@@ -159,6 +174,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "stop",
+    allowOther: true,
     zh: "躺着刷手机,哪种东西最容易让你停下来",
     en: "Scrolling in bed, what actually stops your thumb",
     options: [
@@ -177,15 +193,16 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
       { id: "breaking", zh: "一件正在发生的大事", en: "Something big happening right now" },
     ],
   },
-  { kind: "cards", round: 0 },
-  { kind: "cards", round: 1 },
-  { kind: "cards", round: 2 },
-  { kind: "cards", round: 3 },
-  { kind: "cards", round: 4 },
-  { kind: "cards", round: 5 },
+  { kind: "cards", round: 0, multi: true },
+  { kind: "cards", round: 1, multi: true },
+  { kind: "cards", round: 2, multi: true },
+  { kind: "cards", round: 3, multi: true },
+  { kind: "cards", round: 4, multi: true },
+  { kind: "cards", round: 5, multi: false },
   {
     kind: "choice",
     id: "telling",
+    allowOther: true,
     zh: "朋友非要给你讲一个“改变他世界观”的事。你希望他",
     en: "A friend insists on telling you something that “changed how they see everything.” You'd rather they",
     options: [
@@ -206,6 +223,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "moment",
+    allowOther: true,
     zh: "这种闲逛式的看东西,你最常发生在",
     en: "This kind of idle reading mostly happens",
     options: [
@@ -226,6 +244,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "workday",
+    allowOther: true,
     zh: "不管做什么,你一天里打交道最多的是",
     en: "Whatever the job, most of your day is spent with",
     options: [
@@ -258,6 +277,7 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   {
     kind: "choice",
     id: "days",
+    allowOther: true,
     zh: "平常的日子,更像下面哪一种",
     en: "Most days look like",
     options: [
@@ -307,6 +327,13 @@ const PRIORITY = [
   "nature",
 ];
 
+export interface OtherAnswer {
+  /** Question id from QUIZ_SEQUENCE. */
+  questionId: string;
+  /** The user's free text, verbatim. */
+  text: string;
+}
+
 export interface QuizState {
   /** Merged weighted domain scores. */
   scores: Record<string, number>;
@@ -317,10 +344,31 @@ export interface QuizState {
   /** Cards spent per domain (index into its SPARKS entries). */
   used: Record<string, number>;
   styleVotes: StyleId[];
+  /** Free-text 「其他」 answers, LLM-classified during the sorting phase. */
+  otherAnswers: OtherAnswer[];
 }
 
 export function initialQuizState(): QuizState {
-  return { scores: {}, cardPicks: [], dealt: [], used: {}, styleVotes: [] };
+  return { scores: {}, cardPicks: [], dealt: [], used: {}, styleVotes: [], otherAnswers: [] };
+}
+
+/** Record an 「其他」 free-text answer (votes come later via quizClassify). */
+export function applyOther(state: QuizState, questionId: string, text: string): QuizState {
+  const trimmed = text.trim();
+  if (!trimmed) return state;
+  return { ...state, otherAnswers: [...state.otherAnswers, { questionId, text: trimmed }] };
+}
+
+/** Merge LLM-classified 「其他」 votes into the ledger before quizResult. */
+export function applyClassifiedVotes(
+  state: QuizState,
+  votes: Record<string, number>,
+): QuizState {
+  const scores = { ...state.scores };
+  for (const [d, w] of Object.entries(votes)) {
+    if (PRIORITY.includes(d)) scores[d] = (scores[d] ?? 0) + w;
+  }
+  return { ...state, scores };
 }
 
 /** Apply a trivia/finetune answer's hidden votes. */
@@ -356,47 +404,51 @@ function nextCard(state: QuizState, d: string): Spark {
   return cards[(state.used[d] ?? 0) % cards.length];
 }
 
-/** The three domains on the table for a round. Pure; see doc §3 for shape. */
+/** Fill `base` up to n domains from `pool` order, skipping duplicates. */
+function fill(base: string[], pool: string[], n: number): string[] {
+  const out = [...base];
+  for (const d of pool) {
+    if (out.length >= n) break;
+    if (!out.includes(d)) out.push(d);
+  }
+  return out.slice(0, n);
+}
+
+/**
+ * Domains on the table for a round. Multi rounds (0-4) deal FIVE cards so
+ * multi-select has room to breathe; the finals stay a three-way single pick.
+ */
 function roundDomains(state: QuizState, round: number): string[] {
   const ranked = rank(state, PRIORITY);
   if (round === 0) {
-    // Probe: best-scored domain of each cluster.
-    return CLUSTERS.map((c) => rank(state, c)[0]);
+    // Probe: best of each cluster, padded with the next-ranked overall.
+    return fill(CLUSTERS.map((c) => rank(state, c)[0]), ranked, 5);
   }
   if (round === 1) {
-    // Coverage: undealt domains, spread across clusters where possible.
+    // Coverage: undealt domains, spread across clusters first.
     const undealt = ranked.filter((d) => !state.dealt.includes(d));
     const picked: string[] = [];
     for (const c of CLUSTERS) {
       const hit = undealt.find((d) => c.includes(d) && !picked.includes(d));
       if (hit) picked.push(hit);
     }
-    for (const d of undealt) {
-      if (picked.length === 3) break;
-      if (!picked.includes(d)) picked.push(d);
-    }
-    return picked.slice(0, 3);
+    return fill(fill(picked, undealt, 5), ranked, 5);
   }
   if (round === 2 || round === 3) {
-    // Deepen: confirm the current #1 (or #2) against its cluster neighbors.
+    // Deepen: confirm the current #1 (or #2) against its cluster neighbors,
+    // padded with the next-ranked contenders.
     const target = ranked[round - 2];
     const neighbors = rank(
       state,
       clusterOf(target).filter((d) => d !== target),
     ).slice(0, 2);
-    // World cluster has 4 members; 3-member clusters always yield exactly 2.
-    while (neighbors.length < 2) {
-      const filler = ranked.find((d) => d !== target && !neighbors.includes(d));
-      if (!filler) break;
-      neighbors.push(filler);
-    }
-    return [target, ...neighbors];
+    return fill([target, ...neighbors], ranked, 5);
   }
   if (round === 4) {
-    // Wildcard: three lowest-scored domains get their strongest shot.
-    return rank(state, PRIORITY).reverse().slice(0, 3);
+    // Wildcard: the five lowest-scored domains get their strongest shot.
+    return [...ranked].reverse().slice(0, 5);
   }
-  // Finals: top three, double points.
+  // Finals: top three, double points, single pick.
   return ranked.slice(0, 3);
 }
 
@@ -416,11 +468,20 @@ export function dealRound(
   return { trio, state: { ...state, used, dealt } };
 }
 
-/** Apply a card pick: +1, finals +2. */
-export function applyCardPick(state: QuizState, domainId: string, round: number): QuizState {
+/**
+ * Apply a round's picks: +1 per selected domain (finals +2, single).
+ * Multi rounds may legally submit an empty selection — that too is signal.
+ */
+export function applyCardPicks(
+  state: QuizState,
+  domainIds: string[],
+  round: number,
+): QuizState {
   const scores = { ...state.scores };
-  scores[domainId] = (scores[domainId] ?? 0) + (round === CARD_ROUNDS - 1 ? 2 : 1);
-  return { ...state, scores, cardPicks: [...state.cardPicks, domainId] };
+  for (const d of domainIds) {
+    scores[d] = (scores[d] ?? 0) + (round === CARD_ROUNDS - 1 ? 2 : 1);
+  }
+  return { ...state, scores, cardPicks: [...state.cardPicks, ...domainIds] };
 }
 
 // ---------------------------------------------------------------------------

@@ -7,6 +7,8 @@ interface MessagesRequest {
   maxTokens?: number;
   /** Total request timeout. Facts are short; 90s is generous. */
   timeoutMs?: number;
+  /** Override the model for this request (defaults to GOODVISION_MODEL). */
+  model?: string;
 }
 
 interface AnthropicTextBlock {
@@ -40,6 +42,7 @@ export async function generateText({
   apiKey,
   maxTokens = 600,
   timeoutMs = 90_000,
+  model,
 }: MessagesRequest): Promise<string> {
   if (!apiKey) {
     throw new GoodvisionError(
@@ -60,7 +63,7 @@ export async function generateText({
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: GOODVISION_MODEL,
+        model: model ?? GOODVISION_MODEL,
         max_tokens: maxTokens,
         system,
         messages: [{ role: "user", content: user }],
