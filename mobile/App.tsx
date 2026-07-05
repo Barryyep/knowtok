@@ -63,6 +63,10 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  // False until the local+remote persona lookup finishes for the current
+  // session. Without this, a returning user flashes onboarding (profile is
+  // briefly null) before their saved persona resolves.
+  const [profileResolved, setProfileResolved] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [editingRadar, setEditingRadar] = useState(false);
 
@@ -95,21 +99,33 @@ export default function App() {
   useEffect(() => {
     if (!session) {
       setProfile(null);
+      setProfileResolved(false);
       return;
     }
+    let active = true;
+    setProfileResolved(false);
     void (async () => {
       await ensureCacheOwner(session.user.id);
       const local = await loadProfile();
       if (local) {
-        setProfile(local);
+        if (active) {
+          setProfile(local);
+          setProfileResolved(true);
+        }
         return;
       }
       const remote = await fetchRemotePersona();
       if (remote) {
         await saveProfile(remote);
-        setProfile(remote);
+        if (active) setProfile(remote);
       }
+      // Resolved with or without a persona — a null profile now genuinely
+      // means "new user", so onboarding is correct to show.
+      if (active) setProfileResolved(true);
     })();
+    return () => {
+      active = false;
+    };
   }, [session]);
 
   const language = profile?.language ?? systemLanguage();
@@ -163,6 +179,14 @@ export default function App() {
   let content: React.ReactNode;
   if (!session) {
     content = <AuthScreen language={language} />;
+  } else if (!profileResolved && !editingProfile) {
+    // Signed in but the persona lookup hasn't finished — hold on the splash
+    // instead of flashing onboarding to a returning user.
+    content = (
+      <View style={styles.splash}>
+        <ActivityIndicator color={colors.persimmon} size="large" />
+      </View>
+    );
   } else if (!profile || editingProfile) {
     content = (
       <ProfileScreen
