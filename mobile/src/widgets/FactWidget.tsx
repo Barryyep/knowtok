@@ -21,7 +21,7 @@ export function FactWidget({ fact, language, size = "wide" }: Props) {
       ? `⌖ arXiv:${fact.source.arxivId} ✓`
       : `⌖ ${fact.source.label} ✓`
     : "";
-  const ctaText = language === "zh" ? "为什么与你有关" : "Why this is for you";
+  const ctaText = language === "zh" ? "寄给你的理由" : "Why it found you";
 
   return (
     <FlexWidget
@@ -36,7 +36,7 @@ export function FactWidget({ fact, language, size = "wide" }: Props) {
     >
       <FlexWidget
         style={{
-          height: "match_parent",
+          flex: 1,
           width: "match_parent",
           padding: 14,
           flexDirection: "column",
@@ -66,7 +66,7 @@ export function FactWidget({ fact, language, size = "wide" }: Props) {
             <TextWidget
               key="fact"
               text={fact.fact}
-              maxLines={size === "small" ? 3 : 4}
+              maxLines={size === "small" ? 2 : 3}
               style={{ fontSize: 15, color: colors.paraInk, marginTop: 6 }}
             />,
             // Bottom row: source stamp (left) + CTA pill (right) for wide;
@@ -76,6 +76,7 @@ export function FactWidget({ fact, language, size = "wide" }: Props) {
                 key="bottom"
                 style={{
                   width: "match_parent",
+                  height: 28,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -120,7 +121,7 @@ export function FactWidget({ fact, language, size = "wide" }: Props) {
             ) : (
               <FlexWidget
                 key="bottom"
-                style={{ width: "match_parent", flexDirection: "row", alignItems: "center" }}
+                style={{ width: "match_parent", height: 28, flexDirection: "row", alignItems: "center" }}
               >
                 {[
                   <FlexWidget

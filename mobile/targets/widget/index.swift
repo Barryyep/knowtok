@@ -129,7 +129,7 @@ struct FactWidgetView: View {
   }
 
   private func ctaText(_ fact: SharedFact) -> String {
-    effectiveLanguage(fact) == "zh" ? "为什么与你有关" : "Why this is for you"
+    effectiveLanguage(fact) == "zh" ? "寄给你的理由" : "Why it found you"
   }
 
   var body: some View {
@@ -185,9 +185,9 @@ struct FactWidgetView: View {
         .font(.system(big ? .subheadline : .footnote, design: .serif))
         .foregroundStyle(paraInk)
         .lineLimit(big ? 4 : 5)
-        .minimumScaleFactor(0.8)
+        .minimumScaleFactor(0.85)
         .layoutPriority(1)
-      Spacer(minLength: 0)
+      Spacer(minLength: 4)
       // Bottom row: source stamp (left) + CTA pill (right) for medium;
       // pill only for small — source stamp dropped to give pill room.
       if big {
@@ -201,7 +201,6 @@ struct FactWidgetView: View {
               .padding(.horizontal, 6)
               .padding(.vertical, 2)
               .overlay(RoundedRectangle(cornerRadius: 4).stroke(postmark, lineWidth: 1.5))
-              .rotationEffect(.degrees(-1.2))
               .layoutPriority(0)
           }
           Spacer(minLength: 0)
@@ -213,6 +212,7 @@ struct FactWidgetView: View {
             .padding(.vertical, 4)
             .overlay(Capsule().stroke(persimmon, lineWidth: 1.5))
         }
+        .fixedSize(horizontal: false, vertical: true)
       } else {
         Text(ctaText(fact))
           .font(.system(.caption2))
@@ -221,8 +221,10 @@ struct FactWidgetView: View {
           .padding(.horizontal, 10)
           .padding(.vertical, 4)
           .overlay(Capsule().stroke(persimmon, lineWidth: 1.5))
+          .fixedSize(horizontal: false, vertical: true)
       }
     }
+    .padding(.bottom, 10)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .overlay(alignment: .bottom) {
       Rectangle().fill(paperEdge).frame(height: 4)
