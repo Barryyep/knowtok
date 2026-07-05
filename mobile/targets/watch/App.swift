@@ -6,6 +6,22 @@ import WidgetKit
 let appGroup = "group.com.ohlo.daily"
 let factKey = "todayFact"
 
+// The Daily Dispatch palette (cream slip on the dark desk).
+let paper     = Color(red: 0.953, green: 0.914, blue: 0.839) // #F3E9D6
+let paraInk   = Color(red: 0.141, green: 0.118, blue: 0.082) // #241E15
+let paraSoft  = Color(red: 0.420, green: 0.369, blue: 0.282) // #6B5E48
+let persimmon = Color(red: 0.925, green: 0.290, blue: 0.141) // #EC4A24
+let marigold  = Color(red: 0.949, green: 0.651, blue: 0.231) // #F2A63B
+let postmark  = Color(red: 0.110, green: 0.361, blue: 0.388) // #1C5C63
+
+/// djb2 dispatch № — mirrors src/components/slipUtils.ts and the widgets.
+func dispatchNumber(_ id: String) -> Int {
+  var h: UInt32 = 5381
+  for b in id.utf8 { h = h &* 33 &+ UInt32(b) }
+  return 1000 + Int(h % 9000)
+}
+
+// Mirrors the DailyFact shape written by the React Native app.
 struct FactSource: Codable {
   var kind: String?
   var factId: String?
@@ -17,21 +33,6 @@ struct FactSource: Codable {
   var publishedAt: String?
 }
 
-// The Daily Dispatch palette (cream slip on the dark desk).
-let paper = Color(red: 0.953, green: 0.914, blue: 0.839) // #F3E9D6
-let paperEdge = Color(red: 0.894, green: 0.839, blue: 0.737) // #E4D6BC
-let paraInk = Color(red: 0.141, green: 0.118, blue: 0.082) // #241E15
-let persimmon = Color(red: 0.925, green: 0.290, blue: 0.141) // #EC4A24
-let marigold = Color(red: 0.949, green: 0.651, blue: 0.231) // #F2A63B
-let postmark = Color(red: 0.110, green: 0.361, blue: 0.388) // #1C5C63
-
-/// djb2 dispatch № — mirrors src/components/slipUtils.ts and the widgets.
-func dispatchNumber(_ id: String) -> Int {
-  var h: UInt32 = 5381
-  for b in id.utf8 { h = h &* 33 &+ UInt32(b) }
-  return 1000 + Int(h % 9000)
-}
-
 struct SharedFact: Codable {
   var date: String
   var emoji: String
@@ -39,6 +40,7 @@ struct SharedFact: Codable {
   var fact: String
   var whyCare: String
   var source: FactSource?
+  var language: String?  // "zh" | "en"; optional — older payloads omit this field
 }
 
 func decodeFact(_ raw: String?) -> SharedFact? {
@@ -88,7 +90,18 @@ final class PhoneSync: NSObject, WCSessionDelegate, ObservableObject {
 struct ContentView: View {
   @ObservedObject var sync: PhoneSync
 
-  private func sourceStamp(_ source: FactSource?) -> String? {
+  // Language detection: explicit payload field; fall back to CJK-character heuristic.
+  private func effectiveLanguage(_ fact: SharedFact) -> String {
+    if let lang = fact.language, !lang.isEmpty { return lang }
+    let isCJK = fact.fact.unicodeScalars.contains { s in
+      (0x4E00...0x9FFF ~= s.value) ||  // CJK Unified Ideographs
+      (0x3040...0x30FF ~= s.value) ||  // Hiragana / Katakana
+      (0xAC00...0xD7AF ~= s.value)     // Hangul
+    }
+    return isCJK ? "zh" : "en"
+  }
+
+  private func stampText(_ source: FactSource?) -> String? {
     guard let source else { return nil }
     if let label = source.label, !label.isEmpty { return "⌖ \(label) ✓" }
     if let arxiv = source.arxivId, !arxiv.isEmpty { return "⌖ arXiv:\(arxiv) ✓" }
@@ -98,29 +111,38 @@ struct ContentView: View {
   var body: some View {
     ScrollView {
       if let fact = sync.fact {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+          // Header: № muted (paraSoft, caption2) + topic accent (marigold)
           HStack {
             Text("№ \(dispatchNumber(fact.source?.factId ?? fact.source?.arxivId ?? fact.date))")
-              .font(.system(.footnote, design: .monospaced))
-              .fontWeight(.bold)
-              .foregroundStyle(persimmon)
+              .font(.system(.caption2, design: .monospaced))
+              .foregroundStyle(paraSoft)             // muted — not persimmon
             Spacer()
             Text(fact.topic)
-              .font(.system(.caption2, design: .monospaced))
+              .font(.system(.caption2))
               .foregroundStyle(marigold)
+              .lineLimit(1)
           }
+
+          // Fact body — the hero at watch scale
           Text(fact.fact)
-            .font(.system(.body, design: .serif))
+            .font(.system(.footnote, design: .serif))
             .foregroundStyle(paraInk)
-          if let stamp = sourceStamp(fact.source) {
+            .fixedSize(horizontal: false, vertical: true)
+
+          // Source stamp — single line, scales before truncating, no clipping
+          if let stamp = stampText(fact.source) {
             Text(stamp)
               .font(.system(.caption2, design: .monospaced))
               .foregroundStyle(postmark)
+              .minimumScaleFactor(0.75)
+              .lineLimit(1)
           }
         }
         .padding(10)
         .background(paper)
         .clipShape(RoundedRectangle(cornerRadius: 18))
+        // No fold edge at watch scale — reads as a stray bar, not a fold.
       } else {
         VStack(spacing: 8) {
           Text("在 iPhone 上打开 Ohlo\n同步今日信笺")
