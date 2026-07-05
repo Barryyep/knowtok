@@ -10,6 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.ohlo.daily",
+      "appleTeamId": "7C3X5977UA",
       "usesAppleSignIn": true,
       "entitlements": {
         "com.apple.security.application-groups": [
