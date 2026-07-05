@@ -2,7 +2,8 @@ import { ENV_API_KEY } from "./config";
 import { generateGeneralFact } from "./generalFactService";
 import { generateText } from "./goodvision";
 import { hashStringToNumber } from "./jsonUtils";
-import { fetchCandidatePapers, paperToFact, pickDailyPaper } from "./paperService";
+import { fetchCandidatePapers, paperToFact } from "./paperService";
+import { rankCandidates } from "./ranking";
 import { getPersonaTrack } from "./personaTrack";
 import { buildWhyCarePrompt, cleanWhyCare } from "./prompt";
 import {
@@ -78,7 +79,13 @@ export async function getTodayFact(
   const excludeIds = history.map((f) => f.source.factId);
   if (forceRefresh && cached) excludeIds.push(cached.source.factId);
 
-  const paper = pickDailyPaper(papers, userId, today + (forceRefresh ? `:${excludeIds.length}` : ""), excludeIds);
+  // A2 §1: rank within the domain by need×have; exclude already-seen.
+  // forceRefresh naturally yields the next-best paper because the previous
+  // top already entered excludeIds — no hash salt needed.
+  const hashSeed = `${userId}:${today}`;
+  const ranked = rankCandidates(papers, profile, hashSeed);
+  const pool = ranked.filter((p) => !excludeIds.includes(p.id));
+  const paper = pool.length > 0 ? pool[0] : (ranked[0] ?? null);
   if (!paper) {
     if (cached) return cached;
     throw new Error("No papers available — check your connection and try again.");
@@ -147,12 +154,11 @@ async function buildDomainRotatedFact(
   if (domain.sources.includes("papers") || domain.sources.includes("owid")) {
     const papers = await fetchCandidatePapers(profile.language, [domainId]);
     if (papers.length > 0) {
-      const paper = pickDailyPaper(
-        papers,
-        userId,
-        today + (forceRefresh ? `:${excludeIds.length}` : "") + `:${domainId}`,
-        excludeIds,
-      );
+      // A2 §1: rank within the chosen domain by need×have; exclude already-seen.
+      const hashSeed = `${userId}:${today}:${domainId}`;
+      const ranked = rankCandidates(papers, profile, hashSeed);
+      const pool = ranked.filter((p) => !excludeIds.includes(p.id));
+      const paper = pool.length > 0 ? pool[0] : (ranked[0] ?? null);
       if (paper) {
         const fact = paperToFact(paper, profile.language, today);
         await saveFact(fact);

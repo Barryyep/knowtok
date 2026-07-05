@@ -32,7 +32,13 @@ export function domainsToCategories(domains: string[]): string[] {
  */
 export type CandidatePaper = PaperRow & {
   source: string | null;
-  metadata: { venue?: string | null } | null;
+  /**
+   * Superset of the papers.metadata JSONB column.
+   * `venue`     — OpenAlex citation label (A1 pre-existing)
+   * `relevance` — A1 scoring blob (RelevanceRecord); typed as unknown here to
+   *               avoid a circular dep with ranking.ts, which extracts + casts it.
+   */
+  metadata: { venue?: string | null; relevance?: unknown } | null;
 };
 
 const PAPER_FIELDS =
