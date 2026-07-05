@@ -76,7 +76,10 @@ struct FactProvider: TimelineProvider {
 
   func getTimeline(in context: Context, completion: @escaping (Timeline<FactEntry>) -> Void) {
     let entry = FactEntry(date: Date(), fact: loadSharedFact())
-    let next = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
+    // Re-read the shared fact every 15 min so a complication self-heals after
+    // a phone push even when the watch app wasn't open to reloadAllTimelines.
+    // (WidgetKit still refreshes on its own budget; this is the ceiling.)
+    let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
     completion(Timeline(entries: [entry], policy: .after(next)))
   }
 }
