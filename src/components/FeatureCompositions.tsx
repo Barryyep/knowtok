@@ -1,11 +1,13 @@
 /**
- * FeatureCompositions — 4 alternating editorial spreads replacing the
- * plain ledger + AppShowcase pattern.
+ * FeatureCompositions — 4 alternating editorial spreads.
  *
- * Each composition: large roman numeral + 1px rule (connective thread) +
- * text column (~62ch) + a physical artifact (tilt, shadow, slight rule-overlap).
+ * locale prop: "zh" or "en". Each visitor sees ONE language.
+ * - zh page: Songti SC headings + zh body copy
+ * - en page: Fraunces headings (promoted from former italic sublines) + en body
  *
- * I   — Scarcity + inline widget mockup (lock screen = delivery story)
+ * Artifacts (widget mockup, stamp chip) also localize their fact text.
+ *
+ * I   — Scarcity + inline widget mockup
  * II  — AI radar + radar phone frame          [artifact left / text right]
  * III — Why you'd care + today phone + zoom detail
  * IV  — Real sources + CSS source-stamp chip  [artifact left / text right]
@@ -18,6 +20,8 @@
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import type { CSSProperties } from "react";
+import type { Locale } from "@/lib/marketing-copy";
+import { COPY } from "@/lib/marketing-copy";
 
 // Design-system tokens (DESIGN.md)
 const C = {
@@ -34,44 +38,49 @@ const C = {
   postmark: "#1C5C63",
 } as const;
 
-// Shared text-ramp shortcuts
-const sZhHead: CSSProperties = {
-  fontFamily: '"Songti SC", "Noto Serif SC", "Source Han Serif SC", serif',
-  fontSize: "clamp(20px, 2.8vw, 28px)",
-  fontWeight: 600,
-  lineHeight: 1.4,
-  color: C.inkText,
-  marginBottom: 4,
-  maxWidth: "28em",
-};
+// Typography helpers — derived at render time from locale
+function headStyle(locale: Locale): CSSProperties {
+  return locale === "zh"
+    ? {
+        fontFamily:
+          '"Songti SC", "Noto Serif SC", "Source Han Serif SC", serif',
+        fontSize: "clamp(20px, 2.8vw, 28px)",
+        fontWeight: 600,
+        lineHeight: 1.4,
+        color: C.inkText,
+        marginBottom: 18,
+        maxWidth: "28em",
+      }
+    : {
+        fontFamily: 'var(--font-fraunces), "Georgia", serif',
+        fontSize: "clamp(20px, 2.8vw, 28px)",
+        fontWeight: 600,
+        lineHeight: 1.35,
+        color: C.inkText,
+        marginBottom: 18,
+        maxWidth: "28em",
+        fontStyle: "normal",
+      };
+}
 
-const sEnSub: CSSProperties = {
-  fontFamily: 'var(--font-fraunces), "Georgia", serif',
-  fontSize: "clamp(14px, 1.7vw, 18px)",
-  fontWeight: 400,
-  lineHeight: 1.5,
-  color: C.inkMuted,
-  fontStyle: "italic",
-  marginBottom: 18,
-  maxWidth: "32em",
-};
-
-const sBodyZh: CSSProperties = {
-  fontFamily: '"Songti SC", "Noto Serif SC", "Source Han Serif SC", serif',
-  fontSize: 13,
-  lineHeight: 1.75,
-  color: C.inkMuted,
-  marginBottom: 6,
-  maxWidth: "62ch",
-};
-
-const sBodyEn: CSSProperties = {
-  fontFamily: 'var(--font-fraunces), "Georgia", serif',
-  fontSize: 13,
-  lineHeight: 1.65,
-  color: C.inkMuted,
-  maxWidth: "62ch",
-};
+function bodyStyle(locale: Locale): CSSProperties {
+  return locale === "zh"
+    ? {
+        fontFamily:
+          '"Songti SC", "Noto Serif SC", "Source Han Serif SC", serif',
+        fontSize: 13,
+        lineHeight: 1.75,
+        color: C.inkMuted,
+        maxWidth: "62ch",
+      }
+    : {
+        fontFamily: 'var(--font-fraunces), "Georgia", serif',
+        fontSize: 13,
+        lineHeight: 1.65,
+        color: C.inkMuted,
+        maxWidth: "62ch",
+      };
+}
 
 const sNumeral: CSSProperties = {
   fontFamily: "var(--font-space-mono), 'Courier New', monospace",
@@ -86,7 +95,13 @@ const sNumeral: CSSProperties = {
 };
 
 // ─── Inline widget mockup (Composition I artifact) ────────────────────────────
-function InlineWidget() {
+function InlineWidget({ locale }: { locale: Locale }) {
+  const copy = COPY[locale];
+  const factFont =
+    locale === "zh"
+      ? '"Songti SC", "Noto Serif SC", "Source Han Serif SC", serif'
+      : 'var(--font-fraunces), "Georgia", serif';
+
   return (
     <div
       style={{
@@ -174,8 +189,7 @@ function InlineWidget() {
 
           <p
             style={{
-              fontFamily:
-                '"Songti SC", "Noto Serif SC", "Source Han Serif SC", serif',
+              fontFamily: factFont,
               fontSize: 11,
               lineHeight: 1.5,
               color: C.paraInk,
@@ -183,7 +197,7 @@ function InlineWidget() {
               marginBottom: 6,
             }}
           >
-            大脑仅占体重的2%，却消耗全身约20%的能量。
+            {copy.widgetFact}
           </p>
 
           <p
@@ -198,7 +212,7 @@ function InlineWidget() {
               display: "inline-block",
             }}
           >
-            ⌖ 综合知识 ✓
+            ⌖ {copy.widgetSource} ✓
           </p>
         </div>
       </div>
@@ -265,7 +279,8 @@ function PhoneArtifact({
 }
 
 // ─── Zoom crop detail (Composition III bonus) ─────────────────────────────────
-function ZoomDetail() {
+function ZoomDetail({ locale }: { locale: Locale }) {
+  const copy = COPY[locale];
   return (
     <div
       style={{
@@ -311,7 +326,7 @@ function ZoomDetail() {
             textTransform: "uppercase",
           }}
         >
-          为什么这条跟你有关
+          {copy.zoomLabel}
         </span>
       </div>
     </div>
@@ -422,25 +437,19 @@ function ArtifactReveal({
 }
 
 // ─── Composition I: Scarcity + widget ─────────────────────────────────────────
-function CompositionI() {
+function CompositionI({ locale }: { locale: Locale }) {
+  const copy = COPY[locale];
   return (
     <section className="feat-section feat-section--first">
       <div className="feat-rule" />
       <div className="feat-grid feat-grid--normal">
         <div className="feat-text-col">
           <span style={sNumeral}>I</span>
-          <p style={sZhHead}>每天只有一条。不是无限的流，是一封信。</p>
-          <p style={sEnSub}>One a day. Not a feed, a letter.</p>
-          <p style={{ ...sBodyZh, marginBottom: 8 }}>
-            每天清晨，一条值得停下来的知识出现在你的锁屏上。不是一百条里选一条，是直接送达那一条。组件上门，不用打开 app，信就已经在那里了。
-          </p>
-          <p style={sBodyEn}>
-            Every morning a single dispatch lands on your lock screen. No
-            scrolling, no app to open. The widget is the delivery.
-          </p>
+          <p style={headStyle(locale)}>{copy.comp1Head}</p>
+          <p style={bodyStyle(locale)}>{copy.comp1Body}</p>
         </div>
         <ArtifactReveal>
-          <InlineWidget />
+          <InlineWidget locale={locale} />
         </ArtifactReveal>
       </div>
     </section>
@@ -448,7 +457,8 @@ function CompositionI() {
 }
 
 // ─── Composition II: Radar + phone ────────────────────────────────────────────
-function CompositionII() {
+function CompositionII({ locale }: { locale: Locale }) {
+  const copy = COPY[locale];
   return (
     <section className="feat-section">
       <div className="feat-rule" />
@@ -462,15 +472,8 @@ function CompositionII() {
         </ArtifactReveal>
         <div className="feat-text-col">
           <span style={sNumeral}>II</span>
-          <p style={sZhHead}>AI 好奇雷达</p>
-          <p style={sEnSub}>The radar picks the one thing you&apos;d stop for.</p>
-          <p style={{ ...sBodyZh, marginBottom: 8 }}>
-            好奇雷达从你的测验人设出发，找出当天最可能让你发呆三秒钟的那条。不是黑箱在猜，是你告诉它你对什么感兴趣，它按你说的选。
-          </p>
-          <p style={sBodyEn}>
-            A quiz-derived curiosity profile tells the system what kind of mind
-            you carry. No black box: the radar follows your lead.
-          </p>
+          <p style={headStyle(locale)}>{copy.comp2Head}</p>
+          <p style={bodyStyle(locale)}>{copy.comp2Body}</p>
         </div>
       </div>
     </section>
@@ -478,22 +481,16 @@ function CompositionII() {
 }
 
 // ─── Composition III: Why care + today phone + zoom ───────────────────────────
-function CompositionIII() {
+function CompositionIII({ locale }: { locale: Locale }) {
+  const copy = COPY[locale];
   return (
     <section className="feat-section">
       <div className="feat-rule" />
       <div className="feat-grid feat-grid--normal">
         <div className="feat-text-col">
           <span style={sNumeral}>III</span>
-          <p style={sZhHead}>为什么跟你有关</p>
-          <p style={sEnSub}>Why you&apos;d care.</p>
-          <p style={{ ...sBodyZh, marginBottom: 8 }}>
-            每条信笺都附带一句「为什么这条跟你有关」。不是背景介绍，是直接告诉你：这件事和你的生活有什么关系。
-          </p>
-          <p style={sBodyEn}>
-            Every dispatch includes a why-you&apos;d-care line. Not a summary, not a
-            citation. A direct connection to your life.
-          </p>
+          <p style={headStyle(locale)}>{copy.comp3Head}</p>
+          <p style={bodyStyle(locale)}>{copy.comp3Body}</p>
         </div>
         <ArtifactReveal>
           <div
@@ -509,7 +506,7 @@ function CompositionIII() {
               alt="Ohlo today screen with dispatch card"
               rotate={-4}
             />
-            <ZoomDetail />
+            <ZoomDetail locale={locale} />
           </div>
         </ArtifactReveal>
       </div>
@@ -518,7 +515,8 @@ function CompositionIII() {
 }
 
 // ─── Composition IV: Sources + stamp ──────────────────────────────────────────
-function CompositionIV() {
+function CompositionIV({ locale }: { locale: Locale }) {
+  const copy = COPY[locale];
   return (
     <section className="feat-section">
       <div className="feat-rule" />
@@ -528,15 +526,8 @@ function CompositionIV() {
         </ArtifactReveal>
         <div className="feat-text-col">
           <span style={sNumeral}>IV</span>
-          <p style={sZhHead}>真实来源</p>
-          <p style={sEnSub}>Real sources, stamped.</p>
-          <p style={{ ...sBodyZh, marginBottom: 8 }}>
-            每条都盖出处邮戳。论文轨是当天的真论文，不是 AI 合成的摘要。来源不是脚注，是签名。
-          </p>
-          <p style={sBodyEn}>
-            Every dispatch carries a source stamp. The paper trail is the day&apos;s
-            real paper. Not a footnote: a signature.
-          </p>
+          <p style={headStyle(locale)}>{copy.comp4Head}</p>
+          <p style={bodyStyle(locale)}>{copy.comp4Body}</p>
         </div>
       </div>
     </section>
@@ -544,7 +535,7 @@ function CompositionIV() {
 }
 
 // ─── Export ───────────────────────────────────────────────────────────────────
-export function FeatureCompositions() {
+export function FeatureCompositions({ locale }: { locale: Locale }) {
   return (
     <>
       <style>{`
@@ -577,7 +568,6 @@ export function FeatureCompositions() {
           justify-content: center;
           align-items: flex-start;
           padding-top: 4px;
-          /* reach up over the rule */
           margin-top: -28px;
           position: relative;
           z-index: 2;
@@ -601,10 +591,10 @@ export function FeatureCompositions() {
           }
         }
       `}</style>
-      <CompositionI />
-      <CompositionII />
-      <CompositionIII />
-      <CompositionIV />
+      <CompositionI locale={locale} />
+      <CompositionII locale={locale} />
+      <CompositionIII locale={locale} />
+      <CompositionIV locale={locale} />
     </>
   );
 }
