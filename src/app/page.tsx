@@ -145,13 +145,11 @@ export default function HomePage() {
       {/* ─── Header strip ─────────────────────────────────────────────── */}
       <header
         style={{
-          padding: "20px 24px",
+          padding: "20px clamp(24px, 5vw, 96px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          maxWidth: 840,
           width: "100%",
-          margin: "0 auto",
           boxSizing: "border-box",
         }}
       >
@@ -184,9 +182,7 @@ export default function HomePage() {
         style={{
           flex: 1,
           width: "100%",
-          maxWidth: 840,
-          margin: "0 auto",
-          padding: "0 24px",
+          padding: "0 clamp(24px, 5vw, 96px)",
           boxSizing: "border-box",
         }}
       >
@@ -480,9 +476,7 @@ export default function HomePage() {
       <footer
         style={{
           width: "100%",
-          maxWidth: 840,
-          margin: "0 auto",
-          padding: "20px 24px",
+          padding: "20px clamp(24px, 5vw, 96px)",
           borderTop: `1px solid ${C.inkLine}`,
           display: "flex",
           justifyContent: "space-between",

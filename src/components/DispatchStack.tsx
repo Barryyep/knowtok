@@ -10,13 +10,14 @@
  * with no opacity gate. Entrance is handled on the container only,
  * guarded by useReducedMotion → opacity is always 1 at rest.
  *
- * Responsive spread: spreadFactor derived from window.innerWidth via
- * resize observer. Full spread (1.0) at ≥1280px; scales down proportionally.
+ * Responsive spread: spreadFactor derived from container width via
+ * ResizeObserver. 1.0 at 1280px; scales proportionally above and below
+ * (no upper cap — wide viewports get wider scatter; min 0.3 on mobile).
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 // Design tokens from DESIGN.md
@@ -123,17 +124,23 @@ export function DispatchStack() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const reduce = useReducedMotion();
 
-  // Responsive spread: 1.0 at ≥1280px, proportionally smaller below, min 0.3.
-  // SSR-safe: initialise to 1 (assume desktop), update on first client render.
+  // Responsive spread: derived from actual container width via ResizeObserver.
+  // SSR-safe: initialise to 1 (assume 1280px desktop), update on first client render.
+  // No upper cap — wider containers scatter cards proportionally wider.
+  const containerRef = useRef<HTMLDivElement>(null);
   const [spreadFactor, setSpreadFactor] = useState(1);
   useEffect(() => {
-    function update() {
-      const w = window.innerWidth;
-      setSpreadFactor(Math.min(1, Math.max(0.3, (w - 320) / (1280 - 320))));
+    function update(w: number) {
+      setSpreadFactor(Math.max(0.3, w / 1280));
     }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) =>
+      update(entry.contentRect.width)
+    );
+    ro.observe(el);
+    update(el.getBoundingClientRect().width || window.innerWidth);
+    return () => ro.disconnect();
   }, []);
 
   const isFanning = hoveredIndex !== null && !reduce;
@@ -142,15 +149,15 @@ export function DispatchStack() {
     // Entrance animation on the container — opacity never 0 at rest.
     // initial={false} when reduce = true → skips to animate target (opacity 1) immediately.
     <motion.div
+      ref={containerRef}
       initial={reduce ? false : { opacity: 0, y: 16, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.28, ease: "easeOut", delay: 0.12 }}
       style={{
         position: "relative",
         width: "100%",
-        maxWidth: CARD_WIDTH + 32,
-        // Extra height for the scatter state (cards travel ±48–68 px in y)
-        height: CARD_HEIGHT + 160,
+        // Height grows with spreadFactor so vertically-scattered cards fit
+        height: CARD_HEIGHT + Math.max(160, Math.ceil(160 * spreadFactor)),
         margin: "36px auto 0",
         // overflow: visible so fanned cards can spread beyond bounds
       }}

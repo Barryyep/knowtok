@@ -10,10 +10,14 @@
  *   illustrating the widget-first story without needing a real widget screenshot.
  *
  * Motion: entrance slide-up per item, reduced-motion respects useReducedMotion.
+ *
+ * Responsive sizing: phone frames and widget scale with viewport width.
+ * Base sizes are calibrated for 1280px; scale is clamped to 0.82–1.55.
  */
 
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -30,21 +34,40 @@ const C = {
   postmark: "#1C5C63",
 } as const;
 
-// Phone frame dimensions (CSS units, display size not device px)
-const PHONE_W = 186;
-const PHONE_H = 400;
-const BEZEL_RADIUS = 40;
-const NOTCH_W = 76;
-const NOTCH_H = 22;
+// Base phone frame dimensions (CSS units) — calibrated for 1280px viewport
+const PHONE_W_BASE = 186;
+const PHONE_H_BASE = 400;
+const BEZEL_RADIUS_BASE = 40;
+const NOTCH_W_BASE = 76;
+const NOTCH_H_BASE = 22;
+
+/** Phone/widget scale factor: 1.0 at 1280px, clamped 0.82–1.55. */
+function usePhoneScale(): number {
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    function update() {
+      setScale(Math.max(0.82, Math.min(1.55, window.innerWidth / 1280)));
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return scale;
+}
 
 interface PhoneFrameProps {
   src: string;
   alt: string;
   rotate: number;
   delay: number;
+  w: number;
+  h: number;
+  bezelR: number;
+  notchW: number;
+  notchH: number;
 }
 
-function PhoneFrame({ src, alt, rotate, delay }: PhoneFrameProps) {
+function PhoneFrame({ src, alt, rotate, delay, w, h, bezelR, notchW, notchH }: PhoneFrameProps) {
   const reduce = useReducedMotion();
   return (
     <motion.div
@@ -54,7 +77,7 @@ function PhoneFrame({ src, alt, rotate, delay }: PhoneFrameProps) {
       transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
       style={{
         position: "relative",
-        width: PHONE_W,
+        width: w,
         flexShrink: 0,
         transform: `rotate(${rotate}deg)`,
         transformOrigin: "center bottom",
@@ -63,9 +86,9 @@ function PhoneFrame({ src, alt, rotate, delay }: PhoneFrameProps) {
       {/* Outer bezel */}
       <div
         style={{
-          width: PHONE_W,
-          height: PHONE_H,
-          borderRadius: BEZEL_RADIUS,
+          width: w,
+          height: h,
+          borderRadius: bezelR,
           background: C.ink800,
           border: `2px solid ${C.inkLine}`,
           boxShadow:
@@ -81,9 +104,9 @@ function PhoneFrame({ src, alt, rotate, delay }: PhoneFrameProps) {
             top: 12,
             left: "50%",
             transform: "translateX(-50%)",
-            width: NOTCH_W,
-            height: NOTCH_H,
-            borderRadius: NOTCH_H / 2,
+            width: notchW,
+            height: notchH,
+            borderRadius: notchH / 2,
             background: C.ink900,
             zIndex: 2,
           }}
@@ -95,7 +118,7 @@ function PhoneFrame({ src, alt, rotate, delay }: PhoneFrameProps) {
           alt={alt}
           fill
           style={{ objectFit: "cover", objectPosition: "top" }}
-          sizes={`${PHONE_W}px`}
+          sizes={`${w}px`}
           priority={delay < 0.2}
         />
       </div>
@@ -104,7 +127,9 @@ function PhoneFrame({ src, alt, rotate, delay }: PhoneFrameProps) {
 }
 
 // CSS home-screen widget mockup
-function WidgetMockup() {
+function WidgetMockup({ scale }: { scale: number }) {
+  const wallSize = Math.round(172 * scale);
+  const cardW = Math.round(142 * scale);
   const reduce = useReducedMotion();
   return (
     <motion.div
@@ -124,9 +149,9 @@ function WidgetMockup() {
       <div
         style={{
           position: "relative",
-          width: 172,
-          height: 172,
-          borderRadius: 24,
+          width: wallSize,
+          height: wallSize,
+          borderRadius: Math.round(24 * scale),
           overflow: "hidden",
           boxShadow: "0 12px 40px rgba(20,17,13,0.55)",
         }}
@@ -158,10 +183,10 @@ function WidgetMockup() {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 142,
+            width: cardW,
             background: C.paper0,
-            borderRadius: 16,
-            padding: "10px 12px 0 12px",
+            borderRadius: Math.round(16 * scale),
+            padding: `${Math.round(10 * scale)}px ${Math.round(12 * scale)}px 0 ${Math.round(12 * scale)}px`,
             borderBottom: `3px solid ${C.paperEdge}`,
             boxShadow: "0 4px 20px rgba(20,17,13,0.42)",
           }}
@@ -178,7 +203,7 @@ function WidgetMockup() {
               style={{
                 fontFamily:
                   "var(--font-space-mono), 'Courier New', monospace",
-                fontSize: 10,
+                fontSize: Math.round(10 * scale),
                 color: C.persimmon,
                 letterSpacing: "0.05em",
               }}
@@ -189,7 +214,7 @@ function WidgetMockup() {
               style={{
                 fontFamily:
                   "var(--font-space-mono), 'Courier New', monospace",
-                fontSize: 9,
+                fontSize: Math.round(9 * scale),
                 color: C.paraSoft,
                 letterSpacing: "0.08em",
               }}
@@ -203,7 +228,7 @@ function WidgetMockup() {
             style={{
               fontFamily:
                 '"Songti SC", "Noto Serif SC", "Source Han Serif SC", serif',
-              fontSize: 11,
+              fontSize: Math.round(11 * scale),
               lineHeight: 1.5,
               color: C.paraInk,
               fontWeight: 600,
@@ -218,10 +243,10 @@ function WidgetMockup() {
             style={{
               fontFamily:
                 "var(--font-space-mono), 'Courier New', monospace",
-              fontSize: 9,
+              fontSize: Math.round(9 * scale),
               color: C.postmark,
               letterSpacing: "0.03em",
-              paddingBottom: 10,
+              paddingBottom: Math.round(10 * scale),
               transform: "rotate(-1.2deg)",
               transformOrigin: "left center",
               display: "inline-block",
@@ -250,12 +275,19 @@ function WidgetMockup() {
 }
 
 export function AppShowcase() {
+  const s = usePhoneScale();
+  const w = Math.round(PHONE_W_BASE * s);
+  const h = Math.round(PHONE_H_BASE * s);
+  const br = Math.round(BEZEL_RADIUS_BASE * s);
+  const nw = Math.round(NOTCH_W_BASE * s);
+  const nh = Math.round(NOTCH_H_BASE * s);
+
   return (
     <div
       style={{
         display: "flex",
         flexWrap: "wrap",
-        gap: 24,
+        gap: "clamp(24px, 3vw, 64px)",
         alignItems: "flex-end",
         justifyContent: "center",
       }}
@@ -265,14 +297,24 @@ export function AppShowcase() {
         alt="Ohlo today screen: dispatch card with why you'd care"
         rotate={-5}
         delay={0}
+        w={w}
+        h={h}
+        bezelR={br}
+        notchW={nw}
+        notchH={nh}
       />
       <PhoneFrame
         src="/screens/app-radar.png"
         alt="Ohlo curiosity radar: your interest profile"
         rotate={3}
         delay={0.08}
+        w={w}
+        h={h}
+        bezelR={br}
+        notchW={nw}
+        notchH={nh}
       />
-      <WidgetMockup />
+      <WidgetMockup scale={s} />
     </div>
   );
 }
