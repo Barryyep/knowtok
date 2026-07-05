@@ -23,11 +23,15 @@ EXPO_PUBLIC_GOODVISION_API_KEY ships in the JS bundle (extractable). Proxy whyCa
 **Priority:** P1
 Founder principle: "选择多了也就知道了" — every in-app choice is a questionnaire answer. Log to the existing user_events table: 换一条 (soft veto of the shown domain), share (strong positive), source-link tap (depth interest). Weekly rebalance of curiosityDomains weights from event history, so the persona is a living curve, not an onboarding snapshot. Depends on: curiosity onboarding + domain routing (in flight 2026-07-04).
 
-## Web (Next.js feed)
+## Web (repositioned 2026-07-04: marketing/intro site only, no product features)
 
-### Fix feed API performance criticals
+### Reposition web as the Ohlo marketing site
 **Priority:** P1
-(1) randomQuery pulls 500 full rows per request for in-memory shuffle — replace with bounded random sample. (2) firstLoad awaits up to 6 personalized-hook LLM calls before responding (p95 3-9s) — move into after() like the non-first-load path. Deferred from /ship 2026-07-04 (web currently offline pending Vercel env update).
+Founder decision 2026-07-04: web is NOT a functional feed app anymore — it is the app's introduction page + QR share landing (/s/[id], built). Replace the feed homepage with a Daily Dispatch-styled product intro; retire/hide feed, saved, profile, onboarding routes. Feed API perf criticals are OBSOLETE (route retirement supersedes them).
+
+### arXiv hook regeneration backfill (quality debt)
+**Priority:** P1
+DB sampling 2026-07-04: many of the 206 arXiv rows still carry pre-v5 hooks — exclamation marks, emotional tails (惊艳/改变体验), and at least one miscategorized row (audiobook paper under Your Food). OWID/OpenAlex rows are clean. Run scripts/backfill-paper-metadata.ts with hook rules v5 + META_HOOK_PATTERN guard over all arxiv rows; spot-check categories while at it.
 
 ### Root-side coverage gaps
 **Priority:** P3
@@ -35,9 +39,8 @@ feed-mix encode/decodeCursor, resume-parse heuristics, http.jsonError branches, 
 
 ## Data pipeline
 
-### Switch non-CS premium track from OpenAlex to OWID
-**Priority:** P1
-Empirical research (docs/data-sources-v2.md): OpenAlex unusable for Health/Money/Food (~35% usable; taxonomy lacks consumer topics); OWID Data Insights ~85-90% usable with real citations. Plan: purge 112 openalex rows, build OWID Atom + grapher ingest, keep OpenAlex for Climate+AI with topic-allowlist/score/paratext filters.
+### ~~Switch non-CS premium track from OpenAlex to OWID~~ DONE
+Completed 2026-07-04: OWID ingest live (20 facts, 6 domains), OpenAlex reduced to Climate-only recipe (25 rows), 224 bad rows purged. See scripts/ingest-owid.ts, docs/data-sources-v2.md.
 
 ### Clean up stuck 'running' ingest_runs
 **Priority:** P3

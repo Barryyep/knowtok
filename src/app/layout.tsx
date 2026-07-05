@@ -10,8 +10,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Ohlo | Research Feed",
-  description: "Swipe fresh arXiv papers and see what they mean for your work and life.",
+  title: "Ohlo — 每日信笺 Daily Dispatch",
+  description:
+    "Delivered to your lock screen and home screen, from real papers and data, stamped with its source.",
 };
 
 export default function RootLayout({
