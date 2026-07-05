@@ -30,6 +30,13 @@ export interface Profile {
    * for now (no remote column yet); will drive notification/widget timing.
    */
   readingMoment?: string;
+  /**
+   * Per-domain curiosity strength 0..1 — the radar the user can see AND
+   * adjust (Settings radar editor). Source of truth for curiosityDomains:
+   * ids sorted by weight desc, zero-weight domains dropped. Local-only for
+   * now; remote curiosity_tags keeps plain ids.
+   */
+  domainWeights?: Record<string, number>;
   language: AppLanguage;
   /** Optional goodvision key override (else EXPO_PUBLIC_GOODVISION_API_KEY). */
   apiKey?: string;
@@ -69,6 +76,12 @@ export interface PersonaTrack {
 export interface DailyFact {
   /** Local date the fact was generated for, YYYY-MM-DD. */
   date: string;
+  /**
+   * Language the fact was generated in. A cached fact whose language no
+   * longer matches profile.language is stale — regenerate for the same
+   * date/rotation instead of showing the old language.
+   */
+  language?: AppLanguage;
   emoji: string;
   /** Category label in the user's language, e.g. "AI与机器人". */
   topic: string;

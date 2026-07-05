@@ -169,6 +169,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
     const finalProfile: Profile = {
       ...profileDraft,
       curiosityDomains: result.domains.map((d) => d.id),
+      domainWeights: Object.fromEntries(result.domains.map((d) => [d.id, d.strength])),
       interests: result.style,
     };
     await savePersonaEverywhere(finalProfile);
@@ -264,9 +265,8 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
             language={profileDraft.language}
             initialName={profileDraft.name}
             onContinue={(name) =>
-              advanceToStage(1, quizState, { ...profileDraft, name })
+              advanceToStage(REVEAL_STAGE, quizState, { ...profileDraft, name })
             }
-            onSkip={() => advanceToStage(1, quizState, profileDraft)}
             bottomInset={insets.bottom}
           />
         )}
@@ -316,7 +316,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
             onAgeChange={(range) =>
               setProfileDraft((p) => ({ ...p, ageRange: range }))
             }
-            onContinue={() => advanceToStage(REVEAL_STAGE, quizState, profileDraft)}
+            onContinue={() => advanceToStage(stageIndex + 1, quizState, profileDraft)}
             bottomInset={insets.bottom}
           />
         )}
@@ -330,13 +330,11 @@ function NameStep({
   language,
   initialName,
   onContinue,
-  onSkip,
   bottomInset,
 }: {
   language: AppLanguage;
   initialName: string;
   onContinue: (name: string) => void;
-  onSkip: () => void;
   bottomInset: number;
 }) {
   const [name, setName] = useState(initialName);
@@ -371,11 +369,6 @@ function NameStep({
       </ScrollView>
 
       <View style={[nameStyles.footer, { paddingBottom: bottomInset + spacing.md }]}>
-        <Pressable onPress={onSkip} style={nameStyles.skipWrap}>
-          <Text style={[nameStyles.skipText, { fontFamily: uiFont(language) }]}>
-            {strings.skipLabel}
-          </Text>
-        </Pressable>
         <PrimaryPill
           label={strings.continueLabel}
           language={language}
@@ -516,6 +509,18 @@ function AgeStep({
   bottomInset: number;
 }) {
   const strings = t(language);
+  const [ratherNotSay, setRatherNotSay] = useState(false);
+
+  const handleRangePress = (range: string) => {
+    setRatherNotSay(false);
+    onAgeChange(ageRange === range ? undefined : range);
+  };
+
+  const handleRatherNotSay = () => {
+    const next = !ratherNotSay;
+    setRatherNotSay(next);
+    if (next) onAgeChange(undefined);
+  };
 
   return (
     <View style={ageStyles.root}>
@@ -534,11 +539,11 @@ function AgeStep({
 
         <View style={ageStyles.chipWrap}>
           {AGE_RANGES.map((range) => {
-            const active = ageRange === range;
+            const active = ageRange === range && !ratherNotSay;
             return (
               <Pressable
                 key={range}
-                onPress={() => onAgeChange(active ? undefined : range)}
+                onPress={() => handleRangePress(range)}
                 style={[ageStyles.chip, active && ageStyles.chipActive]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
@@ -555,15 +560,26 @@ function AgeStep({
               </Pressable>
             );
           })}
+          <Pressable
+            onPress={handleRatherNotSay}
+            style={[ageStyles.chip, ratherNotSay && ageStyles.chipActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: ratherNotSay }}
+          >
+            <Text
+              style={[
+                ageStyles.chipText,
+                ratherNotSay && ageStyles.chipTextActive,
+                { fontFamily: uiFont(language, "medium") },
+              ]}
+            >
+              {strings.ageRatherNotSay}
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
 
       <View style={[ageStyles.footer, { paddingBottom: bottomInset + spacing.md }]}>
-        <Pressable onPress={onContinue} style={ageStyles.skipWrap}>
-          <Text style={[ageStyles.skipText, { fontFamily: uiFont(language) }]}>
-            {strings.skipLabel}
-          </Text>
-        </Pressable>
         <PrimaryPill
           label={strings.continueLabel}
           language={language}

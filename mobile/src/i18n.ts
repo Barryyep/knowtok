@@ -41,9 +41,9 @@ export interface UIStrings {
   skipLabel: string;
   nameTitle: string;
   nameSubtitle: string;
-  cardRoundTitle: string;
   ageTitle: string;
   ageSubtitle: string;
+  ageRatherNotSay: string;
   revealSorting: string;
   revealRadarTitle: string;
   revealSpectrumLabel: string;
@@ -110,11 +110,11 @@ const en: UIStrings = {
   stepBack: "Back",
   continueLabel: "Continue",
   skipLabel: "skip",
-  nameTitle: "What should we call you",
-  nameSubtitle: "anything works, or skip",
-  cardRoundTitle: "Which one would you open",
+  nameTitle: "One last thing — what should we call you",
+  nameSubtitle: "Blank is fine.",
   ageTitle: "Which stretch of life",
   ageSubtitle: "optional",
+  ageRatherNotSay: "Rather not say",
   revealSorting: "Sorting your answers",
   revealRadarTitle: "What pulls you in",
   revealSpectrumLabel: "Taste",
@@ -182,11 +182,11 @@ const zh: UIStrings = {
   stepBack: "返回",
   continueLabel: "继续",
   skipLabel: "跳过",
-  nameTitle: "怎么称呼你",
-  nameSubtitle: "随便写,或者跳过",
-  cardRoundTitle: "哪条你会点开",
+  nameTitle: "最后一件事:怎么称呼你",
+  nameSubtitle: "可以留空。",
   ageTitle: "你在哪个人生阶段",
-  ageSubtitle: "可跳过",
+  ageSubtitle: "可选",
+  ageRatherNotSay: "不想说",
   revealSorting: "在整理你的答案",
   revealRadarTitle: "你的好奇雷达",
   revealSpectrumLabel: "口味",

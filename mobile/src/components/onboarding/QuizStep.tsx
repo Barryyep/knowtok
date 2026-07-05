@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { t } from "../../i18n";
-import { CARD_ROUNDS } from "../../lib/quiz";
+import { CARD_PROMPTS } from "../../lib/quiz";
 import type { QuizItem, QuizOption } from "../../lib/quiz";
 import type { Spark } from "../../lib/taxonomy";
 import type { AppLanguage } from "../../lib/types";
@@ -143,10 +143,7 @@ export function QuizStep({
     >
       <Text style={styles.eyebrow}>OHLO · DAILY DISPATCH</Text>
       <Text style={[styles.title, { fontFamily: heroFont(language) }]}>
-        {strings.cardRoundTitle}
-      </Text>
-      <Text style={styles.counter}>
-        {item.round + 1} / {CARD_ROUNDS}
+        {CARD_PROMPTS[item.round]?.[language] ?? CARD_PROMPTS[0][language]}
       </Text>
 
       <View style={styles.deck}>
@@ -204,13 +201,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 30,
     marginBottom: spacing.sm,
-  },
-  counter: {
-    color: colors.inkMuted,
-    fontFamily: fonts.mono,
-    fontSize: 13,
-    letterSpacing: 1,
-    marginBottom: spacing.xl,
   },
   deck: { gap: spacing.md, marginTop: spacing.md },
   slip: {

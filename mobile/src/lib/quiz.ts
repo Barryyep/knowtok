@@ -42,8 +42,21 @@ export type QuizItem =
 
 export const CARD_ROUNDS = 6;
 
+/**
+ * Per-round card prompts — varied so the deck reads as conversation, not a
+ * transaction ("which would you open" ×6 felt too direct). Rounds 4/5 match
+ * their mechanics: 4 is the wildcard round, 5 the finals.
+ */
+export const CARD_PROMPTS: { zh: string; en: string }[] = [
+  { zh: "哪一条,你想刨根问底", en: "Which one would you want to get to the bottom of" },
+  { zh: "哪条会让你多看一眼", en: "Which one would earn a second look" },
+  { zh: "哪个你会讲给别人听", en: "Which one would you retell" },
+  { zh: "哪条让你有点意外", en: "Which one surprises you a little" },
+  { zh: "都不太熟?挑一个最想弄懂的", en: "Unfamiliar ground. Pick the one you'd want explained" },
+  { zh: "只留一条,留哪条", en: "Keep only one. Which" },
+];
+
 export const QUIZ_SEQUENCE: QuizItem[] = [
-  { kind: "name" },
   {
     kind: "note",
     zh: "几个小问题,随便答,没有对错。",
@@ -108,6 +121,38 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
         zh: "账单、计划这些实际的",
         en: "Bills, plans, practical things",
         domainVotes: { money: 0.5 },
+      },
+    ],
+  },
+  {
+    kind: "choice",
+    id: "spare",
+    zh: "难得空出来的半天,你更可能",
+    en: "Half a day frees up. You'd probably",
+    options: [
+      {
+        id: "wander",
+        zh: "出门走走,哪怕没有目的地",
+        en: "Go out and wander, no destination",
+        domainVotes: { nature: 0.25, climate: 0.25 },
+      },
+      {
+        id: "tinker",
+        zh: "捣鼓手机、电脑或什么设备",
+        en: "Tinker with a phone, computer, or some gadget",
+        domainVotes: { tech_ai: 0.5 },
+      },
+      {
+        id: "cook",
+        zh: "认认真真做一顿饭",
+        en: "Cook something proper",
+        domainVotes: { food: 0.5 },
+      },
+      {
+        id: "read",
+        zh: "窝着翻点有意思的东西",
+        en: "Curl up with something interesting",
+        domainVotes: { mind: 0.25, history: 0.25 },
       },
     ],
   },
@@ -180,10 +225,41 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
   },
   {
     kind: "choice",
+    id: "workday",
+    zh: "不管做什么,你一天里打交道最多的是",
+    en: "Whatever the job, most of your day is spent with",
+    options: [
+      {
+        id: "screens",
+        zh: "数据、报表和屏幕",
+        en: "Data, dashboards, screens",
+        domainVotes: { tech_ai: 0.25, money: 0.25 },
+      },
+      {
+        id: "people",
+        zh: "人,和人的事",
+        en: "People, and people problems",
+        domainVotes: { society: 0.25, mind: 0.25 },
+      },
+      {
+        id: "things",
+        zh: "实际的东西:场地、设备、货",
+        en: "Physical things: sites, gear, goods",
+        domainVotes: { climate: 0.25, nature: 0.25 },
+      },
+      {
+        id: "words",
+        zh: "文字和想法",
+        en: "Words and ideas",
+        domainVotes: { history: 0.25, mind: 0.25 },
+      },
+    ],
+  },
+  {
+    kind: "choice",
     id: "days",
     zh: "平常的日子,更像下面哪一种",
     en: "Most days look like",
-    skippable: true,
     options: [
       {
         id: "professional",
@@ -202,6 +278,9 @@ export const QUIZ_SEQUENCE: QuizItem[] = [
     ],
   },
   { kind: "age" },
+  // Name comes LAST — by now the user has answered everything, so a "what
+  // should we call you" reads as sign-off, not intake form (founder call).
+  { kind: "name" },
 ];
 
 // ---------------------------------------------------------------------------
