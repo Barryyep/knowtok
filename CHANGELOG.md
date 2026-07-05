@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.2.0 — 2026-07-05
+
+### Added
+- **One a day, held to it.** 换一条 is now capped at three swaps per day; after that the button becomes a quiet 「明天再来一封 · 好东西值得等」 note. The daily fact itself is always free — only deliberate rerolls count, and the counter resets at midnight.
+
+### Changed
+- **Free-text answers are hardened against prompt injection.** Quiz "other" input is sanitized (control characters stripped, newlines collapsed, capped at 120 characters) and passed to the classifier as clearly delimited data, never instructions, with the domain allowlist as a second line of defense.
+- **The LLM backend is now swappable.** The server proxy selects its provider (goodvision, Anthropic direct, or OpenAI) from a single env value, so changing endpoints is configuration rather than code. Default behavior is unchanged.
+
 ## v0.4.1.0 — 2026-07-05
 
 ### Changed
