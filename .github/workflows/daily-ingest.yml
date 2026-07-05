@@ -49,6 +49,11 @@ jobs:
       - name: Ingest NASA APOD (daily, space domain)
         run: npx tsx scripts/ingest-apod.ts
 
+      # Idempotent on source_id — daily reruns skip existing facts (zero LLM
+      # cost) and only pick up rows when OWID publishes new data years.
+      - name: Ingest OWID grapher trend facts
+        run: npx tsx scripts/ingest-owid-grapher.ts
+
   # Wikidata evergreen backfill — one-shot, run manually via workflow_dispatch.
   # Not included in the daily chain (CC0 facts don't change daily).
   ingest-wikidata:
