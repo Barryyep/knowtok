@@ -2,18 +2,21 @@
  * DispatchStack — V3 hero component.
  *
  * Six dispatch cards fanned like a pile of mail on a desk.
- * Desktop hover: stack fans out, hovered card lifts to front.
+ * Desktop hover: stack scatters wide like letters tossed across a desk.
  * Touch / no-hover: static gentle fan — no JS interaction.
  *
  * Motion approach: framer-motion animate prop drives all transforms.
  * initial={false} on each card → cards snap to resting position on mount
  * with no opacity gate. Entrance is handled on the container only,
  * guarded by useReducedMotion → opacity is always 1 at rest.
+ *
+ * Responsive spread: spreadFactor derived from window.innerWidth via
+ * resize observer. Full spread (1.0) at ≥1280px; scales down proportionally.
  */
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 // Design tokens from DESIGN.md
@@ -100,14 +103,17 @@ const REST_POS = [
   { x: 0,   y: 0,  rotate: 0 }, // top card: straight
 ] as const;
 
-// Fanned-out positions when stack is hovered
+// Scatter positions at spreadFactor=1 (≥1280 px viewport).
+// Letters tossed flat across a desk: wide horizontal spread, staggered y,
+// varied rotations ±5-13°. x and y are scaled by spreadFactor at runtime;
+// rotate stays fixed (doesn't affect viewport overflow).
 const FAN_POS = [
-  { x: -160, y: 28, rotate: -22 },
-  { x: -96,  y: 14, rotate: -12 },
-  { x: -32,  y: 5,  rotate: -4 },
-  { x: 32,   y: 5,  rotate: 4 },
-  { x: 96,   y: 14, rotate: 12 },
-  { x: 0,    y: -28, rotate: 0 }, // top card lifts up
+  { x: -345, y: 52,  rotate: -12 },  // 0 — far left, slightly low
+  { x: -200, y: 30,  rotate: -7 },   // 1
+  { x: -70,  y: 68,  rotate: -5 },   // 2 — middle-left, drops lower
+  { x: 130,  y: 44,  rotate: 7 },    // 3 — middle-right
+  { x: 290,  y: 26,  rotate: 11 },   // 4 — far right
+  { x: 0,    y: -48, rotate: 0 },    // 5 — top card lifts center
 ] as const;
 
 const CARD_WIDTH = 320;
@@ -116,6 +122,19 @@ const CARD_HEIGHT = 280;
 export function DispatchStack() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const reduce = useReducedMotion();
+
+  // Responsive spread: 1.0 at ≥1280px, proportionally smaller below, min 0.3.
+  // SSR-safe: initialise to 1 (assume desktop), update on first client render.
+  const [spreadFactor, setSpreadFactor] = useState(1);
+  useEffect(() => {
+    function update() {
+      const w = window.innerWidth;
+      setSpreadFactor(Math.min(1, Math.max(0.3, (w - 320) / (1280 - 320))));
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   const isFanning = hoveredIndex !== null && !reduce;
 
@@ -130,13 +149,21 @@ export function DispatchStack() {
         position: "relative",
         width: "100%",
         maxWidth: CARD_WIDTH + 32,
-        height: CARD_HEIGHT + 32,
+        // Extra height for the scatter state (cards travel ±48–68 px in y)
+        height: CARD_HEIGHT + 160,
         margin: "36px auto 0",
         // overflow: visible so fanned cards can spread beyond bounds
       }}
     >
       {CARDS.map((card, i) => {
-        const pos = isFanning ? FAN_POS[i] : REST_POS[i];
+        const fan = FAN_POS[i];
+        const pos = isFanning
+          ? {
+              x: fan.x * spreadFactor,
+              y: fan.y * spreadFactor,
+              rotate: fan.rotate,
+            }
+          : REST_POS[i];
         const isHovered = hoveredIndex === i;
 
         return (
@@ -154,7 +181,7 @@ export function DispatchStack() {
             transition={
               reduce
                 ? { duration: 0 }
-                : { type: "spring", stiffness: 200, damping: 24 }
+                : { type: "spring", stiffness: 160, damping: 18 }
             }
             style={{
               position: "absolute",

@@ -255,7 +255,11 @@ export default function HomePage() {
           Opacity fix lives here: initial={false} on each card + container
           entrance guarded by useReducedMotion. Opacity 1 at rest, always.
         */}
-        <DispatchStack />
+        {/* overflow-x: clip prevents scattered cards from triggering a horizontal
+            scrollbar while keeping overflow-y visible for the lift animation. */}
+        <div style={{ overflowX: "clip", overflowY: "visible" }}>
+          <DispatchStack />
+        </div>
 
         {/* ─── Scarcity + Ledger ──────────────────────────────────────── */}
         {/*
