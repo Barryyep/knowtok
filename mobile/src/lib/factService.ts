@@ -31,14 +31,16 @@ export function localDateString(now = new Date()): string {
  */
 export function isoWeekKey(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  // Use UTC noon to avoid DST/midnight boundary issues
-  const date = new Date(Date.UTC(y, m - 1, d, 12));
+  // All-UTC midnights: a noon-based diff added a 0.5-day bias that pushed
+  // every week of Friday-starting years (2021, 2027…) up by one.
+  const date = new Date(Date.UTC(y, m - 1, d));
   // ISO: Mon=1 … Sun=7; find the Thursday of the current ISO week
   const dayNum = date.getUTCDay() || 7;
   const thursday = new Date(date);
   thursday.setUTCDate(date.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil((((thursday.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7);
+  const dayOfYear = Math.round((thursday.getTime() - yearStart.getTime()) / 86_400_000);
+  const weekNum = Math.ceil((dayOfYear + 1) / 7);
   return `${thursday.getUTCFullYear()}W${String(weekNum).padStart(2, "0")}`;
 }
 
@@ -200,7 +202,10 @@ async function buildDomainRotatedFact(
         }
       }
 
-      // Wildcard domain has no DB rows — fall through to general fact seeded with it
+      // Wildcard domain has no DB rows — fall through to general fact seeded
+      // with it. buildGeneralFact saves internally without the wildcard flag;
+      // this second save (same factId) wins everywhere — history dedups on
+      // factId and the native surfaces just sync twice, once a week at most.
       const wFocusDomain = wDomain[profile.language];
       const wFact = await buildGeneralFact(profile, today, history, cached, false, wFocusDomain);
       const wildcardFact: DailyFact = { ...wFact, wildcard: true };
