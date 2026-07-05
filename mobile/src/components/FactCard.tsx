@@ -20,6 +20,10 @@ interface Props {
   language: AppLanguage;
   /** History mini-slip: smaller type, no flip / motion / wordmark. */
   compact?: boolean;
+  /** Called when the card flips front→back (full mode only). */
+  onFlip?: () => void;
+  /** Called when the source stamp is pressed (both modes). */
+  onSourceTap?: () => void;
 }
 
 /**
@@ -33,7 +37,7 @@ interface Props {
  *
  * Compact mode (History list): unchanged, no flip.
  */
-export function FactCard({ fact, language, compact = false }: Props) {
+export function FactCard({ fact, language, compact = false, onFlip, onSourceTap }: Props) {
   const strings = t(language);
   const isPaper = fact.source.kind === "paper";
   const hasUrl = typeof fact.source.url === "string" && fact.source.url.length > 0;
@@ -89,6 +93,9 @@ export function FactCard({ fact, language, compact = false }: Props) {
 
   const handleFlip = useCallback(() => {
     const toValue = flipped ? 0 : 1;
+    // Fire the callback when flipping front→back (before animation starts,
+    // so the event is enqueued immediately without adding perceptible latency).
+    if (!flipped) onFlip?.();
     Animated.timing(flipAnim, {
       toValue,
       duration: 350,
@@ -96,7 +103,7 @@ export function FactCard({ fact, language, compact = false }: Props) {
     }).start(({ finished }) => {
       if (finished) setFlipped((f) => !f);
     });
-  }, [flipped, flipAnim]);
+  }, [flipped, flipAnim, onFlip]);
 
   // Capture the front face's natural height once on first layout.
   // We store the largest value seen so the card never shrinks during
@@ -148,7 +155,7 @@ export function FactCard({ fact, language, compact = false }: Props) {
         <View style={styles.stampRow}>
           {hasUrl ? (
             <Pressable
-              onPress={() => void Linking.openURL(fact.source.url!)}
+              onPress={() => { onSourceTap?.(); void Linking.openURL(fact.source.url!); }}
               hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
             >
               {StampBox(true)}
@@ -226,7 +233,7 @@ export function FactCard({ fact, language, compact = false }: Props) {
             <View style={styles.stampRow}>
               {hasUrl ? (
                 <Pressable
-                  onPress={() => void Linking.openURL(fact.source.url!)}
+                  onPress={() => { onSourceTap?.(); void Linking.openURL(fact.source.url!); }}
                   hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
                 >
                   {StampBox(true)}

@@ -13,7 +13,7 @@ import {
   updateStoredWhyCare,
 } from "./storage";
 import { supabase } from "./supabase";
-import { domainById } from "./taxonomy";
+import { DOMAINS, domainById } from "./taxonomy";
 import type { DailyFact, Profile } from "./types";
 
 /** Local (not UTC) calendar date, so the fact rolls over at the user's midnight. */
@@ -22,6 +22,33 @@ export function localDateString(now = new Date()): string {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+/**
+ * ISO 8601 week key for a local date string (YYYY-MM-DD).
+ * Returns e.g. "2026W27". Parsed via UTC noon to avoid DST edge cases.
+ * Used as the week-level seed for the §1.3 wildcard weekday.
+ */
+export function isoWeekKey(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  // Use UTC noon to avoid DST/midnight boundary issues
+  const date = new Date(Date.UTC(y, m - 1, d, 12));
+  // ISO: Mon=1 … Sun=7; find the Thursday of the current ISO week
+  const dayNum = date.getUTCDay() || 7;
+  const thursday = new Date(date);
+  thursday.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((thursday.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7);
+  return `${thursday.getUTCFullYear()}W${String(weekNum).padStart(2, "0")}`;
+}
+
+/**
+ * Deterministically map (userId, ISO week) → a weekday 0–6 (0=Sun … 6=Sat).
+ * Same value for every day of the same week — defines which day of the week
+ * is the user's §1.3 wildcard day.
+ */
+function wildcardWeekday(userId: string, dateStr: string): number {
+  return hashStringToNumber(`${userId}:${isoWeekKey(dateStr)}`) % 7;
 }
 
 export function resolveApiKey(profile: Profile): string {
@@ -142,7 +169,47 @@ async function buildDomainRotatedFact(
   const excludeIds = history.map((f) => f.source.factId);
   if (forceRefresh && cached) excludeIds.push(cached.source.factId);
 
-  // Stable domain for (user, date); on refresh advance so the topic changes.
+  // §1.3 Wildcard day — first view only (not on 换一条).
+  // One day per week (hash-determined weekday) the domain is drawn from the
+  // zero-weight pool: all taxonomy domains NOT in the user's selected set.
+  // Swap (forceRefresh) immediately returns to the user's own domains.
+  if (!forceRefresh) {
+    const wDay = wildcardWeekday(userId, today);
+    // Parse the local weekday from the date string (UTC noon, getUTCDay 0=Sun…6=Sat)
+    const [ty, tm, td] = today.split("-").map(Number);
+    const todayWeekday = new Date(Date.UTC(ty, tm - 1, td, 12)).getUTCDay();
+    const zeroDomains = DOMAINS.map((d) => d.id).filter((id) => !selectedDomains.includes(id));
+    if (wDay === todayWeekday && zeroDomains.length > 0) {
+      // Pick wildcard domain deterministically for this (user, date)
+      const wHash = hashStringToNumber(`${userId}:${today}:wildcard`);
+      const wDomainId = zeroDomains[wHash % zeroDomains.length];
+      const wDomain = domainById(wDomainId)!;
+
+      if (wDomain.sources.includes("papers") || wDomain.sources.includes("owid")) {
+        const papers = await fetchCandidatePapers(profile.language, [wDomainId]);
+        if (papers.length > 0) {
+          const hashSeed = `${userId}:${today}:${wDomainId}`;
+          const ranked = rankCandidates(papers, profile, hashSeed);
+          const pool = ranked.filter((p) => !excludeIds.includes(p.id));
+          const paper = pool.length > 0 ? pool[0] : (ranked[0] ?? null);
+          if (paper) {
+            const fact: DailyFact = { ...paperToFact(paper, profile.language, today), wildcard: true };
+            await saveFact(fact);
+            return fact;
+          }
+        }
+      }
+
+      // Wildcard domain has no DB rows — fall through to general fact seeded with it
+      const wFocusDomain = wDomain[profile.language];
+      const wFact = await buildGeneralFact(profile, today, history, cached, false, wFocusDomain);
+      const wildcardFact: DailyFact = { ...wFact, wildcard: true };
+      await saveFact(wildcardFact);
+      return wildcardFact;
+    }
+  }
+
+  // Normal rotation: stable domain for (user, date); on refresh advance so topic changes.
   const rotation = forceRefresh ? Math.max(1, excludeIds.length) : 0;
   const hash = hashStringToNumber(`${userId}:${today}`) + rotation;
   const dayIndex = weightedDomainPick(hash, selectedDomains, profile.domainWeights);

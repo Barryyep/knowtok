@@ -17,6 +17,7 @@ import * as Sharing from "expo-sharing";
 import { t } from "../i18n";
 import { ANDROID_WIDGET_NAME } from "../lib/config";
 import { generateWhyCare, getTodayFact } from "../lib/factService";
+import { logEvent } from "../lib/events";
 import { loadFactHistory } from "../lib/storage";
 import type { DailyFact, Profile } from "../lib/types";
 import { FactWidget } from "../widgets/FactWidget";
@@ -102,6 +103,19 @@ export function TodayScreen({ profile }: Props) {
     void markFirstClassHintSeen();
   }, []);
 
+  // §3 — fact_shown: fire once per unique factId (incl. wildcard flag).
+  // Dep on fact?.source.factId ensures exactly one event per displayed fact.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!fact) return;
+    logEvent("fact_shown", {
+      factId: fact.source.factId,
+      domain: fact.topic,
+      date: fact.date,
+      wildcard: fact.wildcard,
+    });
+  }, [fact?.source.factId]); // intentional: fire only when factId changes
+
   // Mount the generated share poster off-screen and capture it once laid out.
   // Cancel/failure is silent per DESIGN.md.
   useEffect(() => {
@@ -115,6 +129,8 @@ export function TodayScreen({ profile }: Props) {
           setIsSharing(false);
           if (!uri) return;
           if (!(await Sharing.isAvailableAsync())) return;
+          // §3 — share: fire when the share sheet opens successfully.
+          if (fact) logEvent("share", { factId: fact.source.factId, domain: fact.topic, date: fact.date });
           await Sharing.shareAsync(uri, {
             mimeType: "image/png",
             dialogTitle: strings.share,
@@ -130,7 +146,7 @@ export function TodayScreen({ profile }: Props) {
       active = false;
       clearTimeout(timer);
     };
-  }, [isSharing, strings.share]);
+  }, [isSharing, strings.share, fact]);
 
   const onShare = useCallback(() => {
     if (!fact || fact.whyCare === "") return;
@@ -183,6 +199,8 @@ export function TodayScreen({ profile }: Props) {
             <FactCard
               fact={fact}
               language={profile.language}
+              onFlip={() => logEvent("flip", { factId: fact.source.factId, domain: fact.topic, date: fact.date })}
+              onSourceTap={() => logEvent("source_tap", { factId: fact.source.factId, domain: fact.topic, date: fact.date })}
             />
 
             {showFirstClassHint && (
@@ -198,7 +216,11 @@ export function TodayScreen({ profile }: Props) {
           {/* Bottom action row: 换一条 pill centered, share to its right. */}
           <View style={styles.actionRow}>
             <View style={styles.actionSpacer} />
-            <Pressable style={styles.pill} onPress={() => void load(true)}>
+            <Pressable style={styles.pill} onPress={() => {
+              // §3 — swap event before triggering the load.
+              logEvent("swap", { factId: fact.source.factId, domain: fact.topic, date: fact.date });
+              void load(true);
+            }}>
               <Ionicons name="swap-horizontal" color={colors.paper0} size={16} />
               <Text style={[styles.pillText, { fontFamily: uiFont(profile.language, "semibold") }]}>
                 {strings.refresh}

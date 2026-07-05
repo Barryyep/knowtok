@@ -86,6 +86,11 @@ export interface DailyFact {
   /** Category label in the user's language, e.g. "AI与机器人". */
   topic: string;
   /**
+   * True when this fact was selected via the §1.3 wildcard day mechanic.
+   * No UI treatment in V1 (deadpan). Used for behavior-event metadata only.
+   */
+  wildcard?: boolean;
+  /**
    * The fact itself, in the user's language. Concise (≤ ~50 chars zh) and
    * NEVER opens with formulaic catchphrases (你知道吗/想象一下/Did you
    * know/Imagine…) — it leads with the surprising substance directly.
