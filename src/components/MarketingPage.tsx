@@ -181,9 +181,8 @@ export function MarketingPage({ locale }: { locale: Locale }) {
             }}
           >
             <a
-              href="https://expo.dev/accounts/barryyep-0820/projects/ohlo-daily/builds/15d8aa1f-d63f-4338-8a9d-d647ec9e5a08"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="https://expo.dev/artifacts/eas/M1QSTmvON5LqOkb3zRl0__pii52mLTQC9_OQia81K7Q.apk"
+              download
               className="cta-pill"
               style={{
                 display: "inline-block",

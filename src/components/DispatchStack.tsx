@@ -120,6 +120,21 @@ const FAN_POS = [
   { x: 0,    y: -48, rotate: 0 },
 ] as const;
 
+// Mobile/touch vertical cascade: cards fall downward ~150px apart.
+// index 5 (top card) stays near top; index 0 (bottom card) lands furthest down.
+// Slight alternating x offset and rotation for the hand-dropped feel.
+const MOBILE_FAN_POS = [
+  { x:   5, y: 750, rotate:  3.0 },  // card 0 — deepest in cascade
+  { x: -18, y: 600, rotate: -2.5 },  // card 1
+  { x:  12, y: 450, rotate:  1.5 },  // card 2
+  { x: -22, y: 300, rotate: -3.5 },  // card 3
+  { x:  16, y: 150, rotate:  2.0 },  // card 4
+  { x:   0, y:   0, rotate:  0.0 },  // card 5 — top card: rests at origin
+] as const;
+
+// Height of the container when mobile cascade is fully expanded.
+const MOBILE_EXPANDED_HEIGHT = MOBILE_FAN_POS[0].y + 280 /* CARD_HEIGHT */ + 60;
+
 const CARD_WIDTH = 320;
 const CARD_HEIGHT = 280;
 
@@ -175,19 +190,28 @@ export function DispatchStack({ locale }: { locale: Locale }) {
       style={{
         position: "relative",
         width: "100%",
-        height: CARD_HEIGHT + Math.max(160, Math.ceil(160 * spreadFactor)),
+        height:
+          isTouchDevice && mobileExpanded
+            ? MOBILE_EXPANDED_HEIGHT
+            : CARD_HEIGHT + Math.max(160, Math.ceil(160 * spreadFactor)),
         margin: "36px auto 0",
         cursor: isTouchDevice ? "pointer" : undefined,
+        // overflow-x: clip prevents horizontal scrollbar on narrow viewports
+        // overflow-y: visible allows cards to paint outside during spring transition
+        overflowX: "clip",
+        overflowY: "visible",
       }}
     >
       {CARDS.map((card, i) => {
         const fan = FAN_POS[i];
         const pos = isFanning
-          ? {
-              x: fan.x * spreadFactor,
-              y: fan.y * spreadFactor,
-              rotate: fan.rotate,
-            }
+          ? isTouchDevice
+            ? MOBILE_FAN_POS[i]
+            : {
+                x: fan.x * spreadFactor,
+                y: fan.y * spreadFactor,
+                rotate: fan.rotate,
+              }
           : REST_POS[i];
         const isHovered = hoveredIndex === i;
         const heroText = locale === "zh" ? card.zh : card.en;
