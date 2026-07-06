@@ -66,6 +66,9 @@ export function MarketingPage({ locale }: { locale: Locale }) {
         .cta-pill:active {
           transform: translateY(1px) scale(0.98);
         }
+        @media (max-width: 480px) {
+          .qr-stamp { display: none !important; }
+        }
       `}</style>
 
       {/* ─── Header strip ─────────────────────────────────────────────── */}
@@ -158,36 +161,87 @@ export function MarketingPage({ locale }: { locale: Locale }) {
         {/* ─── Feature compositions (I–IV) ───────────────────────────── */}
         <FeatureCompositions locale={locale} />
 
-        {/* ─── CTA ──────────────────────────────────────────────────────── */}
+        {/* ─── CTA / Download ───────────────────────────────────────────── */}
         <section
           style={{
             paddingBottom: 80,
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
-            gap: 10,
+            gap: 14,
           }}
         >
-          <a
-            href="#"
-            data-todo="appstore-link"
-            className="cta-pill"
+          {/* Android — live */}
+          <div
             style={{
-              display: "inline-block",
-              background: C.persimmon,
-              color: "#F3E9D6",
-              fontFamily: "system-ui, -apple-system, sans-serif",
-              fontSize: 15,
-              fontWeight: 600,
-              letterSpacing: "0.02em",
-              padding: "13px 36px",
-              borderRadius: 9999,
-              textDecoration: "none",
-              transition: "transform 80ms ease, opacity 120ms ease",
+              display: "flex",
+              alignItems: "center",
+              gap: 20,
+              flexWrap: "wrap",
             }}
           >
-            {copy.ctaButton}
-          </a>
+            <a
+              href="https://expo.dev/accounts/barryyep-0820/projects/ohlo-daily/builds/15d8aa1f-d63f-4338-8a9d-d647ec9e5a08"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cta-pill"
+              style={{
+                display: "inline-block",
+                background: C.persimmon,
+                color: "#F3E9D6",
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                fontSize: 15,
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+                padding: "13px 36px",
+                borderRadius: 9999,
+                textDecoration: "none",
+                transition: "transform 80ms ease, opacity 120ms ease",
+              }}
+            >
+              {copy.androidButton}
+            </a>
+
+            {/* QR stamp — hidden on narrow mobile via .qr-stamp CSS class */}
+            <div
+              className="qr-stamp"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 5,
+                padding: "8px 10px 6px",
+                background: "#F3E9D6",
+                borderRadius: 6,
+                border: "1px solid #E4D6BC",
+                boxShadow: "0 1px 4px rgba(20,17,13,0.18)",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/android-qr.png"
+                alt="Android QR code"
+                width={80}
+                height={80}
+                style={{ display: "block" }}
+              />
+              <span
+                style={{
+                  fontFamily:
+                    "var(--font-space-mono), 'Courier New', monospace",
+                  fontSize: 8,
+                  color: "#6B5E48",
+                  letterSpacing: "0.08em",
+                  textAlign: "center",
+                  textTransform: "uppercase",
+                }}
+              >
+                {copy.androidQrCaption}
+              </span>
+            </div>
+          </div>
+
+          {/* iOS — coming soon */}
           <p
             style={{
               fontFamily: "var(--font-space-mono), 'Courier New', monospace",
@@ -195,9 +249,10 @@ export function MarketingPage({ locale }: { locale: Locale }) {
               color: C.inkMuted,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
+              margin: 0,
             }}
           >
-            {copy.ctaComingSoon}
+            {copy.iosComingSoon}
           </p>
         </section>
       </main>

@@ -24,6 +24,9 @@ export const COPY = {
       "印在你的锁屏和桌面上，来自真实的论文与数据，盖着出处的邮戳。",
     ctaButton: "获取 Ohlo",
     ctaComingSoon: "App Store · 即将上线",
+    androidButton: "下载安卓版",
+    androidQrCaption: "扫码下载安卓版",
+    iosComingSoon: "iOS · 即将上线",
     footerLeft: "OHLO · 每日信笺",
     comp1Head: "每天只有一条。不是无限的流，是一封信。",
     comp1Body:
@@ -54,6 +57,9 @@ export const COPY = {
       "Delivered to your lock screen and home screen, from real papers and data, stamped with its source.",
     ctaButton: "Get Ohlo",
     ctaComingSoon: "App Store · coming soon",
+    androidButton: "Download for Android",
+    androidQrCaption: "Scan to download (Android)",
+    iosComingSoon: "iOS · coming soon",
     footerLeft: "OHLO · DAILY DISPATCH",
     comp1Head: "One a day. Not a feed, a letter.",
     comp1Body:

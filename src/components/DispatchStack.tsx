@@ -125,7 +125,19 @@ const CARD_HEIGHT = 280;
 
 export function DispatchStack({ locale }: { locale: Locale }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  // null = unknown (SSR / before detection); true = hover device; false = touch-only
+  const [hasHover, setHasHover] = useState<boolean | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const reduce = useReducedMotion();
+
+  // Detect hover capability via matchMedia — runs client-side only
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover)");
+    setHasHover(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setHasHover(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [spreadFactor, setSpreadFactor] = useState(1);
@@ -143,7 +155,9 @@ export function DispatchStack({ locale }: { locale: Locale }) {
     return () => ro.disconnect();
   }, []);
 
-  const isFanning = hoveredIndex !== null && !reduce;
+  // hover devices: fan on card hover; touch devices: fan on container tap
+  const isTouchDevice = hasHover === false;
+  const isFanning = !reduce && (isTouchDevice ? mobileExpanded : hoveredIndex !== null);
 
   // Font family for the hero text depends on locale
   const heroFont =
@@ -157,11 +171,13 @@ export function DispatchStack({ locale }: { locale: Locale }) {
       initial={reduce ? false : { opacity: 0, y: 16, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.28, ease: "easeOut", delay: 0.12 }}
+      onClick={isTouchDevice ? () => setMobileExpanded((v) => !v) : undefined}
       style={{
         position: "relative",
         width: "100%",
         height: CARD_HEIGHT + Math.max(160, Math.ceil(160 * spreadFactor)),
         margin: "36px auto 0",
+        cursor: isTouchDevice ? "pointer" : undefined,
       }}
     >
       {CARDS.map((card, i) => {
@@ -210,8 +226,8 @@ export function DispatchStack({ locale }: { locale: Locale }) {
               cursor: "pointer",
               userSelect: "none",
             }}
-            onMouseEnter={() => setHoveredIndex(i)}
-            onMouseLeave={() => setHoveredIndex(null)}
+            onMouseEnter={!isTouchDevice ? () => setHoveredIndex(i) : undefined}
+            onMouseLeave={!isTouchDevice ? () => setHoveredIndex(null) : undefined}
           >
             {/* № + category row */}
             <div
@@ -329,6 +345,29 @@ export function DispatchStack({ locale }: { locale: Locale }) {
           </motion.div>
         );
       })}
+
+      {/* Touch-only tap hint — hidden on hover-capable devices via CSS */}
+      {isTouchDevice && !reduce && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 4,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontFamily: "var(--font-space-mono), 'Courier New', monospace",
+            fontSize: 9,
+            letterSpacing: "0.18em",
+            color: "rgba(107, 94, 72, 0.65)",
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+          }}
+        >
+          {mobileExpanded
+            ? locale === "zh" ? "轻触收起" : "TAP TO CLOSE"
+            : locale === "zh" ? "轻触展开" : "TAP TO EXPLORE"}
+        </div>
+      )}
     </motion.div>
   );
 }
