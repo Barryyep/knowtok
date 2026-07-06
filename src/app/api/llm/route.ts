@@ -5,6 +5,10 @@ import { getApiKey, getApiKeyEnvName, getProvider } from "@/lib/llm-providers";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
+// Run near East Asia so users in China aren't routed through US-East for
+// every LLM call (the proxy added a trans-Pacific hop over direct goodvision).
+// Honored on Pro; Hobby may pin the default region — harmless if ignored.
+export const preferredRegion = ["hnd1", "sin1"];
 
 const ALLOWED_MODELS = new Set(["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"]);
 const MAX_TOKENS_LIMIT = 4096;
