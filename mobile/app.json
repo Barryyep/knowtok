@@ -24,10 +24,8 @@
     "android": {
       "package": "com.ohlo.daily",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0F1A",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#EC4A24",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
