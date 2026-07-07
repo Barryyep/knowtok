@@ -185,6 +185,10 @@ export function FactCard({ fact, language, compact = false, onFlip, onSourceTap 
         {/* ── FRONT FACE (normal flow, measures the canonical height) ─────── */}
         <Animated.View
           onLayout={onFrontLayout}
+          // backfaceVisibility hides the back face visually but NOT for touch;
+          // gate pointer events by flip state so the hidden face never eats taps
+          // (e.g. the back's source stamp firing while the front is showing).
+          pointerEvents={flipped ? "none" : "auto"}
           style={[
             styles.flipSlip,
             isPaper && styles.slipPaper,
@@ -234,6 +238,7 @@ export function FactCard({ fact, language, compact = false, onFlip, onSourceTap 
 
         {/* ── BACK FACE (absolute, fills the front-height container) ──────── */}
         <Animated.View
+          pointerEvents={flipped ? "auto" : "none"}
           style={[
             styles.flipSlip,
             isPaper && styles.slipPaper,
