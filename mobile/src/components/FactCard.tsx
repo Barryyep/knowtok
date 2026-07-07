@@ -30,8 +30,8 @@ interface Props {
  * The Slip — a cream paper dispatch "mailed" onto the dark desk.
  *
  * Full mode (Today screen): flippable card.
- *   Front: № · DatePostmark · seal/topic · hero fact · flip hint · source stamp · wordmark.
- *   Back:  「寄给你的理由」title · whyCare body · flip-back hint · wordmark.
+ *   Front: DatePostmark · seal/topic · hero fact · flip hint · wordmark.
+ *   Back:  「寄给你的理由」title · whyCare body · source stamp · flip-back hint · wordmark.
  *   Tap anywhere on the card (except the source stamp) to flip.
  *   The source stamp Pressable captures its own touch; the outer flip Pressable does not fire.
  *
@@ -201,10 +201,9 @@ export function FactCard({ fact, language, compact = false, onFlip, onSourceTap 
            * when the stamp area is tapped.
            */}
           <Pressable onPress={handleFlip} style={styles.flipSlipContent}>
-            {/* Top row: dispatch № + seal (left), DatePostmark (right) */}
+            {/* Top row: seal (left, paper-only), DatePostmark (right) */}
             <View style={[styles.topRow, styles.topRowFull]}>
               <View style={styles.topLeft}>
-                <Text style={styles.dispatch}>{formatDispatch(fact.source.factId)}</Text>
                 {isPaper && (
                   <View style={styles.seal}>
                     <Text style={styles.sealText}>{strings.firstClassSeal}</Text>
@@ -227,20 +226,6 @@ export function FactCard({ fact, language, compact = false, onFlip, onSourceTap 
               <Text style={styles.flipHintText}>
                 {strings.flipFrontHint}{"  "}{"↷"}
               </Text>
-            </View>
-
-            {/* Stamp row: nested Pressable catches URL tap, outer flip Pressable stays silent */}
-            <View style={styles.stampRow}>
-              {hasUrl ? (
-                <Pressable
-                  onPress={() => { onSourceTap?.(); void Linking.openURL(fact.source.url!); }}
-                  hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
-                >
-                  {StampBox(true)}
-                </Pressable>
-              ) : (
-                StampBox(true)
-              )}
             </View>
 
             <Text style={styles.wordmark}>OHLO · DAILY DISPATCH</Text>
@@ -282,6 +267,20 @@ export function FactCard({ fact, language, compact = false, onFlip, onSourceTap 
 
             {/* Spacer — pushes footer to bottom of the fixed-height face */}
             <View style={styles.backSpacer} />
+
+            {/* Source stamp — moved from front; nested Pressable catches URL tap */}
+            <View style={styles.stampRow}>
+              {hasUrl ? (
+                <Pressable
+                  onPress={() => { onSourceTap?.(); void Linking.openURL(fact.source.url!); }}
+                  hitSlop={{ top: 11, bottom: 11, left: 8, right: 8 }}
+                >
+                  {StampBox(true)}
+                </Pressable>
+              ) : (
+                StampBox(true)
+              )}
+            </View>
 
             {/* Flip-back affordance */}
             <View style={styles.flipHintRow}>

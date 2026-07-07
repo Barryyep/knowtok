@@ -86,6 +86,12 @@ export interface DailyFact {
   /** Category label in the user's language, e.g. "AI与机器人". */
   topic: string;
   /**
+   * Taxonomy domain id (e.g. "tech_ai") — set by buildDomainRotatedFact so
+   * that 换一条 (swap) can read the current domain and rotate to a different one.
+   * Absent on legacy cached facts and general-track facts without a domain.
+   */
+  domain?: string;
+  /**
    * True when this fact was selected via the §1.3 wildcard day mechanic.
    * No UI treatment in V1 (deadpan). Used for behavior-event metadata only.
    */

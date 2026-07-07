@@ -126,6 +126,36 @@ export async function getTodayFact(
 }
 
 /**
+ * Pick a domain for a 换一条 swap, excluding the domain the user just saw.
+ * Pure function — no I/O, fully unit-testable.
+ *
+ * Rules:
+ * - If currentDomain is undefined (legacy cached fact) or only one domain is
+ *   selected, falls back to a weighted pick from the full list (can't rotate).
+ * - Otherwise filters out currentDomain, then applies weightedDomainPick on
+ *   the remaining candidates so repeated swaps cycle across different domains.
+ */
+export function pickSwapDomain(
+  currentDomain: string | undefined,
+  selected: string[],
+  weights: Record<string, number> | undefined,
+  hash: number,
+): string {
+  if (!currentDomain || selected.length <= 1) {
+    const idx = weightedDomainPick(hash, selected, weights);
+    return selected[idx] ?? selected[0];
+  }
+  const others = selected.filter((id) => id !== currentDomain);
+  // currentDomain not found in selected (shouldn't happen, but guard).
+  if (others.length === 0) {
+    const idx = weightedDomainPick(hash, selected, weights);
+    return selected[idx] ?? selected[0];
+  }
+  const idx = weightedDomainPick(hash, others, weights);
+  return others[idx] ?? others[0];
+}
+
+/**
  * Weighted domain pick — maps hash into cumulative-weight buckets so domains
  * with higher weight are selected proportionally more often. Falls back to
  * uniform modulo when weights are missing or sum to zero.
@@ -195,7 +225,7 @@ async function buildDomainRotatedFact(
           const pool = ranked.filter((p) => !excludeIds.includes(p.id));
           const paper = pool.length > 0 ? pool[0] : (ranked[0] ?? null);
           if (paper) {
-            const fact: DailyFact = { ...paperToFact(paper, profile.language, today), wildcard: true };
+            const fact: DailyFact = { ...paperToFact(paper, profile.language, today), wildcard: true, domain: wDomainId };
             await saveFact(fact);
             return fact;
           }
@@ -208,17 +238,28 @@ async function buildDomainRotatedFact(
       // factId and the native surfaces just sync twice, once a week at most.
       const wFocusDomain = wDomain[profile.language];
       const wFact = await buildGeneralFact(profile, today, history, cached, false, wFocusDomain);
-      const wildcardFact: DailyFact = { ...wFact, wildcard: true };
+      const wildcardFact: DailyFact = { ...wFact, wildcard: true, domain: wDomainId };
       await saveFact(wildcardFact);
       return wildcardFact;
     }
   }
 
-  // Normal rotation: stable domain for (user, date); on refresh advance so topic changes.
-  const rotation = forceRefresh ? Math.max(1, excludeIds.length) : 0;
-  const hash = hashStringToNumber(`${userId}:${today}`) + rotation;
-  const dayIndex = weightedDomainPick(hash, selectedDomains, profile.domainWeights);
-  const domainId = selectedDomains[dayIndex];
+  // Normal rotation: stable domain for (user, date).
+  // On 换一条 (forceRefresh): rotate to a DIFFERENT domain from the currently cached one.
+  // Single-domain users fall back to same-domain next-best (can't rotate away).
+  const baseHash = hashStringToNumber(`${userId}:${today}`);
+  let domainId: string;
+  if (forceRefresh && cached?.domain) {
+    // Swap: exclude the current domain, pick from the rest with the same
+    // weight distribution. Advance hash so repeated swaps don't re-pick the
+    // same "next best" within the filtered pool on each press.
+    const swapHash = baseHash + Math.max(1, excludeIds.length);
+    domainId = pickSwapDomain(cached.domain, selectedDomains, profile.domainWeights, swapHash);
+  } else {
+    const dayIndex = weightedDomainPick(baseHash, selectedDomains, profile.domainWeights);
+    domainId = selectedDomains[dayIndex];
+  }
+
   const domain = domainById(domainId)!;
   const focusDomain = domain[profile.language];
 
@@ -232,7 +273,7 @@ async function buildDomainRotatedFact(
       const pool = ranked.filter((p) => !excludeIds.includes(p.id));
       const paper = pool.length > 0 ? pool[0] : (ranked[0] ?? null);
       if (paper) {
-        const fact = paperToFact(paper, profile.language, today);
+        const fact = { ...paperToFact(paper, profile.language, today), domain: domainId };
         await saveFact(fact);
         return fact;
       }
@@ -240,7 +281,11 @@ async function buildDomainRotatedFact(
   }
 
   // Otherwise a general fact seeded with the day's domain.
-  return buildGeneralFact(profile, today, history, cached, forceRefresh, focusDomain);
+  // Stamp domain so subsequent swaps can still rotate away from it.
+  const general = await buildGeneralFact(profile, today, history, cached, forceRefresh, focusDomain);
+  const factWithDomain = { ...general, domain: domainId };
+  await saveFact(factWithDomain);
+  return factWithDomain;
 }
 
 /**

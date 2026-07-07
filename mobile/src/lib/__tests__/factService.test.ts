@@ -34,7 +34,7 @@ vi.mock("../supabase", () => ({
   supabase: { auth: { getUser: vi.fn() } },
 }));
 
-import { isoWeekKey } from "../factService";
+import { isoWeekKey, pickSwapDomain } from "../factService";
 
 // ---------------------------------------------------------------------------
 // isoWeekKey — ISO 8601 week number regression suite
@@ -79,5 +79,90 @@ describe("isoWeekKey", () => {
 
   it("same date always returns same key (determinism)", () => {
     expect(isoWeekKey("2026-06-15")).toBe(isoWeekKey("2026-06-15"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pickSwapDomain — domain-rotation-on-swap logic
+// ---------------------------------------------------------------------------
+describe("pickSwapDomain", () => {
+  const selected = ["tech_ai", "health", "space"];
+
+  // ── Basic exclusion ────────────────────────────────────────────────────────
+  it("never returns the current domain when alternatives exist", () => {
+    for (let h = 0; h < 30; h++) {
+      expect(pickSwapDomain("tech_ai", selected, undefined, h)).not.toBe("tech_ai");
+    }
+    for (let h = 0; h < 30; h++) {
+      expect(pickSwapDomain("health", selected, undefined, h)).not.toBe("health");
+    }
+    for (let h = 0; h < 30; h++) {
+      expect(pickSwapDomain("space", selected, undefined, h)).not.toBe("space");
+    }
+  });
+
+  it("result is always a member of selected", () => {
+    for (let h = 0; h < 20; h++) {
+      expect(selected).toContain(pickSwapDomain("tech_ai", selected, undefined, h));
+    }
+  });
+
+  // ── Deterministic uniform pick (no weights) ────────────────────────────────
+  it("uniform pick: hash % others.length → predictable index", () => {
+    // others = ["health", "space"] when excluding "tech_ai"
+    // hash=0 → 0%2=0 → "health"; hash=1 → 1%2=1 → "space"; hash=2 → 0 → "health"
+    expect(pickSwapDomain("tech_ai", selected, undefined, 0)).toBe("health");
+    expect(pickSwapDomain("tech_ai", selected, undefined, 1)).toBe("space");
+    expect(pickSwapDomain("tech_ai", selected, undefined, 2)).toBe("health");
+  });
+
+  // ── Single-domain fallback ─────────────────────────────────────────────────
+  it("single-domain list: returns the only domain (can't rotate)", () => {
+    expect(pickSwapDomain("tech_ai", ["tech_ai"], undefined, 0)).toBe("tech_ai");
+    expect(pickSwapDomain("tech_ai", ["tech_ai"], undefined, 99)).toBe("tech_ai");
+  });
+
+  // ── Unknown / undefined current domain fallback ────────────────────────────
+  it("undefined currentDomain: picks from full selected list", () => {
+    const result = pickSwapDomain(undefined, selected, undefined, 0);
+    expect(selected).toContain(result);
+  });
+
+  it("unknown currentDomain (not in selected): picks from full list", () => {
+    const result = pickSwapDomain("unknown_domain_xyz", selected, undefined, 1);
+    expect(selected).toContain(result);
+  });
+
+  // ── Weight-aware exclusion ─────────────────────────────────────────────────
+  it("respects weights on the filtered list (high-weight domain always wins)", () => {
+    // health=100, space=0 → when excluding tech_ai, every hash picks "health"
+    const weights = { tech_ai: 5, health: 100, space: 0 };
+    for (let h = 0; h < 10; h++) {
+      expect(pickSwapDomain("tech_ai", selected, weights, h * 10_000)).toBe("health");
+    }
+  });
+
+  it("zero-weight all remaining → falls back to uniform modulo", () => {
+    // All remaining have weight 0 → total=0 → uniform hash % others.length
+    const weights = { tech_ai: 5, health: 0, space: 0 };
+    // others = ["health","space"], uniform: hash%2
+    expect(pickSwapDomain("tech_ai", selected, weights, 0)).toBe("health");
+    expect(pickSwapDomain("tech_ai", selected, weights, 1)).toBe("space");
+  });
+
+  // ── Determinism ───────────────────────────────────────────────────────────
+  it("is deterministic: same inputs always yield same result", () => {
+    expect(pickSwapDomain("health", selected, undefined, 42)).toBe(
+      pickSwapDomain("health", selected, undefined, 42),
+    );
+  });
+
+  // ── Two-domain list ───────────────────────────────────────────────────────
+  it("two domains: always returns the other one", () => {
+    const two = ["tech_ai", "climate"];
+    for (let h = 0; h < 10; h++) {
+      expect(pickSwapDomain("tech_ai", two, undefined, h)).toBe("climate");
+      expect(pickSwapDomain("climate", two, undefined, h)).toBe("tech_ai");
+    }
   });
 });

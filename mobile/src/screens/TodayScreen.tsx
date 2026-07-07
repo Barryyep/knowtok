@@ -245,7 +245,7 @@ export function TodayScreen({ profile }: Props) {
         <>
           {/* Centered hero region: eyebrow directly above the slip. */}
           <View style={styles.hero}>
-            <DateEyebrow date={fact.date} streak={streak} language={profile.language} />
+            <DateEyebrow streak={streak} language={profile.language} />
             <FactCard
               fact={fact}
               language={profile.language}

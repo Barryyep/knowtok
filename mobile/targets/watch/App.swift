@@ -89,6 +89,7 @@ final class PhoneSync: NSObject, WCSessionDelegate, ObservableObject {
 
 struct ContentView: View {
   @ObservedObject var sync: PhoneSync
+  @State private var showWhy = false
 
   // Language detection: explicit payload field; fall back to CJK-character heuristic.
   private func effectiveLanguage(_ fact: SharedFact) -> String {
@@ -124,24 +125,48 @@ struct ContentView: View {
               .lineLimit(1)
           }
 
-          // Fact body — the hero at watch scale
-          Text(fact.fact)
-            .font(.system(.footnote, design: .serif))
-            .foregroundStyle(paraInk)
-            .fixedSize(horizontal: false, vertical: true)
-
-          // Source stamp — single line, scales before truncating, no clipping
-          if let stamp = stampText(fact.source) {
-            Text(stamp)
-              .font(.system(.caption2, design: .monospaced))
-              .foregroundStyle(postmark)
-              .minimumScaleFactor(0.75)
-              .lineLimit(1)
+          // Toggleable body — front: fact · back: why-you (tap anywhere on card)
+          ZStack(alignment: .topLeading) {
+            if showWhy {
+              VStack(alignment: .leading, spacing: 4) {
+                Text(effectiveLanguage(fact) == "zh" ? "寄给你的理由" : "Why it found you")
+                  .font(.system(.caption2, design: .monospaced))
+                  .foregroundStyle(paraSoft)
+                Text(fact.whyCare.isEmpty
+                  ? (effectiveLanguage(fact) == "zh" ? "还在整理" : "Writing this…")
+                  : fact.whyCare)
+                  .font(.system(.footnote, design: .serif))
+                  .foregroundStyle(paraInk)
+                  .fixedSize(horizontal: false, vertical: true)
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .transition(.opacity)
+            } else {
+              VStack(alignment: .leading, spacing: 6) {
+                // Fact body — the hero at watch scale
+                Text(fact.fact)
+                  .font(.system(.footnote, design: .serif))
+                  .foregroundStyle(paraInk)
+                  .fixedSize(horizontal: false, vertical: true)
+                // Source stamp — single line, scales before truncating, no clipping
+                if let stamp = stampText(fact.source) {
+                  Text(stamp)
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(postmark)
+                    .minimumScaleFactor(0.75)
+                    .lineLimit(1)
+                }
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .transition(.opacity)
+            }
           }
+          .animation(.easeInOut(duration: 0.25), value: showWhy)
         }
         .padding(10)
         .background(paper)
         .clipShape(RoundedRectangle(cornerRadius: 18))
+        .onTapGesture { showWhy.toggle() }
         // No fold edge at watch scale — reads as a stray bar, not a fold.
       } else {
         VStack(spacing: 8) {
