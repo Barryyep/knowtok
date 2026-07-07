@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.5.0.0 — 2026-07-06
+
+### Added
+- **The content pool grows every day again.** A PubMed pipeline pulls high-impact journals daily (Nature Medicine, The Lancet, NEJM, Cell, PNAS, and more), restating one fact per article in our own words with the journal stamped and the DOI linked — the abstract is read and discarded, never stored. A per-journal cap keeps any single journal from dominating. Combined with the arXiv fix below, the pool went from ~410 to ~1300 facts.
+- **The Today card flips to the source too.** The source stamp now lives on the back with the why-you line; the front is just the fact, its date postmark, and the flip hint.
+- **The watch flips to the why-you line** on tap.
+- **The site downloads the Android app directly** and its dispatch deck cascades vertically on touch devices.
+
+### Changed
+- **换一条 changes the topic.** A swap now rotates to a different curiosity domain (a swap means "not this today"), instead of the next fact in the same domain.
+- **The Today card is calmer** — the dispatch № and the duplicate date are gone; the circular postmark is the card's identity.
+- **The real Ohlo logo** replaces the placeholder across iOS, Android, and the watch.
+
+### Fixed
+- **arXiv daily was re-fetching the same papers every day** (it anchored its date window to nothing, so over holidays/weekends it kept returning the same top slice). It now tracks the newest paper it has per field and pulls everything since, so genuinely new research flows in daily.
+- **The hidden face of a flipped card no longer eats taps** (source no longer fires from the front).
+- **Returning users don't flash the onboarding screen**, and the widget/watch re-sync when the app comes to the foreground.
+
 ## v0.4.2.0 — 2026-07-05
 
 ### Added
