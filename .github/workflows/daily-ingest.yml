@@ -26,6 +26,8 @@ jobs:
       OPENAI_MODEL_LOW_COST: ${{ secrets.OPENAI_MODEL_LOW_COST }}
       # Optional — falls back to DEMO_KEY if unset (rate-limited to ~30 req/hr).
       NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
+      # Optional — falls back to keyless PubMed E-utilities (3 req/s) if unset.
+      NCBI_API_KEY: ${{ secrets.NCBI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +41,9 @@ jobs:
 
       - name: Ingest arXiv papers (daily)
         run: npm run ingest:papers -- --mode daily
+
+      - name: Ingest PubMed high-impact journals (daily)
+        run: npx tsx scripts/ingest-pubmed.ts
 
       - name: Ingest Our World in Data insights
         run: npx tsx scripts/ingest-owid.ts

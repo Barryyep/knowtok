@@ -9,7 +9,8 @@ import type { DomainKey, IngestRunResult } from "@/types/domain";
 
 export type IngestMode = "daily" | "backfill";
 const DOMAINS: DomainKey[] = ["cs", "physics", "math", "q-bio", "q-fin", "econ", "astro-ph"];
-const DAILY_LIMIT_PER_DOMAIN = 30;
+const DAILY_LIMIT_PER_DOMAIN = 200;
+const DAILY_LOOKBACK_DAYS = 7;
 const BACKFILL_FETCH_PER_DOMAIN = 250;
 const MAX_LLM_ERROR_LOGS_PER_DOMAIN = 5;
 const ARXIV_MIN_INTERVAL_MS = 3500;
@@ -111,6 +112,37 @@ async function upsertPaperByVersion(client: SupabaseClient, paper: ArxivPaper & 
   return true;
 }
 
+/**
+ * Pure helper: compute the `since` cutoff for a daily ingest run for one domain.
+ * If the domain already has papers in DB, use the newest paper's date so we only
+ * fetch submissions after what we already have. Otherwise fall back to a rolling
+ * lookback window so a brand-new domain (or post-holiday gap) still gets coverage.
+ * Exported for unit testing.
+ */
+export function computeDailySince(
+  newestInDb: Date | undefined,
+  now: Date,
+  lookbackDays: number,
+): Date {
+  return newestInDb ?? new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000);
+}
+
+async function getNewestPaperDateForDomain(
+  client: SupabaseClient,
+  domain: DomainKey,
+): Promise<Date | undefined> {
+  const { data } = await client
+    .from("papers")
+    .select("published_at")
+    .eq("source", "arxiv")
+    .contains("metadata", { domain })
+    .order("published_at", { ascending: false })
+    .limit(1);
+
+  const dateStr = (data as Array<{ published_at: string }> | null)?.[0]?.published_at;
+  return dateStr ? new Date(dateStr) : undefined;
+}
+
 async function startRunRecord(client: SupabaseClient, options: {
   mode: IngestMode;
   days: number;
@@ -205,7 +237,20 @@ export async function runIngestPipeline(options: {
   try {
     for (const domain of DOMAINS) {
       logInfo(options.verbose, `domain=${domain} fetching papers...`);
-      const domainSince = options.mode === "backfill" ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
+      let domainSince: Date;
+      if (options.mode === "backfill") {
+        domainSince = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      } else {
+        // Daily: anchor to the newest paper already in DB for this domain so we
+        // only fetch submissions newer than what we already have. Falls back to a
+        // rolling DAILY_LOOKBACK_DAYS window when the domain has no papers yet.
+        const newestInDb = await getNewestPaperDateForDomain(serviceClient, domain);
+        domainSince = computeDailySince(newestInDb, new Date(), DAILY_LOOKBACK_DAYS);
+        logInfo(
+          options.verbose,
+          `domain=${domain} daily since=${domainSince.toISOString()} (newestInDb=${newestInDb?.toISOString() ?? "none"})`,
+        );
+      }
       let papers: ArxivPaper[] = [];
       try {
         let lastFetchError: unknown = null;
