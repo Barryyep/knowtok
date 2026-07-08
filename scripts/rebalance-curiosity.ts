@@ -26,7 +26,13 @@ loadDotenv({ path: ".env", override: false, quiet: true });
 
 import { createClient } from "@supabase/supabase-js";
 import { DOMAINS } from "../mobile/src/lib/taxonomy";
-import { computeRebalancedWeights, type DomainEventTally } from "../src/lib/curiosity-rebalance";
+import {
+  computeRebalancedWeights,
+  isEligiblePersona,
+  tallyEventsByUserAndDomain,
+  type RebalanceEventRow,
+  type RebalancePersonaRow,
+} from "../src/lib/curiosity-rebalance";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -42,27 +48,14 @@ const WINDOW_DAYS = 7;
 const VALID_DOMAIN_IDS = new Set(DOMAINS.map((d) => d.id));
 const QUALIFYING_EVENT_TYPES = ["swap", "share", "source_tap"] as const;
 
-interface PersonaRow {
-  user_id: string;
-  domain_weights: Record<string, number> | null;
-}
-
-interface EventRow {
-  user_id: string;
-  event_type: string;
-  metadata: { domain?: string } | null;
-}
-
 /** Users with a real, non-empty domainWeights map — the only ones this job touches. */
-async function fetchEligiblePersonas(): Promise<PersonaRow[]> {
+async function fetchEligiblePersonas(): Promise<RebalancePersonaRow[]> {
   const { data, error } = await supabase.from("user_personas").select("user_id, domain_weights");
   if (error) throw new Error(`fetch personas failed: ${error.message}`);
-  return ((data ?? []) as PersonaRow[]).filter(
-    (row) => row.domain_weights && Object.keys(row.domain_weights).length > 0,
-  );
+  return ((data ?? []) as RebalancePersonaRow[]).filter(isEligiblePersona);
 }
 
-async function fetchWindowEvents(userIds: string[], sinceIso: string): Promise<EventRow[]> {
+async function fetchWindowEvents(userIds: string[], sinceIso: string): Promise<RebalanceEventRow[]> {
   if (userIds.length === 0) return [];
   const { data, error } = await supabase
     .from("user_events")
@@ -71,30 +64,7 @@ async function fetchWindowEvents(userIds: string[], sinceIso: string): Promise<E
     .in("event_type", QUALIFYING_EVENT_TYPES as unknown as string[])
     .gte("created_at", sinceIso);
   if (error) throw new Error(`fetch events failed: ${error.message}`);
-  return (data ?? []) as EventRow[];
-}
-
-/** user_id -> domain -> tally. Events with a missing/unknown/legacy domain
- * (pre-migration rows, or rows logged before the fact.domain fix landed) are
- * safely ignored rather than crashing the job. */
-function tallyEventsByUserAndDomain(events: EventRow[]): Map<string, Record<string, DomainEventTally>> {
-  const byUser = new Map<string, Record<string, DomainEventTally>>();
-  for (const event of events) {
-    const domain = event.metadata?.domain;
-    if (!domain || !VALID_DOMAIN_IDS.has(domain)) continue;
-
-    let userTallies = byUser.get(event.user_id);
-    if (!userTallies) {
-      userTallies = {};
-      byUser.set(event.user_id, userTallies);
-    }
-    const tally = userTallies[domain] ?? { swap: 0, share: 0, sourceTap: 0 };
-    if (event.event_type === "swap") tally.swap += 1;
-    else if (event.event_type === "share") tally.share += 1;
-    else if (event.event_type === "source_tap") tally.sourceTap += 1;
-    userTallies[domain] = tally;
-  }
-  return byUser;
+  return (data ?? []) as RebalanceEventRow[];
 }
 
 async function main() {
@@ -111,7 +81,7 @@ async function main() {
   const events = await fetchWindowEvents(personas.map((p) => p.user_id), since);
   console.log(`[rebalance] qualifying events fetched: ${events.length}`);
 
-  const talliesByUser = tallyEventsByUserAndDomain(events);
+  const talliesByUser = tallyEventsByUserAndDomain(events, VALID_DOMAIN_IDS);
 
   let updated = 0;
   let unchanged = 0;

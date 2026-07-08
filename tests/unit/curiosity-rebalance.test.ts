@@ -1,9 +1,12 @@
 import { describe, expect, test } from "vitest";
 import {
   computeRebalancedWeights,
+  isEligiblePersona,
+  tallyEventsByUserAndDomain,
   REBALANCE_STEP,
   WEIGHT_FLOOR,
   WEIGHT_CEILING,
+  type RebalanceEventRow,
 } from "@/lib/curiosity-rebalance";
 
 describe("computeRebalancedWeights", () => {
@@ -84,5 +87,92 @@ describe("computeRebalancedWeights", () => {
       { history: { swap: 0, share: 5, sourceTap: 0 } },
     );
     expect(result).toEqual({ tech_ai: 0.5 });
+  });
+});
+
+describe("isEligiblePersona", () => {
+  test("a persona with a non-empty domain_weights map is eligible", () => {
+    expect(isEligiblePersona({ user_id: "u1", domain_weights: { tech_ai: 0.5 } })).toBe(true);
+  });
+
+  test("a persona with an empty domain_weights map ({}) is not eligible", () => {
+    expect(isEligiblePersona({ user_id: "u1", domain_weights: {} })).toBe(false);
+  });
+
+  test("a persona with null domain_weights is not eligible", () => {
+    expect(isEligiblePersona({ user_id: "u1", domain_weights: null })).toBe(false);
+  });
+});
+
+describe("tallyEventsByUserAndDomain", () => {
+  const VALID = new Set(["tech_ai", "space"]);
+
+  function event(overrides: Partial<RebalanceEventRow> = {}): RebalanceEventRow {
+    return {
+      user_id: "u1",
+      event_type: "swap",
+      metadata: { domain: "tech_ai" },
+      ...overrides,
+    };
+  }
+
+  test("counts a swap event against the right user and domain", () => {
+    const result = tallyEventsByUserAndDomain([event()], VALID);
+    expect(result.get("u1")).toEqual({ tech_ai: { swap: 1, share: 0, sourceTap: 0 } });
+  });
+
+  test("counts share and source_tap event types", () => {
+    const result = tallyEventsByUserAndDomain(
+      [event({ event_type: "share" }), event({ event_type: "source_tap" })],
+      VALID,
+    );
+    expect(result.get("u1")).toEqual({ tech_ai: { swap: 0, share: 1, sourceTap: 1 } });
+  });
+
+  test("accumulates multiple events of the same type for the same domain", () => {
+    const result = tallyEventsByUserAndDomain(
+      [event(), event(), event({ event_type: "share" })],
+      VALID,
+    );
+    expect(result.get("u1")).toEqual({ tech_ai: { swap: 2, share: 1, sourceTap: 0 } });
+  });
+
+  test("splits tallies across users", () => {
+    const result = tallyEventsByUserAndDomain(
+      [event({ user_id: "u1" }), event({ user_id: "u2", event_type: "share" })],
+      VALID,
+    );
+    expect(result.get("u1")).toEqual({ tech_ai: { swap: 1, share: 0, sourceTap: 0 } });
+    expect(result.get("u2")).toEqual({ tech_ai: { swap: 0, share: 1, sourceTap: 0 } });
+  });
+
+  test("splits tallies across domains for the same user", () => {
+    const result = tallyEventsByUserAndDomain(
+      [event({ metadata: { domain: "tech_ai" } }), event({ metadata: { domain: "space" } })],
+      VALID,
+    );
+    expect(result.get("u1")).toEqual({
+      tech_ai: { swap: 1, share: 0, sourceTap: 0 },
+      space: { swap: 1, share: 0, sourceTap: 0 },
+    });
+  });
+
+  test("ignores an event with a missing domain (legacy/general-track fact) without crashing", () => {
+    const result = tallyEventsByUserAndDomain([event({ metadata: {} })], VALID);
+    expect(result.size).toBe(0);
+  });
+
+  test("ignores an event with null metadata without crashing", () => {
+    const result = tallyEventsByUserAndDomain([event({ metadata: null })], VALID);
+    expect(result.size).toBe(0);
+  });
+
+  test("ignores an event whose domain is not in the valid set (stale/renamed taxonomy id)", () => {
+    const result = tallyEventsByUserAndDomain([event({ metadata: { domain: "retired_domain" } })], VALID);
+    expect(result.size).toBe(0);
+  });
+
+  test("empty events array yields an empty map", () => {
+    expect(tallyEventsByUserAndDomain([], VALID).size).toBe(0);
   });
 });

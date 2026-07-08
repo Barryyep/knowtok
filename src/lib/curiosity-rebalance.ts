@@ -42,6 +42,59 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Minimal shape of a `user_personas` row the rebalance job reads. */
+export interface RebalancePersonaRow {
+  user_id: string;
+  domain_weights: Record<string, number> | null;
+}
+
+/** Minimal shape of a `user_events` row the rebalance job reads. */
+export interface RebalanceEventRow {
+  user_id: string;
+  event_type: string;
+  metadata: { domain?: string } | null;
+}
+
+/**
+ * Only personas with a real, non-empty domainWeights map are touched by the
+ * rebalance job — it augments an existing persona, it never creates one from
+ * scratch. Pure so it's testable without Supabase — see
+ * scripts/rebalance-curiosity.ts (fetchEligiblePersonas).
+ */
+export function isEligiblePersona(row: RebalancePersonaRow): boolean {
+  return Boolean(row.domain_weights && Object.keys(row.domain_weights).length > 0);
+}
+
+/**
+ * Tally qualifying events (swap/share/source_tap) per user and per taxonomy
+ * domain. Events with a missing/unknown/stale domain (pre-migration rows, or
+ * rows logged before the fact.domain fix landed, or a since-renamed taxonomy
+ * id) are safely ignored rather than crashing the job. Pure so it's testable
+ * without Supabase — see scripts/rebalance-curiosity.ts.
+ */
+export function tallyEventsByUserAndDomain(
+  events: RebalanceEventRow[],
+  validDomainIds: ReadonlySet<string>,
+): Map<string, Record<string, DomainEventTally>> {
+  const byUser = new Map<string, Record<string, DomainEventTally>>();
+  for (const event of events) {
+    const domain = event.metadata?.domain;
+    if (!domain || !validDomainIds.has(domain)) continue;
+
+    let userTallies = byUser.get(event.user_id);
+    if (!userTallies) {
+      userTallies = {};
+      byUser.set(event.user_id, userTallies);
+    }
+    const tally = userTallies[domain] ?? { swap: 0, share: 0, sourceTap: 0 };
+    if (event.event_type === "swap") tally.swap += 1;
+    else if (event.event_type === "share") tally.share += 1;
+    else if (event.event_type === "source_tap") tally.sourceTap += 1;
+    userTallies[domain] = tally;
+  }
+  return byUser;
+}
+
 /**
  * Nudge a user's existing domainWeights based on their trailing-window event
  * tallies. Domains absent from `eventTallies` (zero events in the window)
