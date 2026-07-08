@@ -10,11 +10,9 @@ Both TTFs load unconditionally at startup; English users pay 27MB install + star
 **Priority:** P2
 WidgetKit timeline only re-reads App Group data; after midnight it shows yesterday's fact until the app opens (stale-date muted styling shipped as V1). V2: background URLSession fetch in the extension or BGTaskScheduler.
 
-### Implicit curiosity learning from daily choices (第二层问卷) — code written, needs manual activation
+### Implicit curiosity learning from daily choices (第二层问卷) — code written, needs merge to activate
 **Priority:** P1
-Code complete 2026-07-07 (uncommitted): `src/lib/curiosity-rebalance.ts` (pure weighting logic, tested), `scripts/rebalance-curiosity.ts` (weekly job), `.github/workflows/weekly-curiosity-rebalance.yml` (Sunday cron), mobile-side `fact.domain` logging fix + `domain_weights` sync in `personaService.ts`. Two manual steps before this is live:
-1. Review + apply `supabase/migrations/20260326_007_curiosity_events.sql` (widens `user_events.event_type` CHECK to accept mobile's vocabulary — currently every mobile swap/share/source_tap insert silently fails against this constraint; adds `user_personas.domain_weights` column).
-2. Merge to `main` — GitHub Actions cron only fires from the default branch, so the weekly workflow is inert on this branch.
+Code complete 2026-07-07: `src/lib/curiosity-rebalance.ts` (pure weighting + tallying logic, 22 tests), `scripts/rebalance-curiosity.ts` (weekly job), `.github/workflows/weekly-curiosity-rebalance.yml` (Sunday cron), mobile-side `fact.domain` logging fix + `domain_weights` sync in `personaService.ts`. `supabase/migrations/20260326_007_curiosity_events.sql` already applied to production (widened `user_events.event_type` CHECK to accept mobile's vocabulary; added `user_personas.domain_weights` column) — mobile event inserts are unblocked now. One step left: merge to `main` — GitHub Actions cron only fires from the default branch, so the weekly workflow is inert until then.
 
 ## Web (repositioned 2026-07-04: marketing/intro site only, no product features)
 
