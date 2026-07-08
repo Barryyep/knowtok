@@ -1,0 +1,38 @@
+name: Weekly curiosity rebalance
+
+# "隐式好奇心学习" — nudges each user's domain_weights from the trailing
+# week's swap/share/source_tap events (scripts/rebalance-curiosity.ts).
+# Only touches personas that already have domainWeights set; safe to
+# manually re-run (idempotent per window, no destructive writes).
+on:
+  schedule:
+    # Sunday 21:00 UTC == 05:00 Asia/Shanghai Monday — low traffic, and lands
+    # before the week's first weekday session.
+    - cron: "0 21 * * 0"
+  workflow_dispatch: {}
+
+concurrency:
+  group: weekly-curiosity-rebalance
+  cancel-in-progress: false
+
+jobs:
+  rebalance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebalance curiosity domain weights
+        run: npx tsx scripts/rebalance-curiosity.ts

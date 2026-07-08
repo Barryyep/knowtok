@@ -2,10 +2,6 @@
 
 ## Mobile (Ohlo app)
 
-### Set up a mobile test framework (vitest or jest for mobile/)
-**Priority:** P1
-mobile/ has no test runner; crash-fix logic (storage.normalizeStoredFact), pickDailyPaper determinism, slipUtils dispatch/streak, personaTrack extractJson edge cases are all unprotected. Flagged by /ship coverage audit (35% gate override on 2026-07-04).
-
 ### Lazy-load LXGW WenKai fonts (27MB) for zh users only
 **Priority:** P2
 Both TTFs load unconditionally at startup; English users pay 27MB install + startup cost. Two-phase useFonts keyed on profile.language, or subset the TTFs.
@@ -14,14 +10,11 @@ Both TTFs load unconditionally at startup; English users pay 27MB install + star
 **Priority:** P2
 WidgetKit timeline only re-reads App Group data; after midnight it shows yesterday's fact until the app opens (stale-date muted styling shipped as V1). V2: background URLSession fetch in the extension or BGTaskScheduler.
 
-### Move goodvision key server-side before public release
+### Implicit curiosity learning from daily choices (第二层问卷) — code written, needs manual activation
 **Priority:** P1
-EXPO_PUBLIC_GOODVISION_API_KEY ships in the JS bundle (extractable). Proxy whyCare/general-fact calls through a Next.js route authenticated by the Supabase JWT.
-
-
-### Implicit curiosity learning from daily choices (第二层问卷)
-**Priority:** P1
-Founder principle: "选择多了也就知道了" — every in-app choice is a questionnaire answer. Log to the existing user_events table: 换一条 (soft veto of the shown domain), share (strong positive), source-link tap (depth interest). Weekly rebalance of curiosityDomains weights from event history, so the persona is a living curve, not an onboarding snapshot. Depends on: curiosity onboarding + domain routing (in flight 2026-07-04).
+Code complete 2026-07-07 (uncommitted): `src/lib/curiosity-rebalance.ts` (pure weighting logic, tested), `scripts/rebalance-curiosity.ts` (weekly job), `.github/workflows/weekly-curiosity-rebalance.yml` (Sunday cron), mobile-side `fact.domain` logging fix + `domain_weights` sync in `personaService.ts`. Two manual steps before this is live:
+1. Review + apply `supabase/migrations/20260326_007_curiosity_events.sql` (widens `user_events.event_type` CHECK to accept mobile's vocabulary — currently every mobile swap/share/source_tap insert silently fails against this constraint; adds `user_personas.domain_weights` column).
+2. Merge to `main` — GitHub Actions cron only fires from the default branch, so the weekly workflow is inert on this branch.
 
 ## Web (repositioned 2026-07-04: marketing/intro site only, no product features)
 
@@ -57,6 +50,12 @@ The djb2 hash in `src/app/s/[id]/page.tsx` and `mobile/src/components/slipUtils.
 `PaperRow` is independently defined in `src/app/s/[id]/page.tsx` and in `mobile/src/lib/paperService.ts`. A drift in column selection (e.g. adding `metadata`) requires two edits. Extract to a shared type module.
 
 ## Completed
+
+### Set up a mobile test framework (vitest for mobile/)
+**Completed:** 2026-07-05, commit 6de56d7 (test: bootstrap mobile vitest framework — 137 tests on the algorithm core). Extended 2026-07-07: added paperService.ts (domainsToCategories, pickDailyPaper determinism, paperToFact) and prompt.ts (buildWhyCarePrompt, cleanWhyCare) coverage. Now 13 test files / 242 tests passing (`npm test` in mobile/). Remaining untested: personaService.ts, watchSync.ts (network/native-module calls, not pure).
+
+### Move goodvision key server-side before public release
+**Completed:** 2026-07-05, commit a98fbe1 (feat: goodvision key moves server-side behind /api/llm). Production calls proxy through https://ohlo.app/api/llm authenticated by Supabase JWT; direct key use is DEV-only.
 
 ### Reposition web as the Ohlo marketing site (+ /s QR landing, /zh /en split)
 **Completed:** v0.3.0.0 (2026-07-05)

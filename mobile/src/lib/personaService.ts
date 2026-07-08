@@ -13,7 +13,7 @@ export async function fetchRemotePersona(): Promise<Profile | null> {
   if (!uid) return null;
   const { data, error } = await supabase
     .from("user_personas")
-    .select("job_title, interests, language, manual_notes, curiosity_tags, age_range")
+    .select("job_title, interests, language, manual_notes, curiosity_tags, age_range, domain_weights")
     .eq("user_id", uid)
     .maybeSingle();
   if (error || !data) return null;
@@ -23,8 +23,24 @@ export async function fetchRemotePersona(): Promise<Profile | null> {
     interests: (data.interests ?? []).join(", "),
     curiosityDomains: data.curiosity_tags ?? [],
     ageRange: data.age_range ?? undefined,
+    domainWeights: shapeDomainWeights(data.domain_weights),
     language: data.language === "en" ? "en" : "zh",
   };
+}
+
+/**
+ * Shape a raw `user_personas.domain_weights` JSONB value into
+ * Profile.domainWeights. Pure so it's testable without Supabase — see
+ * mobile/src/lib/__tests__/personaService.test.ts. Returns undefined for an
+ * empty/absent map (matches the optional field, and lets callers fall back
+ * to a locally-persisted value instead of overwriting it with `{}`).
+ */
+export function shapeDomainWeights(raw: unknown): Record<string, number> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const entries = Object.entries(raw as Record<string, unknown>).filter(
+    (entry): entry is [string, number] => typeof entry[1] === "number",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 export async function saveRemotePersona(profile: Profile): Promise<void> {
@@ -43,6 +59,7 @@ export async function saveRemotePersona(profile: Profile): Promise<void> {
     interests,
     curiosity_tags: profile.curiosityDomains ?? [],
     age_range: profile.ageRange ?? null,
+    domain_weights: profile.domainWeights ?? {},
     language: profile.language,
     profile_source: "manual",
   });

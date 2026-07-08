@@ -109,7 +109,7 @@ export function TodayScreen({ profile }: Props) {
   const handleSwap = useCallback(async () => {
     if (swapsLeft <= 0 || !fact) return;
     const today = todayDateString();
-    logEvent("swap", { factId: fact.source.factId, domain: fact.topic, date: fact.date });
+    logEvent("swap", { factId: fact.source.factId, domain: fact.domain, date: fact.date });
     setLoading(true);
     setError(null);
     try {
@@ -180,7 +180,7 @@ export function TodayScreen({ profile }: Props) {
           if (!uri) return;
           if (!(await Sharing.isAvailableAsync())) return;
           // §3 — share: fire when the share sheet opens successfully.
-          if (fact) logEvent("share", { factId: fact.source.factId, domain: fact.topic, date: fact.date });
+          if (fact) logEvent("share", { factId: fact.source.factId, domain: fact.domain, date: fact.date });
           await Sharing.shareAsync(uri, {
             mimeType: "image/png",
             dialogTitle: strings.share,
@@ -250,7 +250,7 @@ export function TodayScreen({ profile }: Props) {
               fact={fact}
               language={profile.language}
               onFlip={() => logEvent("flip", { factId: fact.source.factId, domain: fact.topic, date: fact.date })}
-              onSourceTap={() => logEvent("source_tap", { factId: fact.source.factId, domain: fact.topic, date: fact.date })}
+              onSourceTap={() => logEvent("source_tap", { factId: fact.source.factId, domain: fact.domain, date: fact.date })}
             />
 
             {showFirstClassHint && (
