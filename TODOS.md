@@ -10,10 +10,6 @@ Both TTFs load unconditionally at startup; English users pay 27MB install + star
 **Priority:** P2
 WidgetKit timeline only re-reads App Group data; after midnight it shows yesterday's fact until the app opens (stale-date muted styling shipped as V1). V2: background URLSession fetch in the extension or BGTaskScheduler.
 
-### Implicit curiosity learning from daily choices (第二层问卷) — code written, needs merge to activate
-**Priority:** P1
-Code complete 2026-07-07: `src/lib/curiosity-rebalance.ts` (pure weighting + tallying logic, 22 tests), `scripts/rebalance-curiosity.ts` (weekly job), `.github/workflows/weekly-curiosity-rebalance.yml` (Sunday cron), mobile-side `fact.domain` logging fix + `domain_weights` sync in `personaService.ts`. `supabase/migrations/20260326_007_curiosity_events.sql` already applied to production (widened `user_events.event_type` CHECK to accept mobile's vocabulary; added `user_personas.domain_weights` column) — mobile event inserts are unblocked now. One step left: merge to `main` — GitHub Actions cron only fires from the default branch, so the weekly workflow is inert until then.
-
 ### rebalance-curiosity.ts writes don't scale past a small user base
 **Priority:** P3
 Reads are now paginated (`.range()`, fixed 2026-07-08 per /ship adversarial review — the prior unbounded SELECT risked silent truncation past the project's Supabase Max Rows setting). The write side is still one sequential `.update()` per changed persona instead of a batched `.upsert()`. Fine at current tester-scale; before real growth, batch the writes.
@@ -60,6 +56,9 @@ The djb2 hash in `src/app/s/[id]/page.tsx` and `mobile/src/components/slipUtils.
 `PaperRow` is independently defined in `src/app/s/[id]/page.tsx` and in `mobile/src/lib/paperService.ts`. A drift in column selection (e.g. adding `metadata`) requires two edits. Extract to a shared type module.
 
 ## Completed
+
+### Implicit curiosity learning from daily choices (第二层问卷)
+**Completed:** v0.6.0.0 (2026-07-08). `src/lib/curiosity-rebalance.ts` (pure weighting + tallying, 22 tests), `scripts/rebalance-curiosity.ts` (weekly job, paginated), `.github/workflows/weekly-curiosity-rebalance.yml` (Sunday 21:00 UTC cron), mobile-side `fact.domain` logging across all 5 event types + `domain_weights` sync in `personaService.ts`. Migration `20260326_007_curiosity_events.sql` applied to production; merged to `main` so the cron is live. Known follow-ups tracked above (P2/P3): weekly-job-vs-manual-edit race, per-user UUID+weights in CI logs, write-side batching.
 
 ### Set up a mobile test framework (vitest for mobile/)
 **Completed:** 2026-07-05, commit 6de56d7 (test: bootstrap mobile vitest framework — 137 tests on the algorithm core). Extended 2026-07-07: added paperService.ts (domainsToCategories, pickDailyPaper determinism, paperToFact) and prompt.ts (buildWhyCarePrompt, cleanWhyCare) coverage. Now 13 test files / 242 tests passing (`npm test` in mobile/). Remaining untested: personaService.ts, watchSync.ts (network/native-module calls, not pure).
