@@ -36,7 +36,7 @@ export async function fetchRemotePersona(): Promise<Profile | null> {
  * to a locally-persisted value instead of overwriting it with `{}`).
  */
 export function shapeDomainWeights(raw: unknown): Record<string, number> | undefined {
-  if (!raw || typeof raw !== "object") return undefined;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const entries = Object.entries(raw as Record<string, unknown>).filter(
     (entry): entry is [string, number] => typeof entry[1] === "number",
   );

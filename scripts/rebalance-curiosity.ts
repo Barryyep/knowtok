@@ -61,7 +61,7 @@ async function fetchWindowEvents(userIds: string[], sinceIso: string): Promise<R
     .from("user_events")
     .select("user_id, event_type, metadata")
     .in("user_id", userIds)
-    .in("event_type", QUALIFYING_EVENT_TYPES as unknown as string[])
+    .in("event_type", [...QUALIFYING_EVENT_TYPES])
     .gte("created_at", sinceIso);
   if (error) throw new Error(`fetch events failed: ${error.message}`);
   return (data ?? []) as RebalanceEventRow[];

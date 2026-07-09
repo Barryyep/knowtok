@@ -41,4 +41,9 @@ describe("shapeDomainWeights", () => {
       tech_ai: 0.5,
     });
   });
+
+  test("returns undefined for array input (arrays pass typeof === 'object' but aren't a weights map)", () => {
+    expect(shapeDomainWeights([0.5, 0.8])).toBeUndefined();
+    expect(shapeDomainWeights([])).toBeUndefined();
+  });
 });

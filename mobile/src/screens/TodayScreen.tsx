@@ -249,7 +249,7 @@ export function TodayScreen({ profile }: Props) {
             <FactCard
               fact={fact}
               language={profile.language}
-              onFlip={() => logEvent("flip", { factId: fact.source.factId, domain: fact.topic, date: fact.date })}
+              onFlip={() => logEvent("flip", { factId: fact.source.factId, domain: fact.domain, date: fact.date })}
               onSourceTap={() => logEvent("source_tap", { factId: fact.source.factId, domain: fact.domain, date: fact.date })}
             />
 
