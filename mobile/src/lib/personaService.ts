@@ -43,26 +43,41 @@ export function shapeDomainWeights(raw: unknown): Record<string, number> | undef
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
-export async function saveRemotePersona(profile: Profile): Promise<void> {
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id;
-  if (!userId) throw new Error("Not signed in");
-
+/**
+ * Build the `user_personas` upsert payload for a save. Pure so the
+ * domain_weights omission logic is testable without Supabase — see
+ * mobile/src/lib/__tests__/personaService.test.ts.
+ *
+ * `domain_weights` is included ONLY when profile.domainWeights is defined.
+ * An upsert with the column absent leaves the existing row value untouched,
+ * so a profile save that never loaded domainWeights (e.g. editing language
+ * in Settings without ever opening Radar) can't clobber what the weekly
+ * rebalance job computed with a stale/empty local value.
+ */
+export function buildPersonaUpsertPayload(userId: string, profile: Profile) {
   const interests = profile.interests
     .split(/[,，、]/)
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const { error } = await supabase.from("user_personas").upsert({
+  return {
     user_id: userId,
     job_title: profile.occupation || null,
     interests,
     curiosity_tags: profile.curiosityDomains ?? [],
     age_range: profile.ageRange ?? null,
-    domain_weights: profile.domainWeights ?? {},
+    ...(profile.domainWeights !== undefined ? { domain_weights: profile.domainWeights } : {}),
     language: profile.language,
     profile_source: "manual",
-  });
+  };
+}
+
+export async function saveRemotePersona(profile: Profile): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) throw new Error("Not signed in");
+
+  const { error } = await supabase.from("user_personas").upsert(buildPersonaUpsertPayload(userId, profile));
   if (error) throw new Error(`persona save failed: ${error.message}`);
 }
 
