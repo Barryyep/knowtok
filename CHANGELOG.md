@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.0.0 — 2026-07-08
+
+### Added
+- **The app now learns from what you actually do, not just what you said once during onboarding.** 换一条, sharing a fact, and tapping through to the source are read as signal — a weekly job nudges your curiosity weights toward what you engage with, so your feed keeps adjusting on its own instead of staying frozen at whatever you picked on day one.
+- **Usage analytics on the web site**, via Vercel Analytics.
+
+### Fixed
+- Behavior events (换一条, share, source-link tap) now record the stable topic id instead of the on-screen label text, so the same topic aggregates correctly whether you're reading in Chinese or English.
+- Saving your profile no longer risks silently overwriting curiosity weights the weekly learning job just computed.
+- A pre-existing type mismatch in two web feed tests is resolved.
+
 ## v0.5.0.0 — 2026-07-06
 
 ### Added
