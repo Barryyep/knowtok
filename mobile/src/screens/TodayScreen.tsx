@@ -160,7 +160,7 @@ export function TodayScreen({ profile }: Props) {
     if (!fact) return;
     logEvent("fact_shown", {
       factId: fact.source.factId,
-      domain: fact.topic,
+      domain: fact.domain,
       date: fact.date,
       wildcard: fact.wildcard,
     });

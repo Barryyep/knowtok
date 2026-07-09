@@ -18,6 +18,10 @@ Code complete 2026-07-07: `src/lib/curiosity-rebalance.ts` (pure weighting + tal
 **Priority:** P3
 `fetchEligiblePersonas()` does an unbounded SELECT of every `user_personas` row (no query-side filter, filters client-side), and the update loop issues one sequential `.update()` per changed persona instead of a batched `.upsert()`. Fine at current tester-scale; before real growth, push the non-empty-`domain_weights` filter into the query and batch the writes. Flagged by /ship performance specialist 2026-07-08.
 
+### Weekly rebalance job can clobber a concurrent manual RadarScreen edit
+**Priority:** P2
+`scripts/rebalance-curiosity.ts` SELECTs all eligible personas' `domain_weights` once at job start (T0), then writes each user's nudged value later in a sequential loop (job can run for minutes). If a user opens RadarScreen and saves a manual weight edit between T0 and their turn in the loop, the job's later `.update()` — computed from the stale T0 snapshot + that week's event tallies, not the user's fresh edit — silently overwrites it. No error, no merge, no conflict surfaced. Narrow window (only while the job is actively running, ~weekly) and self-healing (user can re-save), so not blocking at current tester-scale. Real fix needs optimistic concurrency (compare-and-swap against `updated_at`, or a Postgres RPC doing an atomic jsonb merge against the live row instead of a client-computed full snapshot). Flagged by /ship red-team review 2026-07-08.
+
 ## Web (repositioned 2026-07-04: marketing/intro site only, no product features)
 
 ### Root-side coverage gaps
