@@ -47,24 +47,47 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const WINDOW_DAYS = 7;
 const VALID_DOMAIN_IDS = new Set(DOMAINS.map((d) => d.id));
 const QUALIFYING_EVENT_TYPES = ["swap", "share", "source_tap"] as const;
+const PAGE_SIZE = 500;
 
-/** Users with a real, non-empty domainWeights map — the only ones this job touches. */
+/**
+ * Users with a real, non-empty domainWeights map — the only ones this job touches.
+ * Paginated (matches scripts/repair-arxiv-categories.ts's convention) — an
+ * unbounded .select() silently truncates at the project's Max Rows setting
+ * with no error, so an unpaginated query here would eventually drop users
+ * from a run with no signal that it happened.
+ */
 async function fetchEligiblePersonas(): Promise<RebalancePersonaRow[]> {
-  const { data, error } = await supabase.from("user_personas").select("user_id, domain_weights");
-  if (error) throw new Error(`fetch personas failed: ${error.message}`);
-  return ((data ?? []) as RebalancePersonaRow[]).filter(isEligiblePersona);
+  const all: RebalancePersonaRow[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("user_personas")
+      .select("user_id, domain_weights")
+      .order("user_id")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`fetch personas failed: ${error.message}`);
+    all.push(...((data ?? []) as RebalancePersonaRow[]));
+    if ((data ?? []).length < PAGE_SIZE) break;
+  }
+  return all.filter(isEligiblePersona);
 }
 
 async function fetchWindowEvents(userIds: string[], sinceIso: string): Promise<RebalanceEventRow[]> {
   if (userIds.length === 0) return [];
-  const { data, error } = await supabase
-    .from("user_events")
-    .select("user_id, event_type, metadata")
-    .in("user_id", userIds)
-    .in("event_type", [...QUALIFYING_EVENT_TYPES])
-    .gte("created_at", sinceIso);
-  if (error) throw new Error(`fetch events failed: ${error.message}`);
-  return (data ?? []) as RebalanceEventRow[];
+  const all: RebalanceEventRow[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("user_events")
+      .select("user_id, event_type, metadata")
+      .in("user_id", userIds)
+      .in("event_type", [...QUALIFYING_EVENT_TYPES])
+      .gte("created_at", sinceIso)
+      .order("created_at")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`fetch events failed: ${error.message}`);
+    all.push(...((data ?? []) as RebalanceEventRow[]));
+    if ((data ?? []).length < PAGE_SIZE) break;
+  }
+  return all;
 }
 
 async function main() {

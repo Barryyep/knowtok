@@ -14,9 +14,13 @@ WidgetKit timeline only re-reads App Group data; after midnight it shows yesterd
 **Priority:** P1
 Code complete 2026-07-07: `src/lib/curiosity-rebalance.ts` (pure weighting + tallying logic, 22 tests), `scripts/rebalance-curiosity.ts` (weekly job), `.github/workflows/weekly-curiosity-rebalance.yml` (Sunday cron), mobile-side `fact.domain` logging fix + `domain_weights` sync in `personaService.ts`. `supabase/migrations/20260326_007_curiosity_events.sql` already applied to production (widened `user_events.event_type` CHECK to accept mobile's vocabulary; added `user_personas.domain_weights` column) — mobile event inserts are unblocked now. One step left: merge to `main` — GitHub Actions cron only fires from the default branch, so the weekly workflow is inert until then.
 
-### rebalance-curiosity.ts doesn't scale past a small user base
+### rebalance-curiosity.ts writes don't scale past a small user base
 **Priority:** P3
-`fetchEligiblePersonas()` does an unbounded SELECT of every `user_personas` row (no query-side filter, filters client-side), and the update loop issues one sequential `.update()` per changed persona instead of a batched `.upsert()`. Fine at current tester-scale; before real growth, push the non-empty-`domain_weights` filter into the query and batch the writes. Flagged by /ship performance specialist 2026-07-08.
+Reads are now paginated (`.range()`, fixed 2026-07-08 per /ship adversarial review — the prior unbounded SELECT risked silent truncation past the project's Supabase Max Rows setting). The write side is still one sequential `.update()` per changed persona instead of a batched `.upsert()`. Fine at current tester-scale; before real growth, batch the writes.
+
+### Weekly rebalance job logs full UUID + weight maps to CI logs
+**Priority:** P3
+`scripts/rebalance-curiosity.ts`'s per-user `[OK]` log line prints the raw `user_id` and the full before/after `domain_weights` map to GitHub Actions logs every run — a behavioral profile in plaintext, subject to whatever Actions log retention/access the org has rather than the app's own access controls. Low urgency at current tiny tester count and private-repo Actions logs, but tighten before wider release: log only aggregate counts (updated/unchanged/failed), not per-user weight maps. Flagged by /ship adversarial review 2026-07-08.
 
 ### Weekly rebalance job can clobber a concurrent manual RadarScreen edit
 **Priority:** P2

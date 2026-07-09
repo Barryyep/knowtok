@@ -2,8 +2,12 @@ name: Weekly curiosity rebalance
 
 # "隐式好奇心学习" — nudges each user's domain_weights from the trailing
 # week's swap/share/source_tap events (scripts/rebalance-curiosity.ts).
-# Only touches personas that already have domainWeights set; safe to
-# manually re-run (idempotent per window, no destructive writes).
+# Only touches personas that already have domainWeights set; no destructive
+# writes. NOT idempotent, though: the job always re-tallies a rolling 7-day
+# window with no watermark, so a manual re-run within days of the last one
+# re-counts overlapping events and double-applies that week's nudge. Bounded
+# (clamped to WEIGHT_FLOOR/CEILING, small REBALANCE_STEP) and self-correcting
+# next week, but don't treat "just re-run it" as a free action.
 on:
   schedule:
     # Sunday 21:00 UTC == 05:00 Asia/Shanghai Monday — low traffic, and lands
