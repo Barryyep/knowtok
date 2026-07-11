@@ -1,8 +1,9 @@
 name: Daily data ingest
 
-# Pulls fresh content into Supabase every morning (China time). arXiv first,
-# then Our World in Data (the consumer-domain backbone), then OpenAlex
-# (Climate-only). All steps upsert idempotently, so a manual re-run is safe.
+# Pulls fresh content into Supabase every morning (China time) from 6
+# independent sources (arXiv, PubMed, OWID, OpenAlex, NASA APOD, OWID
+# grapher). All steps upsert idempotently, so a manual re-run is safe, and
+# each step has continue-on-error so one source's failure can't skip the rest.
 on:
   schedule:
     # 22:00 UTC == 06:00 Asia/Shanghai — content is ready before people wake up.
@@ -39,25 +40,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # continue-on-error on every step below: these 6 sources are independent
+      # of each other. Without this, one source throwing (a transient API
+      # error, a rate limit) makes GitHub Actions skip every step after it —
+      # silently zeroing out unrelated pipelines for the whole day. A step
+      # failure still shows red in the Actions UI; it just no longer blocks
+      # its siblings.
       - name: Ingest arXiv papers (daily)
         run: npm run ingest:papers -- --mode daily
+        continue-on-error: true
 
       - name: Ingest PubMed high-impact journals (daily)
         run: npx tsx scripts/ingest-pubmed.ts
+        continue-on-error: true
 
       - name: Ingest Our World in Data insights
         run: npx tsx scripts/ingest-owid.ts
+        continue-on-error: true
 
       - name: Ingest OpenAlex works (Climate-only)
         run: npx tsx scripts/ingest-openalex.ts
+        continue-on-error: true
 
       - name: Ingest NASA APOD (daily, space domain)
         run: npx tsx scripts/ingest-apod.ts
+        continue-on-error: true
 
       # Idempotent on source_id — daily reruns skip existing facts (zero LLM
       # cost) and only pick up rows when OWID publishes new data years.
       - name: Ingest OWID grapher trend facts
         run: npx tsx scripts/ingest-owid-grapher.ts
+        continue-on-error: true
 
   # Wikidata evergreen backfill — one-shot, run manually via workflow_dispatch.
   # Not included in the daily chain (CC0 facts don't change daily).

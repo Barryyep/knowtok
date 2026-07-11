@@ -18,7 +18,7 @@
  *       metadata.venue='NASA APOD'.
  *
  * Usage:
- *   npx tsx scripts/ingest-apod.ts                    # today only
+ *   npx tsx scripts/ingest-apod.ts                    # rolling DAILY_LOOKBACK_DAYS window
  *   npx tsx scripts/ingest-apod.ts --backfill         # last 14 days
  *   npx tsx scripts/ingest-apod.ts --date=2026-06-15  # specific date
  */
@@ -31,6 +31,7 @@ loadDotenv({ path: ".env", override: false, quiet: true });
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { generateRelevance, scoreStructure } from "../src/lib/relevance";
+import { rollingLookbackWindow } from "../src/lib/ingest-window";
 
 // ── env ──────────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,10 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+
+// Daily-mode rescan window — see the "Daily run" comment in main() for why
+// this isn't just "today".
+const DAILY_LOOKBACK_DAYS = 3;
 
 // ── META_HOOK_PATTERN — mirrors src/lib/llm.ts ───────────────────────────────
 const META_HOOK_PATTERN =
@@ -268,9 +273,16 @@ async function main() {
     console.log(`[apod] single date: ${dateArg}`);
     entries = await fetchApodDate(dateArg);
   } else {
-    // Daily run — just today
-    console.log(`[apod] daily mode: fetching ${today}`);
-    entries = await fetchApodDate(today);
+    // Daily run: a rolling window, not just today. The cron fires at 06:00
+    // Asia/Shanghai (22:00 UTC) — NASA's "today" entry doesn't always exist
+    // yet at that moment relative to US Eastern time, and a bare fetch
+    // failure here used to crash the whole step with no retry. Re-scanning
+    // the last few days is free (fetchExistingDates is idempotent on date),
+    // so a day that wasn't published yet at run time gets picked up on the
+    // next run instead of being silently lost forever.
+    const { startDate: start, endDate: end } = rollingLookbackWindow(new Date(), DAILY_LOOKBACK_DAYS);
+    console.log(`[apod] daily mode: fetching ${start} → ${end}`);
+    entries = await fetchApodRange(start, end);
   }
 
   console.log(`[apod] fetched ${entries.length} entries`);

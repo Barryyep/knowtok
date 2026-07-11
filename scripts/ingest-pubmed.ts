@@ -38,7 +38,7 @@
  *   metadata.venue=<journal display name>, metadata.relevance=<scored>.
  *
  * Usage:
- *   npx tsx scripts/ingest-pubmed.ts                    # yesterday only
+ *   npx tsx scripts/ingest-pubmed.ts                    # rolling DEFAULT_LOOKBACK_DAYS window
  *   npx tsx scripts/ingest-pubmed.ts --date=2026-07-03  # a specific PDAT day
  *   npx tsx scripts/ingest-pubmed.ts --days=3           # last 3 days (backfill)
  *
@@ -56,6 +56,7 @@ import OpenAI from "openai";
 import { XMLParser } from "fast-xml-parser";
 import { DOMAINS } from "../mobile/src/lib/taxonomy";
 import { generateRelevance, scoreStructure } from "../src/lib/relevance";
+import { rollingLookbackWindow } from "../src/lib/ingest-window";
 
 // ── env ──────────────────────────────────────────────────────────────────────
 
@@ -123,7 +124,15 @@ const DOMAIN_MENU = DOMAINS.map((d) => ({ id: d.id, zh: d.zh, en: d.en }));
 const VALID_DOMAIN_IDS = new Set(DOMAINS.map((d) => d.id));
 
 // Extraction/insert caps.
-const RETMAX = 400;
+// NCBI's PDAT (publication date) index lags real-time by a few days — an
+// article dated "yesterday" often doesn't show up in esearch until 2-3 days
+// later. A single-day, non-overlapping window (the old default) permanently
+// misses whatever wasn't indexed yet at run time. Instead, every run rescans
+// a rolling window; fetchExistingPmids() (idempotent on PMID) makes re-scanning
+// already-seen days free, so widening the window costs nothing but esearch/efetch
+// calls for PMIDs we'll just skip.
+const DEFAULT_LOOKBACK_DAYS = 5;
+const RETMAX = 1000; // must exceed a 5-day, 15-journal esearch result count — see DEFAULT_LOOKBACK_DAYS
 const MAX_EXTRACT = 200; // bound LLM cost per run regardless of window size (~$0.08)
 const DAILY_CAP = 60; // keep top-N by hook_strength across all venues
 const PER_VENUE_CAP = 10; // no single journal (e.g. PNAS) may dominate a run
@@ -544,10 +553,10 @@ async function main() {
     start.setDate(start.getDate() - (n - 1));
     minDate = ymd(start);
   } else {
-    // default: yesterday only
-    const y = new Date(now);
-    y.setDate(y.getDate() - 1);
-    minDate = maxDate = ymd(y);
+    // default: rolling lookback (see DEFAULT_LOOKBACK_DAYS above) — NOT just
+    // yesterday. PDAT indexing lag means a single-day window silently and
+    // permanently drops articles that weren't indexed yet at run time.
+    ({ startDate: minDate, endDate: maxDate } = rollingLookbackWindow(now, DEFAULT_LOOKBACK_DAYS));
   }
 
   console.log(
