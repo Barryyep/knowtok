@@ -40,7 +40,7 @@ const SUPABASE_URL =
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const NASA_API_KEY = process.env.NASA_API_KEY ?? "DEMO_KEY";
-const OPENAI_MODEL = process.env.OPENAI_MODEL_LOW_COST ?? "gpt-4o-mini";
+const OPENAI_MODEL = process.env.OPENAI_MODEL_LOW_COST || "gpt-4o-mini";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !OPENAI_API_KEY) {
   console.error(
