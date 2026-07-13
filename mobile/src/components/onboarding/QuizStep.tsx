@@ -69,6 +69,18 @@ export function QuizStep({
   // 「其他」 expand/collapse state.
   const [otherExpanded, setOtherExpanded] = useState(false);
   const [otherText, setOtherText] = useState("");
+  const scrollRef = useRef<ScrollView>(null);
+
+  // styles.body centers content (flexGrow:1, justifyContent:"center"), and
+  // KeyboardAvoidingView's "padding" behavior only shrinks the viewport for
+  // the keyboard — it never scrolls to reveal a newly-mounted view. Without
+  // this, the 「其他」 TextInput (appended last, after the option slips) can
+  // render below the fold, hidden behind the keyboard, right when it appears.
+  useEffect(() => {
+    if (!otherExpanded) return;
+    const id = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    return () => clearTimeout(id);
+  }, [otherExpanded]);
 
   useEffect(() => {
     Animated.stagger(
@@ -125,6 +137,7 @@ export function QuizStep({
   if (item.kind === "choice") {
     return (
       <ScrollView
+        ref={scrollRef}
         style={styles.root}
         contentContainerStyle={[
           styles.body,
@@ -135,6 +148,9 @@ export function QuizStep({
       >
         <Text style={[styles.title, { fontFamily: heroFont(language) }]}>
           {item[language]}
+        </Text>
+        <Text style={[styles.selectHint, { fontFamily: uiFont(language) }]}>
+          {strings.singleSelectHint}
         </Text>
 
         <View style={styles.deck}>
@@ -286,6 +302,9 @@ export function QuizStep({
           <Text style={[styles.title, { fontFamily: heroFont(language) }]}>
             {prompt}
           </Text>
+          <Text style={[styles.selectHint, { fontFamily: uiFont(language) }]}>
+            {strings.multiSelectHint}
+          </Text>
           {cardSlips}
         </ScrollView>
         <View style={[styles.multiFooter, { paddingBottom: bottomInset + spacing.md }]}>
@@ -312,6 +331,9 @@ export function QuizStep({
       <Text style={[styles.title, { fontFamily: heroFont(language) }]}>
         {prompt}
       </Text>
+      <Text style={[styles.selectHint, { fontFamily: uiFont(language) }]}>
+        {strings.singleSelectHint}
+      </Text>
       {cardSlips}
     </ScrollView>
   );
@@ -329,6 +351,11 @@ const styles = StyleSheet.create({
     color: colors.inkText,
     fontSize: 22,
     lineHeight: 30,
+    marginBottom: spacing.sm,
+  },
+  selectHint: {
+    color: colors.paraSoft,
+    fontSize: 13,
     marginBottom: spacing.sm,
   },
   deck: { gap: spacing.sm, marginTop: spacing.md },

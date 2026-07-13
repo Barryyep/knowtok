@@ -39,6 +39,8 @@ export interface UIStrings {
   stepBack: string;
   continueLabel: string;
   skipLabel: string;
+  singleSelectHint: string;
+  multiSelectHint: string;
   nameTitle: string;
   nameSubtitle: string;
   ageTitle: string;
@@ -116,6 +118,8 @@ const en: UIStrings = {
   stepBack: "Back",
   continueLabel: "Continue",
   skipLabel: "skip",
+  singleSelectHint: "Pick one",
+  multiSelectHint: "Pick as many as you like",
   nameTitle: "One last thing — what should we call you",
   nameSubtitle: "Blank is fine.",
   ageTitle: "Which stretch of life",
@@ -193,6 +197,8 @@ const zh: UIStrings = {
   stepBack: "返回",
   continueLabel: "继续",
   skipLabel: "跳过",
+  singleSelectHint: "单选一个",
+  multiSelectHint: "可以多选",
   nameTitle: "最后一件事:怎么称呼你",
   nameSubtitle: "可以留空。",
   ageTitle: "你在哪个人生阶段",
