@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -76,10 +77,22 @@ export function QuizStep({
   // the keyboard — it never scrolls to reveal a newly-mounted view. Without
   // this, the 「其他」 TextInput (appended last, after the option slips) can
   // render below the fold, hidden behind the keyboard, right when it appears.
+  //
+  // This must be driven by the keyboard's OWN show event, not a guessed
+  // setTimeout: autoFocus on the TextInput fires the keyboard animation
+  // (~250-300ms) at roughly the same moment this effect runs, and
+  // KeyboardAvoidingView's padding adjustment tracks that same animation.
+  // A fixed short delay races both of them — scrollToEnd ends up computing
+  // its target against a frame that hasn't finished shrinking yet, so the
+  // scroll lands short once the keyboard settles. keyboardDidShow only
+  // fires once the animation (and thus the padding adjustment) is done, so
+  // the frame scrollToEnd sees is already final.
   useEffect(() => {
     if (!otherExpanded) return;
-    const id = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
-    return () => clearTimeout(id);
+    const sub = Keyboard.addListener("keyboardDidShow", () => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
   }, [otherExpanded]);
 
   useEffect(() => {
