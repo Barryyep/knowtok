@@ -36,6 +36,7 @@ export interface UIStrings {
   otherLabel: string;
   otherPlaceholder: string;
   otherConfirm: string;
+  otherCancel: string;
   stepBack: string;
   continueLabel: string;
   skipLabel: string;
@@ -115,6 +116,7 @@ const en: UIStrings = {
   otherLabel: "Something else…",
   otherPlaceholder: "Type here",
   otherConfirm: "Done",
+  otherCancel: "Back to options",
   stepBack: "Back",
   continueLabel: "Continue",
   skipLabel: "skip",
@@ -194,6 +196,7 @@ const zh: UIStrings = {
   otherLabel: "其他…",
   otherPlaceholder: "写在这里",
   otherConfirm: "好",
+  otherCancel: "返回选项",
   stepBack: "返回",
   continueLabel: "继续",
   skipLabel: "跳过",

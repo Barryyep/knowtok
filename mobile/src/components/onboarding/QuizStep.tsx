@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -70,30 +69,6 @@ export function QuizStep({
   // 「其他」 expand/collapse state.
   const [otherExpanded, setOtherExpanded] = useState(false);
   const [otherText, setOtherText] = useState("");
-  const scrollRef = useRef<ScrollView>(null);
-
-  // styles.body centers content (flexGrow:1, justifyContent:"center"), and
-  // KeyboardAvoidingView's "padding" behavior only shrinks the viewport for
-  // the keyboard — it never scrolls to reveal a newly-mounted view. Without
-  // this, the 「其他」 TextInput (appended last, after the option slips) can
-  // render below the fold, hidden behind the keyboard, right when it appears.
-  //
-  // This must be driven by the keyboard's OWN show event, not a guessed
-  // setTimeout: autoFocus on the TextInput fires the keyboard animation
-  // (~250-300ms) at roughly the same moment this effect runs, and
-  // KeyboardAvoidingView's padding adjustment tracks that same animation.
-  // A fixed short delay races both of them — scrollToEnd ends up computing
-  // its target against a frame that hasn't finished shrinking yet, so the
-  // scroll lands short once the keyboard settles. keyboardDidShow only
-  // fires once the animation (and thus the padding adjustment) is done, so
-  // the frame scrollToEnd sees is already final.
-  useEffect(() => {
-    if (!otherExpanded) return;
-    const sub = Keyboard.addListener("keyboardDidShow", () => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    });
-    return () => sub.remove();
-  }, [otherExpanded]);
 
   useEffect(() => {
     Animated.stagger(
@@ -150,7 +125,6 @@ export function QuizStep({
   if (item.kind === "choice") {
     return (
       <ScrollView
-        ref={scrollRef}
         style={styles.root}
         contentContainerStyle={[
           styles.body,
@@ -167,37 +141,43 @@ export function QuizStep({
         </Text>
 
         <View style={styles.deck}>
-          {item.options.map((option, i) => {
-            const anim = staggerAnims[i] ?? new Animated.Value(1);
-            const isSelected = selectedId === option.id;
-            return (
-              <Animated.View
-                key={option.id}
-                style={{
-                  opacity: anim,
-                  transform: [
-                    {
-                      translateY: anim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [10, 0],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <Pressable
-                  style={[styles.slip, isSelected && styles.slipSelected]}
-                  onPress={() => handleChoicePick(option)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
+          {/* While 其他 is expanded, the sibling options are hidden rather than
+              scrolled-around: this is a fixed 2-line-tall block that can never
+              overflow below the keyboard, so there's nothing to scroll into
+              view in the first place — see the git history on this file for
+              two failed attempts at scrolling a taller, still-visible list. */}
+          {!otherExpanded &&
+            item.options.map((option, i) => {
+              const anim = staggerAnims[i] ?? new Animated.Value(1);
+              const isSelected = selectedId === option.id;
+              return (
+                <Animated.View
+                  key={option.id}
+                  style={{
+                    opacity: anim,
+                    transform: [
+                      {
+                        translateY: anim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [10, 0],
+                        }),
+                      },
+                    ],
+                  }}
                 >
-                  <Text style={[styles.slipText, { fontFamily: heroFont(language) }]}>
-                    {option[language]}
-                  </Text>
-                </Pressable>
-              </Animated.View>
-            );
-          })}
+                  <Pressable
+                    style={[styles.slip, isSelected && styles.slipSelected]}
+                    onPress={() => handleChoicePick(option)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                  >
+                    <Text style={[styles.slipText, { fontFamily: heroFont(language) }]}>
+                      {option[language]}
+                    </Text>
+                  </Pressable>
+                </Animated.View>
+              );
+            })}
 
           {item.allowOther && !otherExpanded && (
             <Pressable
@@ -235,9 +215,24 @@ export function QuizStep({
               </Pressable>
             </View>
           )}
+
+          {item.allowOther && otherExpanded && (
+            <Pressable
+              onPress={() => {
+                setOtherExpanded(false);
+                setOtherText("");
+              }}
+              style={styles.otherCancelWrap}
+              hitSlop={8}
+            >
+              <Text style={[styles.otherCancelText, { fontFamily: uiFont(language) }]}>
+                {strings.otherCancel}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
-        {item.skippable && (
+        {item.skippable && !otherExpanded && (
           <Pressable onPress={onSkip} style={styles.skipWrap}>
             <Text style={[styles.skipText, { fontFamily: uiFont(language) }]}>{strings.skipLabel}</Text>
           </Pressable>
@@ -418,6 +413,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 13,
   },
+  otherCancelWrap: { marginTop: spacing.md, alignItems: "center" },
+  otherCancelText: { color: colors.inkMuted, fontSize: 14 },
   skipWrap: { marginTop: spacing.lg, alignItems: "center" },
   skipText: { color: colors.inkMuted, fontSize: 14 },
   multiFooter: {
