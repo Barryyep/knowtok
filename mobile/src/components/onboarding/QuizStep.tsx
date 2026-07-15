@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +15,7 @@ import { CARD_PROMPTS } from "../../lib/quiz";
 import type { QuizItem, QuizOption } from "../../lib/quiz";
 import type { Spark } from "../../lib/taxonomy";
 import type { AppLanguage } from "../../lib/types";
+import { useKeyboardHeight } from "../../lib/useKeyboardHeight";
 import { colors, fonts, heroFont, radius, spacing, uiFont } from "../../theme";
 import { PrimaryPill } from "./PrimaryPill";
 
@@ -73,6 +72,7 @@ export function QuizStep({
   const [otherExpanded, setOtherExpanded] = useState(false);
   const [otherText, setOtherText] = useState("");
   const otherInputRef = useRef<TextInput>(null);
+  const keyboardHeight = useKeyboardHeight();
 
   // Deliberately NOT autoFocus. autoFocus fires TextInput.focus() (and
   // therefore the keyboard-show event) synchronously on mount, before
@@ -153,22 +153,15 @@ export function QuizStep({
       }}
     >
       {/*
-        Four prior attempts, all still inside ProfileScreen's outer
-        KeyboardAvoidingView + Animated.View(motionStyle) stack, reproduced
-        the same bug on a real device: the input flashes correctly for a
-        moment, then vanishes as the keyboard finishes rising (typing and
-        the confirm button kept working the whole time, so it was still
-        mounted — just not painted). That points at the OUTER screen's
-        KeyboardAvoidingView/animated-transform combination miscalculating
-        once the keyboard event fires, not at anything in this file.
-        A Modal renders in its own native layer (a separate UIWindow on
-        iOS) with its own KeyboardAvoidingView below — completely outside
-        that outer stack, so whatever it's doing can't reach in here.
+        Not KeyboardAvoidingView — see useKeyboardHeight's doc comment.
+        Its internal onLayout-based frame measurement is the actual root
+        cause found after six attempts (this Modal was itself one of
+        them, and still reproduced the bug with its own separate
+        KeyboardAvoidingView instance, ruling out ProfileScreen's outer
+        stack as the cause). keyboardHeight is driven directly by the
+        OS keyboard event instead.
       */}
-      <KeyboardAvoidingView
-        style={otherPanelStyles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View style={[otherPanelStyles.overlay, { paddingBottom: keyboardHeight }]}>
         <Pressable
           style={otherPanelStyles.scrim}
           onPress={() => {
@@ -211,7 +204,7 @@ export function QuizStep({
             </Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 

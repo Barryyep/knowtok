@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -15,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { systemLanguage, t } from "../i18n";
+import { useKeyboardHeight } from "../lib/useKeyboardHeight";
 import {
   QUIZ_SEQUENCE,
   applyCardPicks,
@@ -56,6 +56,7 @@ interface Props {
 // ─── ProfileScreen ────────────────────────────────────────────────────────────
 export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props) {
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
 
   const [stageIndex, setStageIndex] = useState(0);
   const [quizState, setQuizState] = useState<QuizState>(initialQuizState);
@@ -221,10 +222,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={[styles.root, { paddingBottom: keyboardHeight }]}>
       {!isNote && (
         <View style={[styles.chrome, { paddingTop: insets.top + spacing.sm }]}>
           <View style={styles.chromeSide}>
@@ -342,7 +340,7 @@ export function ProfileScreen({ initial, isFirstRun, onSaved, onCancel }: Props)
           />
         )}
       </Animated.View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
