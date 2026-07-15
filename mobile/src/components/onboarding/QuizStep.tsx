@@ -121,6 +121,57 @@ export function QuizStep({
     onCardPicks?.(selectedIds);
   };
 
+  // ── Choice: 其他 expanded ──────────────────────────────────────────────────
+  // Fully separate render path — its own View tree and its own StyleSheet
+  // block (otherPanelStyles below), sharing nothing with the options-list
+  // rendering. Three prior attempts (a scroll-into-view timer, a
+  // keyboardDidShow-driven scroll, then hiding the sibling options inside
+  // the same tree) all still reproduced a blank screen on a real device —
+  // typing and the confirm button kept working, so the input was mounted
+  // and functional the whole time, just not visibly painted. Isolating this
+  // into its own tree with explicit, hardcoded-opaque backgrounds rules out
+  // any interaction with the options list's Animated.View/style-array stack
+  // as the cause, rather than guessing at yet another timing fix.
+  if (item.kind === "choice" && item.allowOther && otherExpanded) {
+    return (
+      <View style={otherPanelStyles.root}>
+        <Text style={[otherPanelStyles.title, { fontFamily: heroFont(language) }]}>
+          {item[language]}
+        </Text>
+        <View style={otherPanelStyles.inputRow}>
+          <TextInput
+            style={[otherPanelStyles.input, { fontFamily: heroFont(language) }]}
+            value={otherText}
+            onChangeText={setOtherText}
+            autoFocus
+            maxLength={120}
+            placeholder={strings.otherPlaceholder}
+            placeholderTextColor={otherPanelStyles.placeholder.color as string}
+            returnKeyType="done"
+            onSubmitEditing={handleOtherConfirm}
+          />
+        </View>
+        <Pressable onPress={handleOtherConfirm} style={otherPanelStyles.confirmBtn} hitSlop={8}>
+          <Text style={[otherPanelStyles.confirmText, { fontFamily: uiFont(language) }]}>
+            {strings.otherConfirm}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            setOtherExpanded(false);
+            setOtherText("");
+          }}
+          style={otherPanelStyles.cancelWrap}
+          hitSlop={8}
+        >
+          <Text style={[otherPanelStyles.cancelText, { fontFamily: uiFont(language) }]}>
+            {strings.otherCancel}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   // ── Choice ───────────────────────────────────────────────────────────────────
   if (item.kind === "choice") {
     return (
@@ -141,45 +192,39 @@ export function QuizStep({
         </Text>
 
         <View style={styles.deck}>
-          {/* While 其他 is expanded, the sibling options are hidden rather than
-              scrolled-around: this is a fixed 2-line-tall block that can never
-              overflow below the keyboard, so there's nothing to scroll into
-              view in the first place — see the git history on this file for
-              two failed attempts at scrolling a taller, still-visible list. */}
-          {!otherExpanded &&
-            item.options.map((option, i) => {
-              const anim = staggerAnims[i] ?? new Animated.Value(1);
-              const isSelected = selectedId === option.id;
-              return (
-                <Animated.View
-                  key={option.id}
-                  style={{
-                    opacity: anim,
-                    transform: [
-                      {
-                        translateY: anim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [10, 0],
-                        }),
-                      },
-                    ],
-                  }}
+          {item.options.map((option, i) => {
+            const anim = staggerAnims[i] ?? new Animated.Value(1);
+            const isSelected = selectedId === option.id;
+            return (
+              <Animated.View
+                key={option.id}
+                style={{
+                  opacity: anim,
+                  transform: [
+                    {
+                      translateY: anim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [10, 0],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <Pressable
+                  style={[styles.slip, isSelected && styles.slipSelected]}
+                  onPress={() => handleChoicePick(option)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
                 >
-                  <Pressable
-                    style={[styles.slip, isSelected && styles.slipSelected]}
-                    onPress={() => handleChoicePick(option)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                  >
-                    <Text style={[styles.slipText, { fontFamily: heroFont(language) }]}>
-                      {option[language]}
-                    </Text>
-                  </Pressable>
-                </Animated.View>
-              );
-            })}
+                  <Text style={[styles.slipText, { fontFamily: heroFont(language) }]}>
+                    {option[language]}
+                  </Text>
+                </Pressable>
+              </Animated.View>
+            );
+          })}
 
-          {item.allowOther && !otherExpanded && (
+          {item.allowOther && (
             <Pressable
               style={[styles.slip, styles.slipOther, selectedId === "__other__" && styles.slipSelected]}
               onPress={() => setOtherExpanded(true)}
@@ -190,49 +235,9 @@ export function QuizStep({
               </Text>
             </Pressable>
           )}
-
-          {item.allowOther && otherExpanded && (
-            <View
-              style={[
-                styles.slip,
-                styles.slipOtherExpanded,
-                selectedId === "__other__" && styles.slipSelected,
-              ]}
-            >
-              <TextInput
-                style={[styles.otherInput, { fontFamily: heroFont(language) }]}
-                value={otherText}
-                onChangeText={setOtherText}
-                autoFocus
-                maxLength={120}
-                placeholder={strings.otherPlaceholder}
-                placeholderTextColor={colors.paraSoft}
-                returnKeyType="done"
-                onSubmitEditing={handleOtherConfirm}
-              />
-              <Pressable onPress={handleOtherConfirm} hitSlop={8} style={styles.otherConfirmBtn}>
-                <Text style={styles.otherConfirmText}>{strings.otherConfirm}</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {item.allowOther && otherExpanded && (
-            <Pressable
-              onPress={() => {
-                setOtherExpanded(false);
-                setOtherText("");
-              }}
-              style={styles.otherCancelWrap}
-              hitSlop={8}
-            >
-              <Text style={[styles.otherCancelText, { fontFamily: uiFont(language) }]}>
-                {strings.otherCancel}
-              </Text>
-            </Pressable>
-          )}
         </View>
 
-        {item.skippable && !otherExpanded && (
+        {item.skippable && (
           <Pressable onPress={onSkip} style={styles.skipWrap}>
             <Text style={[styles.skipText, { fontFamily: uiFont(language) }]}>{strings.skipLabel}</Text>
           </Pressable>
@@ -386,12 +391,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink800,
     borderBottomColor: colors.inkLine,
   },
-  slipOtherExpanded: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: spacing.md,
-    minHeight: 56,
-  },
   slipSelected: {
     borderLeftWidth: 4,
     borderLeftColor: colors.persimmon,
@@ -400,21 +399,6 @@ const styles = StyleSheet.create({
   slipText: { color: colors.paraInk, fontSize: 17, lineHeight: 26 },
   slipTextCompact: { color: colors.paraInk, fontSize: 15, lineHeight: 22 },
   slipTextMuted: { color: colors.inkMuted, fontSize: 16, lineHeight: 24 },
-  otherInput: {
-    flex: 1,
-    color: colors.paraInk,
-    fontSize: 16,
-    lineHeight: 24,
-    paddingVertical: 0,
-  },
-  otherConfirmBtn: { marginLeft: spacing.sm },
-  otherConfirmText: {
-    color: colors.persimmon,
-    fontFamily: fonts.mono,
-    fontSize: 13,
-  },
-  otherCancelWrap: { marginTop: spacing.md, alignItems: "center" },
-  otherCancelText: { color: colors.inkMuted, fontSize: 14 },
   skipWrap: { marginTop: spacing.lg, alignItems: "center" },
   skipText: { color: colors.inkMuted, fontSize: 14 },
   multiFooter: {
@@ -424,4 +408,50 @@ const styles = StyleSheet.create({
     borderTopColor: colors.inkLine,
     backgroundColor: colors.ink900,
   },
+});
+
+// Fully separate from `styles` above — see the comment on the 其他-expanded
+// render branch for why. Explicit backgroundColor on the root and no
+// centering/flex tricks: a flat, top-anchored column that can't collapse.
+const otherPanelStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.ink900,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  title: {
+    color: colors.inkText,
+    fontSize: 22,
+    lineHeight: 30,
+    marginBottom: spacing.lg,
+  },
+  inputRow: {
+    backgroundColor: colors.paper0,
+    borderRadius: radius.slip,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.paperEdge,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    minHeight: 56,
+    justifyContent: "center",
+  },
+  input: {
+    color: colors.paraInk,
+    fontSize: 16,
+    lineHeight: 24,
+    paddingVertical: 0,
+  },
+  placeholder: { color: colors.paraSoft },
+  confirmBtn: {
+    marginTop: spacing.md,
+    alignSelf: "flex-start",
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    backgroundColor: colors.persimmon,
+  },
+  confirmText: { color: colors.paper0, fontSize: 15 },
+  cancelWrap: { marginTop: spacing.lg, alignItems: "flex-start" },
+  cancelText: { color: colors.inkMuted, fontSize: 14 },
 });
