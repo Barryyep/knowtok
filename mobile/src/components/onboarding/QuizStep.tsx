@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -121,128 +124,155 @@ export function QuizStep({
     onCardPicks?.(selectedIds);
   };
 
-  // ── Choice: 其他 expanded ──────────────────────────────────────────────────
-  // Fully separate render path — its own View tree and its own StyleSheet
-  // block (otherPanelStyles below), sharing nothing with the options-list
-  // rendering. Three prior attempts (a scroll-into-view timer, a
-  // keyboardDidShow-driven scroll, then hiding the sibling options inside
-  // the same tree) all still reproduced a blank screen on a real device —
-  // typing and the confirm button kept working, so the input was mounted
-  // and functional the whole time, just not visibly painted. Isolating this
-  // into its own tree with explicit, hardcoded-opaque backgrounds rules out
-  // any interaction with the options list's Animated.View/style-array stack
-  // as the cause, rather than guessing at yet another timing fix.
-  if (item.kind === "choice" && item.allowOther && otherExpanded) {
-    return (
-      <View style={otherPanelStyles.root}>
-        <Text style={[otherPanelStyles.title, { fontFamily: heroFont(language) }]}>
-          {item[language]}
-        </Text>
-        <View style={otherPanelStyles.inputRow}>
-          <TextInput
-            style={[otherPanelStyles.input, { fontFamily: heroFont(language) }]}
-            value={otherText}
-            onChangeText={setOtherText}
-            autoFocus
-            maxLength={120}
-            placeholder={strings.otherPlaceholder}
-            placeholderTextColor={otherPanelStyles.placeholder.color as string}
-            returnKeyType="done"
-            onSubmitEditing={handleOtherConfirm}
-          />
-        </View>
-        <Pressable onPress={handleOtherConfirm} style={otherPanelStyles.confirmBtn} hitSlop={8}>
-          <Text style={[otherPanelStyles.confirmText, { fontFamily: uiFont(language) }]}>
-            {strings.otherConfirm}
-          </Text>
-        </Pressable>
+  // 「其他」 free-text entry, rendered as a Modal — see the comment above the
+  // JSX below for why.
+  const otherModal = item.kind === "choice" && item.allowOther && (
+    <Modal
+      visible={otherExpanded}
+      animationType="slide"
+      transparent
+      onRequestClose={() => {
+        setOtherExpanded(false);
+        setOtherText("");
+      }}
+    >
+      {/*
+        Four prior attempts, all still inside ProfileScreen's outer
+        KeyboardAvoidingView + Animated.View(motionStyle) stack, reproduced
+        the same bug on a real device: the input flashes correctly for a
+        moment, then vanishes as the keyboard finishes rising (typing and
+        the confirm button kept working the whole time, so it was still
+        mounted — just not painted). That points at the OUTER screen's
+        KeyboardAvoidingView/animated-transform combination miscalculating
+        once the keyboard event fires, not at anything in this file.
+        A Modal renders in its own native layer (a separate UIWindow on
+        iOS) with its own KeyboardAvoidingView below — completely outside
+        that outer stack, so whatever it's doing can't reach in here.
+      */}
+      <KeyboardAvoidingView
+        style={otherPanelStyles.overlay}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <Pressable
+          style={otherPanelStyles.scrim}
           onPress={() => {
             setOtherExpanded(false);
             setOtherText("");
           }}
-          style={otherPanelStyles.cancelWrap}
-          hitSlop={8}
-        >
-          <Text style={[otherPanelStyles.cancelText, { fontFamily: uiFont(language) }]}>
-            {strings.otherCancel}
+        />
+        <View style={otherPanelStyles.sheet}>
+          <Text style={[otherPanelStyles.title, { fontFamily: heroFont(language) }]}>
+            {item.kind === "choice" ? item[language] : ""}
           </Text>
-        </Pressable>
-      </View>
-    );
-  }
+          <View style={otherPanelStyles.inputRow}>
+            <TextInput
+              style={[otherPanelStyles.input, { fontFamily: heroFont(language) }]}
+              value={otherText}
+              onChangeText={setOtherText}
+              autoFocus
+              maxLength={120}
+              placeholder={strings.otherPlaceholder}
+              placeholderTextColor={otherPanelStyles.placeholder.color as string}
+              returnKeyType="done"
+              onSubmitEditing={handleOtherConfirm}
+            />
+          </View>
+          <Pressable onPress={handleOtherConfirm} style={otherPanelStyles.confirmBtn} hitSlop={8}>
+            <Text style={[otherPanelStyles.confirmText, { fontFamily: uiFont(language) }]}>
+              {strings.otherConfirm}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setOtherExpanded(false);
+              setOtherText("");
+            }}
+            style={otherPanelStyles.cancelWrap}
+            hitSlop={8}
+          >
+            <Text style={[otherPanelStyles.cancelText, { fontFamily: uiFont(language) }]}>
+              {strings.otherCancel}
+            </Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
 
   // ── Choice ───────────────────────────────────────────────────────────────────
   if (item.kind === "choice") {
     return (
-      <ScrollView
-        style={styles.root}
-        contentContainerStyle={[
-          styles.body,
-          { paddingBottom: bottomInset + spacing.xl },
-        ]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={[styles.title, { fontFamily: heroFont(language) }]}>
-          {item[language]}
-        </Text>
-        <Text style={[styles.selectHint, { fontFamily: uiFont(language) }]}>
-          {strings.singleSelectHint}
-        </Text>
+      <>
+        <ScrollView
+          style={styles.root}
+          contentContainerStyle={[
+            styles.body,
+            { paddingBottom: bottomInset + spacing.xl },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={[styles.title, { fontFamily: heroFont(language) }]}>
+            {item[language]}
+          </Text>
+          <Text style={[styles.selectHint, { fontFamily: uiFont(language) }]}>
+            {strings.singleSelectHint}
+          </Text>
 
-        <View style={styles.deck}>
-          {item.options.map((option, i) => {
-            const anim = staggerAnims[i] ?? new Animated.Value(1);
-            const isSelected = selectedId === option.id;
-            return (
-              <Animated.View
-                key={option.id}
-                style={{
-                  opacity: anim,
-                  transform: [
-                    {
-                      translateY: anim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [10, 0],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <Pressable
-                  style={[styles.slip, isSelected && styles.slipSelected]}
-                  onPress={() => handleChoicePick(option)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
+          <View style={styles.deck}>
+            {item.options.map((option, i) => {
+              const anim = staggerAnims[i] ?? new Animated.Value(1);
+              const isSelected = selectedId === option.id;
+              return (
+                <Animated.View
+                  key={option.id}
+                  style={{
+                    opacity: anim,
+                    transform: [
+                      {
+                        translateY: anim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [10, 0],
+                        }),
+                      },
+                    ],
+                  }}
                 >
-                  <Text style={[styles.slipText, { fontFamily: heroFont(language) }]}>
-                    {option[language]}
-                  </Text>
-                </Pressable>
-              </Animated.View>
-            );
-          })}
+                  <Pressable
+                    style={[styles.slip, isSelected && styles.slipSelected]}
+                    onPress={() => handleChoicePick(option)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                  >
+                    <Text style={[styles.slipText, { fontFamily: heroFont(language) }]}>
+                      {option[language]}
+                    </Text>
+                  </Pressable>
+                </Animated.View>
+              );
+            })}
 
-          {item.allowOther && (
-            <Pressable
-              style={[styles.slip, styles.slipOther, selectedId === "__other__" && styles.slipSelected]}
-              onPress={() => setOtherExpanded(true)}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.slipTextMuted, { fontFamily: heroFont(language) }]}>
-                {strings.otherLabel}
-              </Text>
+            {item.allowOther && (
+              <Pressable
+                style={[styles.slip, styles.slipOther, selectedId === "__other__" && styles.slipSelected]}
+                onPress={() => setOtherExpanded(true)}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.slipTextMuted, { fontFamily: heroFont(language) }]}>
+                  {strings.otherLabel}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {item.skippable && (
+            <Pressable onPress={onSkip} style={styles.skipWrap}>
+              <Text style={[styles.skipText, { fontFamily: uiFont(language) }]}>{strings.skipLabel}</Text>
             </Pressable>
           )}
-        </View>
-
-        {item.skippable && (
-          <Pressable onPress={onSkip} style={styles.skipWrap}>
-            <Text style={[styles.skipText, { fontFamily: uiFont(language) }]}>{strings.skipLabel}</Text>
-          </Pressable>
-        )}
-      </ScrollView>
+        </ScrollView>
+        {otherModal}
+      </>
     );
   }
 
@@ -414,11 +444,14 @@ const styles = StyleSheet.create({
 // render branch for why. Explicit backgroundColor on the root and no
 // centering/flex tricks: a flat, top-anchored column that can't collapse.
 const otherPanelStyles = StyleSheet.create({
-  root: {
-    flex: 1,
+  overlay: { flex: 1, justifyContent: "flex-end" },
+  scrim: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)" },
+  sheet: {
     backgroundColor: colors.ink900,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    borderTopLeftRadius: radius.slip,
+    borderTopRightRadius: radius.slip,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   title: {
     color: colors.inkText,
