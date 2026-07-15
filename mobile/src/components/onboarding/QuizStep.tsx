@@ -72,6 +72,22 @@ export function QuizStep({
   // 「其他」 expand/collapse state.
   const [otherExpanded, setOtherExpanded] = useState(false);
   const [otherText, setOtherText] = useState("");
+  const otherInputRef = useRef<TextInput>(null);
+
+  // Deliberately NOT autoFocus. autoFocus fires TextInput.focus() (and
+  // therefore the keyboard-show event) synchronously on mount, before
+  // KeyboardAvoidingView has finished its own layout measurement — on this
+  // app's React Native 0.86 / Expo SDK 57 (New Architecture / Fabric) that
+  // race made the whole screen render blank the instant the keyboard
+  // started rising, while staying fully interactive underneath (confirmed:
+  // typing and buttons kept working). Focusing manually, one frame after
+  // the modal has mounted and settled, avoids triggering the keyboard
+  // before that measurement is done.
+  useEffect(() => {
+    if (!otherExpanded) return;
+    const id = requestAnimationFrame(() => otherInputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [otherExpanded]);
 
   useEffect(() => {
     Animated.stagger(
@@ -166,10 +182,10 @@ export function QuizStep({
           </Text>
           <View style={otherPanelStyles.inputRow}>
             <TextInput
+              ref={otherInputRef}
               style={[otherPanelStyles.input, { fontFamily: heroFont(language) }]}
               value={otherText}
               onChangeText={setOtherText}
-              autoFocus
               maxLength={120}
               placeholder={strings.otherPlaceholder}
               placeholderTextColor={otherPanelStyles.placeholder.color as string}

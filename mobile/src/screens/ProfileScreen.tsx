@@ -421,6 +421,16 @@ function NameStep({
 }) {
   const [name, setName] = useState(initialName);
   const strings = t(language);
+  const nameInputRef = useRef<TextInput>(null);
+
+  // Deliberately NOT autoFocus — see the identical comment on QuizStep's
+  // 其他-input ref. autoFocus racing KeyboardAvoidingView's own layout
+  // measurement made this screen render blank the instant the keyboard
+  // started rising, on RN 0.86 / Expo SDK 57 (New Architecture).
+  useEffect(() => {
+    const id = requestAnimationFrame(() => nameInputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   return (
     <View style={nameStyles.root}>
@@ -437,10 +447,10 @@ function NameStep({
           {strings.nameSubtitle}
         </Text>
         <TextInput
+          ref={nameInputRef}
           style={[nameStyles.input, { fontFamily: paperBodyFont(language) }]}
           value={name}
           onChangeText={setName}
-          autoFocus
           placeholder=""
           placeholderTextColor={colors.paraSoft}
           returnKeyType="done"
