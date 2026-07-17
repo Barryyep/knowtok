@@ -129,11 +129,16 @@ async function main() {
       .eq("user_id", persona.user_id);
     if (error) {
       failed += 1;
-      console.error(`  [FAIL] ${persona.user_id}: ${error.message}`);
+      // Truncated id: enough to correlate against the DB when debugging a
+      // failure, without writing a full user UUID into CI logs.
+      console.error(`  [FAIL] ${persona.user_id.slice(0, 8)}…: ${error.message}`);
       continue;
     }
     updated += 1;
-    console.log(`  [OK] ${persona.user_id}: ${JSON.stringify(currentWeights)} -> ${JSON.stringify(nextWeights)}`);
+    // PRIVACY: no per-user output on success. GitHub Actions logs are outside
+    // the app's own access controls, so a full user_id + interest-weight map
+    // is a behavioral profile in plaintext — aggregate counts only (SUMMARY
+    // below). To inspect a specific user's weights, query the DB directly.
   }
 
   console.log("\n[rebalance] === SUMMARY ===");
