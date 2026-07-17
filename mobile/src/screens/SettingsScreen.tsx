@@ -1,7 +1,9 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { t } from "../i18n";
+import { deleteAccount } from "../lib/accountService";
 import { readerTypeLabel, readingStyleLabel } from "../lib/onboarding";
 import { supabase } from "../lib/supabase";
 import type { AppLanguage, Profile } from "../lib/types";
@@ -18,6 +20,27 @@ export function SettingsScreen({ profile, onEditProfile, onEditRadar, onChangeLa
   const strings = t(profile.language);
   const insets = useSafeAreaInsets();
   const ui = (w?: "regular" | "medium" | "semibold" | "bold") => uiFont(profile.language, w);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = () => {
+    if (deleting) return;
+    Alert.alert(strings.deleteAccountConfirmTitle, strings.deleteAccountConfirmBody, [
+      { text: strings.deleteAccountCancel, style: "cancel" },
+      {
+        text: strings.deleteAccountConfirmAction,
+        style: "destructive",
+        onPress: () => {
+          setDeleting(true);
+          deleteAccount()
+            // Success needs no navigation here — the local signOut inside
+            // deleteAccount fires the auth listener in App.tsx, which
+            // returns the user to the sign-in screen.
+            .catch(() => Alert.alert(strings.deleteAccountFailed))
+            .finally(() => setDeleting(false));
+        },
+      },
+    ]);
+  };
 
   return (
     <ScrollView
@@ -66,6 +89,21 @@ export function SettingsScreen({ profile, onEditProfile, onEditRadar, onChangeLa
         <Pressable style={styles.row} onPress={() => void supabase.auth.signOut()}>
           <Text style={[styles.rowTitle, styles.danger, { fontFamily: ui("semibold") }]}>
             {strings.signOut}
+          </Text>
+        </Pressable>
+
+        <View style={styles.divider} />
+
+        <Pressable style={styles.row} onPress={handleDeleteAccount} disabled={deleting}>
+          <Text
+            style={[
+              styles.rowTitle,
+              styles.danger,
+              deleting && { opacity: 0.4 },
+              { fontFamily: ui("semibold") },
+            ]}
+          >
+            {deleting ? "…" : strings.deleteAccount}
           </Text>
         </Pressable>
       </View>

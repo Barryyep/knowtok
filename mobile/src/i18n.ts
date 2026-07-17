@@ -27,6 +27,12 @@ export interface UIStrings {
   continueWithGoogle: string;
   checkEmail: string;
   signOut: string;
+  deleteAccount: string;
+  deleteAccountConfirmTitle: string;
+  deleteAccountConfirmBody: string;
+  deleteAccountConfirmAction: string;
+  deleteAccountCancel: string;
+  deleteAccountFailed: string;
   // Profile
   languageLabel: string;
   apiKeyLabel: string;
@@ -107,6 +113,13 @@ const en: UIStrings = {
   continueWithGoogle: "Continue with Google",
   checkEmail: "Check your inbox to confirm your email, then sign in.",
   signOut: "Sign out",
+  deleteAccount: "Delete account",
+  deleteAccountConfirmTitle: "Delete your account?",
+  deleteAccountConfirmBody:
+    "This permanently deletes your account, profile, and reading history. It cannot be undone.",
+  deleteAccountConfirmAction: "Delete permanently",
+  deleteAccountCancel: "Cancel",
+  deleteAccountFailed: "Deletion failed. Check your connection and try again.",
   // Profile
   languageLabel: "Content language",
   apiKeyLabel: "goodvision API key",
@@ -187,6 +200,12 @@ const zh: UIStrings = {
   continueWithGoogle: "使用 Google 继续",
   checkEmail: "请查收邮箱完成验证,然后回来登录。",
   signOut: "退出登录",
+  deleteAccount: "删除账号",
+  deleteAccountConfirmTitle: "确定删除账号？",
+  deleteAccountConfirmBody: "将永久删除你的账号、画像与阅读记录，无法恢复。",
+  deleteAccountConfirmAction: "永久删除",
+  deleteAccountCancel: "取消",
+  deleteAccountFailed: "删除失败，请检查网络后重试。",
   // Profile
   languageLabel: "内容语言",
   apiKeyLabel: "goodvision API key",
